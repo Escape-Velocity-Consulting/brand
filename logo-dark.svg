@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200">
+  <rect width="400" height="200" rx="16" fill="#1E1C1A"/>
+  <text x="200" y="85" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="48" font-weight="700" fill="#F5F3F0">Escape</text>
+  <text x="200" y="135" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-size="48" font-weight="700" fill="#E8865A">Velocity</text>
+</svg>
