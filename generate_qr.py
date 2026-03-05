@@ -21,10 +21,14 @@ qr.make(fit=True)
 img = qr.make_image(
     image_factory=StyledPilImage,
     module_drawer=SquareModuleDrawer(),
-    back_color=CREAM,
     fill_color=WARM_BLACK,
 )
 img = img.convert("RGBA")
+
+# Replace white background with cream (StyledPilImage ignores back_color)
+data = img.getdata()
+cream_rgba = (249, 247, 244, 255)
+img.putdata([cream_rgba if px[:3] == (255, 255, 255) else px for px in data])
 
 size = img.size[0]
 center = size // 2
