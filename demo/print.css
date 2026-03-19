@@ -1,0 +1,28 @@
+@media print {
+  .demo-nav {
+    display: none !important;
+  }
+  .demo-header {
+    break-after: avoid;
+    padding: 20px 0 0;
+  }
+  section {
+    overflow: visible !important;
+    break-before: auto;
+    padding: 30px 0;
+  }
+  section h2 {
+    break-after: avoid;
+  }
+  h3 {
+    break-after: avoid;
+  }
+  .previews-grid,
+  .cards-row,
+  .swatches {
+    break-inside: avoid;
+  }
+  body {
+    background: white;
+  }
+}

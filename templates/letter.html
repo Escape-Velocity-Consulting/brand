@@ -1,54 +1,6 @@
-<!DOCTYPE html>
-<html lang="{{ lang }}">
-<head>
-<meta charset="UTF-8">
-<style>
-@font-face {
-  font-family: 'Space Grotesk';
-  src: url('{{ fonts_uri }}/space-grotesk.woff2') format('woff2');
-  font-weight: 600 700;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Space Grotesk';
-  src: url('{{ fonts_uri }}/space-grotesk-ext.woff2') format('woff2');
-  font-weight: 600 700;
-  unicode-range: U+0100-024F;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Inter';
-  src: url('{{ fonts_uri }}/inter.woff2') format('woff2');
-  font-weight: 400 600;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Inter';
-  src: url('{{ fonts_uri }}/inter-ext.woff2') format('woff2');
-  font-weight: 400 600;
-  unicode-range: U+0100-024F;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Manrope';
-  src: url('{{ fonts_uri }}/manrope.woff2') format('woff2');
-  font-weight: 400 700;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Manrope';
-  src: url('{{ fonts_uri }}/manrope-ext.woff2') format('woff2');
-  font-weight: 400 700;
-  unicode-range: U+0100-024F;
-  font-display: swap;
-}
+{% extends "_base.html" %}
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
+{% block styles %}
 body {
   font-family: 'Inter', sans-serif;
   font-weight: 400;
@@ -76,7 +28,7 @@ body {
 }
 
 .logo span {
-  color: #C46B3C;
+  color: #D4784A;
 }
 
 .header-tagline {
@@ -89,7 +41,7 @@ body {
 
 .accent-bar {
   height: 3px;
-  background: #C46B3C;
+  background: #D4784A;
   margin-bottom: 1.5rem;
 }
 
@@ -101,13 +53,13 @@ body {
 .meta-right .ref { font-size: 11px; color: #9A948D; font-weight: 400; }
 
 .confidential-label {
-  color: #C46B3C;
+  color: #D4784A;
   font-weight: 500;
 }
 
 /* Subject line */
 .subject-line {
-  border-left: 2.5px solid #C46B3C;
+  border-left: 2.5px solid #D4784A;
   padding-left: 16px;
   margin-bottom: 20px;
 }
@@ -138,7 +90,7 @@ body {
 }
 
 .body-content a {
-  color: #C46B3C;
+  color: #D4784A;
   text-decoration: none;
 }
 
@@ -157,7 +109,7 @@ body {
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 700;
   font-size: 17px;
-  color: #C46B3C;
+  color: #D4784A;
   margin-top: 24px;
   margin-bottom: 10px;
   line-height: 1.3;
@@ -191,7 +143,7 @@ body {
 
 /* Blockquote */
 .body-content blockquote {
-  border-left: 2.5px solid #C46B3C;
+  border-left: 2.5px solid #D4784A;
   padding-left: 16px;
   margin: 16px 0;
   color: #9A948D;
@@ -233,7 +185,7 @@ body {
   font-weight: 700;
   text-align: left;
   padding: 8px 10px;
-  border-bottom: 2px solid #C46B3C;
+  border-bottom: 2px solid #D4784A;
   color: #1E1C1A;
 }
 
@@ -246,38 +198,35 @@ body {
 h1, h2, h3 {
   break-after: avoid;
 }
-</style>
-</head>
-<body>
+{% endblock %}
 
+{% block content %}
 <div class="page-header">
   <div class="logo">Escape <span>Velocity</span></div>
   <div class="header-tagline">Digitization · Automation · AI</div>
 </div>
 <div class="accent-bar"></div>
 
-{% if show_meta %}
+{% if SHOW_META %}
 <div class="meta-strip">
   <div class="meta-to">
-    {{ strings.to_label }} <strong>{{ recipient }}</strong>
+    {{ STRINGS.to_label }} <strong>{{ RECIPIENT }}</strong>
   </div>
   <div class="meta-right">
-    {{ date }}{% if ref %}<br><span class="ref">Ref: {{ ref }}</span>{% endif %}
-    {% if confidential %}<br><span class="confidential-label">{{ strings.confidential_label }}</span>{% endif %}
+    {{ DATE }}{% if REF %}<br><span class="ref">Ref: {{ REF }}</span>{% endif %}
+    {% if CONFIDENTIAL %}<br><span class="confidential-label">{{ STRINGS.confidential_label }}</span>{% endif %}
   </div>
 </div>
 {% endif %}
 
-{% if subject %}
+{% if SUBJECT %}
 <div class="subject-line">
-  <div class="subject-label">{{ strings.subject_label }}</div>
-  <div class="subject-text">{{ subject }}</div>
+  <div class="subject-label">{{ STRINGS.subject_label }}</div>
+  <div class="subject-text">{{ SUBJECT }}</div>
 </div>
 {% endif %}
 
 <div class="body-content">
-{{ content }}
+{{ CONTENT | safe }}
 </div>
-
-</body>
-</html>
+{% endblock %}

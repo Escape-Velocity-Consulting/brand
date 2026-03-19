@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workflow — Escape Velocity Brand Demo</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="print.css" media="print">
+<style>
+@font-face { font-family: 'Space Grotesk'; src: url('../../website/fonts/space-grotesk.woff2') format('woff2'); font-weight: 400 700; font-display: swap; }
+@font-face { font-family: 'Space Grotesk'; src: url('../../website/fonts/space-grotesk-ext.woff2') format('woff2'); font-weight: 400 700; font-display: swap; unicode-range: U+0100-024F; }
+@font-face { font-family: 'Inter'; src: url('../../website/fonts/inter.woff2') format('woff2'); font-weight: 400 600; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url('../../website/fonts/inter-ext.woff2') format('woff2'); font-weight: 400 600; font-display: swap; unicode-range: U+0100-024F; }
+@font-face { font-family: 'Manrope'; src: url('../../website/fonts/manrope.woff2') format('woff2'); font-weight: 400 800; font-display: swap; }
+@font-face { font-family: 'Manrope'; src: url('../../website/fonts/manrope-ext.woff2') format('woff2'); font-weight: 400 800; font-display: swap; unicode-range: U+0100-024F; }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font-body); background: var(--color-cream); color: var(--color-text); line-height: 1.6; }
+a { color: var(--color-terracotta); }
+.container { max-width: 1100px; margin: 0 auto; padding: 0 40px; }
+section { padding: 60px 0; border-bottom: 1px solid rgba(0,0,0,0.06); }
+section:last-child { border-bottom: none; }
+.demo-header { background: var(--color-black); padding: 40px 0 0; color: var(--color-light); }
+.demo-header .container { padding-bottom: 20px; }
+.demo-header h1 { font-family: var(--font-headline); font-weight: 700; font-size: 28px; }
+.demo-header h1 span { color: var(--color-accent); }
+.demo-header p { color: var(--color-muted); margin-top: 8px; font-size: 14px; }
+.demo-nav { background: var(--color-black); border-bottom: 1px solid rgba(255,255,255,0.08); }
+.demo-nav .container { display: flex; gap: 0; }
+.demo-nav a { color: var(--color-muted); text-decoration: none; font-family: var(--font-ui); font-size: 13px; font-weight: 500; padding: 12px 20px; border-bottom: 2px solid transparent; }
+.demo-nav a:hover { color: var(--color-light); }
+.demo-nav a.active { color: var(--color-light); border-bottom-color: var(--color-terracotta); }
+h2 { font-family: var(--font-headline); font-weight: 700; font-size: 22px; color: var(--color-text); margin-bottom: 24px; }
+h3 { font-family: var(--font-headline); font-weight: 600; font-size: 14px; color: var(--color-subtle); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; margin-top: 32px; }
+h3:first-child { margin-top: 0; }
+.eyebrow { font-family: var(--font-ui); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: var(--color-terracotta); margin-bottom: 20px; }
+
+/* Page-specific */
+pre { background: var(--color-black); color: var(--color-light); padding: 16px 20px; border-radius: 8px; font-size: 13px; overflow-x: auto; margin-top: 12px; line-height: 1.6; }
+code { font-family: monospace; }
+table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+th { font-family: var(--font-ui); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--color-terracotta); color: var(--color-text); }
+td { font-size: 14px; padding: 10px 12px; border-bottom: 1px solid rgba(0,0,0,0.06); color: var(--color-body); }
+td code { font-size: 12px; background: rgba(0,0,0,0.04); padding: 2px 6px; border-radius: 3px; }
+.step { background: white; border-radius: 12px; padding: 24px; border: 1px solid rgba(0,0,0,0.06); margin-bottom: 16px; }
+.step-number { font-family: var(--font-headline); font-weight: 700; font-size: 18px; color: var(--color-terracotta); margin-bottom: 4px; }
+.step p { font-size: 14px; color: var(--color-body); }
+.links-list { list-style: none; }
+.links-list li { padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.06); }
+.links-list li:last-child { border-bottom: none; }
+.links-list a { font-family: var(--font-ui); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="demo-header">
+  <div class="container">
+    <h1>Escape <span>Velocity</span> — Brand Demo</h1>
+    <p>Visual reference for all brand tokens, components, and generated assets.</p>
+  </div>
+</div>
+
+<nav class="demo-nav">
+  <div class="container">
+    <a href="./">Overview</a>
+    <a href="identity.html">Identity</a>
+    <a href="components.html">Components</a>
+    <a href="documents.html">Documents</a>
+    <a href="social.html">Social</a>
+    <a href="workflow.html" class="active">Workflow</a>
+  </div>
+</nav>
+
+<!-- Pipeline Overview -->
+<section>
+  <div class="container">
+    <div class="eyebrow">System</div>
+    <h2>How the System Works</h2>
+
+    <pre>tokens.ts  ──→  tokens.css  ──→  website/styles/tokens.css
+                    │
+                    ▼
+              templates/*.html  ──→  generators/pdf.ts   ──→  *.pdf
+                    │                generators/image.ts  ──→  *.png
+                    ▼
+              demo/index.html   (visual reference)</pre>
+
+    <h3>Generators</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Script</th>
+          <th>Command</th>
+          <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>build:tokens</code></td>
+          <td><code>tsx scripts/build-tokens.ts</code></td>
+          <td>Regenerate tokens.css from tokens.ts</td>
+        </tr>
+        <tr>
+          <td><code>sync:website</code></td>
+          <td><code>bash scripts/sync-website.sh</code></td>
+          <td>Copy tokens.css &rarr; website/styles/</td>
+        </tr>
+        <tr>
+          <td><code>pdf</code></td>
+          <td><code>tsx generators/pdf.ts</code></td>
+          <td>Markdown &rarr; branded A4 PDF</td>
+        </tr>
+        <tr>
+          <td><code>image</code></td>
+          <td><code>tsx generators/image.ts</code></td>
+          <td>HTML/SVG &rarr; PNG (banners, social)</td>
+        </tr>
+        <tr>
+          <td><code>export</code></td>
+          <td><code>tsx scripts/export-assets.ts</code></td>
+          <td>Regenerate all raster assets + previews</td>
+        </tr>
+        <tr>
+          <td><code>build:skill</code></td>
+          <td><code>bash scripts/build-skill.sh</code></td>
+          <td>Package brand-engine.skill</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Token Update Workflow -->
+<section>
+  <div class="container">
+    <h3>Token Update Workflow</h3>
+
+    <div class="step">
+      <div class="step-number">1</div>
+      <p>Edit <code>brand/tokens.ts</code> — Change colors, fonts, or spacing values</p>
+    </div>
+
+    <div class="step">
+      <div class="step-number">2</div>
+      <p>Run <code>npm run build:tokens</code> — Regenerates brand/tokens.css from source</p>
+    </div>
+
+    <div class="step">
+      <div class="step-number">3</div>
+      <p>Run <code>npm run sync:website</code> — Copies tokens.css into website/styles/tokens.css</p>
+    </div>
+
+    <div class="step">
+      <div class="step-number">4</div>
+      <p>Commit both repos — Brand repo and website repo are separate git repos</p>
+    </div>
+  </div>
+</section>
+
+<!-- Skill Packaging -->
+<section>
+  <div class="container">
+    <h3>Skill Packaging</h3>
+    <p style="font-size: 14px; color: var(--color-body); margin-top: 8px;">The brand system can be packaged as a Claude Code skill for agent use.</p>
+
+    <pre><code>npm run build:skill
+# Output: dist/brand-engine.skill</code></pre>
+  </div>
+</section>
+
+<!-- Reference Files -->
+<section>
+  <div class="container">
+    <h3>Reference Files</h3>
+
+    <ul class="links-list">
+      <li><a href="../BRAND_SPEC.md">BRAND_SPEC.md</a> — Canonical brand specification (source of truth)</li>
+      <li><a href="../AGENT_GUIDE.md">AGENT_GUIDE.md</a> — Terse agent lookup tables</li>
+      <li><a href="../BRAND_SKILL.md">BRAND_SKILL.md</a> — Agent cheatsheet for brand system</li>
+      <li><a href="../tokens.ts">tokens.ts</a> — Token source of truth (colors, fonts, spacing)</li>
+      <li><a href="../tokens.css">tokens.css</a> — Generated CSS custom properties</li>
+    </ul>
+  </div>
+</section>
+
+</body>
+</html>

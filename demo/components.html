@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Components — Escape Velocity Brand Demo</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="print.css" media="print">
+<style>
+/* Font loading */
+@font-face { font-family: 'Space Grotesk'; src: url('../../website/fonts/space-grotesk.woff2') format('woff2'); font-weight: 400 700; font-display: swap; }
+@font-face { font-family: 'Space Grotesk'; src: url('../../website/fonts/space-grotesk-ext.woff2') format('woff2'); font-weight: 400 700; font-display: swap; unicode-range: U+0100-024F; }
+@font-face { font-family: 'Inter'; src: url('../../website/fonts/inter.woff2') format('woff2'); font-weight: 400 600; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url('../../website/fonts/inter-ext.woff2') format('woff2'); font-weight: 400 600; font-display: swap; unicode-range: U+0100-024F; }
+@font-face { font-family: 'Manrope'; src: url('../../website/fonts/manrope.woff2') format('woff2'); font-weight: 400 800; font-display: swap; }
+@font-face { font-family: 'Manrope'; src: url('../../website/fonts/manrope-ext.woff2') format('woff2'); font-weight: 400 800; font-display: swap; unicode-range: U+0100-024F; }
+
+/* Reset & base */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font-body); background: var(--color-cream); color: var(--color-text); line-height: 1.6; }
+a { color: var(--color-terracotta); }
+
+/* Layout */
+.container { max-width: 1100px; margin: 0 auto; padding: 0 40px; }
+section { padding: 60px 0; border-bottom: 1px solid rgba(0,0,0,0.06); }
+section:last-child { border-bottom: none; }
+
+/* Header */
+.demo-header { background: var(--color-black); padding: 40px 0 0; color: var(--color-light); }
+.demo-header .container { padding-bottom: 20px; }
+.demo-header h1 { font-family: var(--font-headline); font-weight: 700; font-size: 28px; }
+.demo-header h1 span { color: var(--color-accent); }
+.demo-header p { color: var(--color-muted); margin-top: 8px; font-size: 14px; }
+
+/* Nav */
+.demo-nav { background: var(--color-black); border-bottom: 1px solid rgba(255,255,255,0.08); }
+.demo-nav .container { display: flex; gap: 0; }
+.demo-nav a { color: var(--color-muted); text-decoration: none; font-family: var(--font-ui); font-size: 13px; font-weight: 500; padding: 12px 20px; border-bottom: 2px solid transparent; }
+.demo-nav a:hover { color: var(--color-light); }
+.demo-nav a.active { color: var(--color-light); border-bottom-color: var(--color-terracotta); }
+
+/* Headings */
+h2 { font-family: var(--font-headline); font-weight: 700; font-size: 22px; color: var(--color-text); margin-bottom: 24px; }
+h3 { font-family: var(--font-headline); font-weight: 600; font-size: 14px; color: var(--color-subtle); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; margin-top: 32px; }
+h3:first-child { margin-top: 0; }
+.eyebrow { font-family: var(--font-ui); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: var(--color-terracotta); margin-bottom: 20px; }
+
+/* === Buttons === */
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 15px 34px;
+  background: var(--color-terracotta); color: white; border-radius: 8px;
+  font-family: var(--font-ui); font-weight: 600; font-size: 16px;
+  text-decoration: none; border: none; cursor: pointer;
+}
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 15px 34px;
+  background: transparent; color: var(--color-light);
+  border: 1px solid rgba(255,255,255,0.2); border-radius: 8px;
+  font-family: var(--font-ui); font-weight: 500; font-size: 16px;
+  text-decoration: none; cursor: pointer;
+}
+.btn-email {
+  display: inline-block; padding: 12px 28px;
+  background: var(--color-terracotta); color: white; border-radius: 6px;
+  font-family: var(--font-ui); font-weight: 600; font-size: 14px;
+  text-decoration: none; border: none; cursor: pointer;
+}
+.dark-strip {
+  background: var(--color-black);
+  padding: 32px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+.button-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* === Cards === */
+.cards-row {
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr 0.9fr;
+  gap: 20px;
+}
+.card-dark {
+  background: var(--color-black);
+  border: 1px solid rgba(212,120,74,0.3);
+  border-radius: 12px;
+  padding: 32px;
+}
+.card-dark .card-title {
+  font-family: var(--font-headline);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--color-light);
+  margin-bottom: 8px;
+}
+.card-dark .card-body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-muted);
+}
+.card-light {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+.card-light .card-title {
+  font-family: var(--font-headline);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--color-text);
+  margin-bottom: 8px;
+}
+.card-light .card-body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-body);
+}
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  background: rgba(212,120,74,0.15);
+  color: var(--color-terracotta);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+/* === Tags === */
+.tags-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.tag-geht { background: rgba(212,120,74,0.10); color: #C2653A; }
+.tag-kommt { background: rgba(59,130,246,0.08); color: #3B82F6; }
+.tag-tun { background: rgba(34,197,94,0.08); color: #16A34A; }
+
+/* === Dividers === */
+.divider-demo {
+  margin-bottom: 32px;
+}
+.divider-label {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-subtle);
+  margin-bottom: 8px;
+}
+.divider-header-rule {
+  border-bottom: 0.5px solid #EEEAE4;
+  padding-bottom: 16px;
+}
+.divider-accent-bar {
+  height: 3px;
+  background: var(--color-terracotta);
+  width: 100%;
+}
+.divider-subject {
+  border-left: 2.5px solid var(--color-terracotta);
+  padding-left: 16px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--color-text);
+}
+.divider-table-header {
+  border-bottom: 2px solid var(--color-terracotta);
+  padding-bottom: 8px;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--color-text);
+}
+.divider-section {
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  padding-bottom: 16px;
+}
+.divider-newsletter {
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  padding-bottom: 16px;
+}
+
+/* === Newsletter Blocks === */
+.tldr-box {
+  background: var(--color-black);
+  border-radius: 8px;
+  padding: 20px 24px;
+}
+.tldr-label {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--color-terracotta);
+  margin-bottom: 8px;
+}
+.tldr-body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-muted);
+}
+.callout-block {
+  background: var(--color-cream);
+  border-left: 3px solid var(--color-terracotta);
+  border-radius: 0 8px 8px 0;
+  padding: 20px 24px;
+}
+.callout-quote {
+  font-family: var(--font-headline);
+  font-weight: 500;
+  font-size: 16px;
+  font-style: italic;
+  color: var(--color-text);
+  margin-bottom: 8px;
+}
+.callout-source {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: #999;
+}
+
+/* === Logo Previews === */
+.preview-img { max-width: 100%; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); margin-bottom: 8px; }
+.preview-caption { font-family: var(--font-ui); font-size: 12px; color: var(--color-subtle); }
+.previews-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+.logo-preview-box {
+  background: var(--color-cream);
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.06);
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+</style>
+</head>
+<body>
+
+<div class="demo-header">
+  <div class="container">
+    <h1>Escape <span>Velocity</span> — Brand Demo</h1>
+    <p>Visual reference for all brand tokens, components, and generated assets.</p>
+  </div>
+</div>
+
+<nav class="demo-nav">
+  <div class="container">
+    <a href="./">Overview</a>
+    <a href="identity.html">Identity</a>
+    <a href="components.html" class="active">Components</a>
+    <a href="documents.html">Documents</a>
+    <a href="social.html">Social</a>
+    <a href="workflow.html">Workflow</a>
+  </div>
+</nav>
+
+<!-- Buttons -->
+<section>
+  <div class="container">
+    <div class="eyebrow">Buttons</div>
+    <h2>Button Variants</h2>
+
+    <h3>Primary CTA</h3>
+    <div class="button-row">
+      <a href="#" class="btn-primary">Erstgespräch buchen →</a>
+    </div>
+
+    <h3>Primary + Secondary (on dark)</h3>
+    <div class="dark-strip">
+      <a href="#" class="btn-primary">Erstgespräch buchen →</a>
+      <a href="#" class="btn-secondary">Mehr erfahren</a>
+    </div>
+
+    <h3>Newsletter CTA</h3>
+    <div class="button-row" style="margin-top: 16px;">
+      <a href="#" class="btn-email">Weiterlesen →</a>
+    </div>
+  </div>
+</section>
+
+<!-- Cards -->
+<section>
+  <div class="container">
+    <div class="eyebrow">Cards</div>
+    <h2>Card Variants</h2>
+
+    <div class="cards-row">
+      <div class="card-dark">
+        <div class="badge">FLAGSHIP</div>
+        <div class="card-title">Tech Upgrade</div>
+        <div class="card-body">Engpass gefunden? Wir lösen ihn. Prozesse digitalisieren, Systeme verbinden, Automatisierung aufsetzen.</div>
+      </div>
+      <div class="card-light">
+        <div class="card-title">Aha! Moment Workshop</div>
+        <div class="card-body">Der Einstieg. Halber Tag, voller Durchblick: wo Ihre größten Hebel liegen.</div>
+      </div>
+      <div class="card-light">
+        <div class="card-title">Laufende Begleitung</div>
+        <div class="card-body">Zu früh für einen IT-Lead, aber zu viele Tech-Entscheidungen für nebenbei?</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Tags -->
+<section>
+  <div class="container">
+    <div class="eyebrow">Tags</div>
+    <h2>Tags & Badges</h2>
+
+    <h3>Status Tags</h3>
+    <div class="tags-row">
+      <span class="tag tag-geht">geht</span>
+      <span class="tag tag-kommt">kommt</span>
+      <span class="tag tag-tun">tun</span>
+    </div>
+
+    <h3>Badge</h3>
+    <div style="margin-top: 8px;">
+      <span class="badge">FLAGSHIP</span>
+    </div>
+  </div>
+</section>
+
+<!-- Dividers -->
+<section>
+  <div class="container">
+    <div class="eyebrow">Dividers</div>
+    <h2>Divider Variants</h2>
+
+    <div class="divider-demo">
+      <div class="divider-label">Document Header Rule</div>
+      <div class="divider-header-rule"></div>
+    </div>
+
+    <div class="divider-demo">
+      <div class="divider-label">Accent Bar</div>
+      <div class="divider-accent-bar"></div>
+    </div>
+
+    <div class="divider-demo">
+      <div class="divider-label">Subject Line Border</div>
+      <div class="divider-subject">Betreff: Testbrief</div>
+    </div>
+
+    <div class="divider-demo">
+      <div class="divider-label">Table Header Bottom</div>
+      <div class="divider-table-header">Column Header</div>
+    </div>
+
+    <div class="divider-demo">
+      <div class="divider-label">Section Divider</div>
+      <div class="divider-section"></div>
+    </div>
+
+    <div class="divider-demo">
+      <div class="divider-label">Newsletter Divider</div>
+      <div class="divider-newsletter">Newsletter section separator</div>
+    </div>
+  </div>
+</section>
+
+<!-- Newsletter Blocks -->
+<section>
+  <div class="container">
+    <div class="eyebrow">Newsletter</div>
+    <h2>Newsletter Blocks</h2>
+
+    <h3>TLDR Box</h3>
+    <div class="tldr-box">
+      <div class="tldr-label">TLDR</div>
+      <div class="tldr-body">Die meisten Unternehmen brauchen keinen Rundumschlag. Sie brauchen einen Aha! Moment.</div>
+    </div>
+
+    <h3>Callout / Quote Block</h3>
+    <div class="callout-block">
+      <div class="callout-quote">Wer den Engpass findet, findet den Hebel.</div>
+      <div class="callout-source">— Tommi Enenkel</div>
+    </div>
+  </div>
+</section>
+
+<!-- Logos -->
+<section>
+  <div class="container">
+    <div class="eyebrow">Logos</div>
+    <h2>Logo Lockups</h2>
+
+    <h3>SVG Sources</h3>
+    <div class="previews-grid">
+      <div>
+        <div class="logo-preview-box">
+          <img src="../assets/logos/ev-wordmark.svg" alt="EV Wordmark" width="150" height="150">
+        </div>
+        <div class="preview-caption">ev-wordmark.svg — Square EV monogram</div>
+      </div>
+      <div>
+        <div class="logo-preview-box">
+          <img src="../assets/logos/logo-dark.svg" alt="Logo Dark" width="250" height="125">
+        </div>
+        <div class="preview-caption">logo-dark.svg — Full wordmark, dark bg, wide</div>
+      </div>
+      <div>
+        <div class="logo-preview-box">
+          <img src="../assets/logos/logo-dark-square.svg" alt="Logo Dark Square" width="150" height="150">
+        </div>
+        <div class="preview-caption">logo-dark-square.svg — Full wordmark, dark bg, square</div>
+      </div>
+    </div>
+
+    <h3>PNG Exports</h3>
+    <div class="previews-grid">
+      <div>
+        <img src="../assets/raster/ev-wordmark-300.png" alt="EV Wordmark PNG" class="preview-img" style="max-width: 150px;">
+        <div class="preview-caption">ev-wordmark-300.png</div>
+      </div>
+      <div>
+        <img src="../assets/raster/logo-dark-300.png" alt="Logo Dark PNG" class="preview-img" style="max-width: 150px;">
+        <div class="preview-caption">logo-dark-300.png</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

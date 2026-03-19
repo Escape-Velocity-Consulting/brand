@@ -1,0 +1,18 @@
+:root {
+  --color-cream: #F9F7F4;
+  --color-black: #1E1C1A;
+  --color-terracotta: #D4784A;
+  --color-terracotta-hover: #C2653A;
+  --color-accent: #E8865A;
+  --color-light: #F5F3F0;
+  --color-muted: #C4BEB8;
+  --color-subtle: #807A74;
+  --color-body: #5C5650;
+  --color-text: #1A1816;
+  --color-blue: #3B82F6;
+  --color-green: #16A34A;
+  --font-headline: 'Space Grotesk', sans-serif;
+  --font-ui: 'Manrope', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}

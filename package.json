@@ -1,5 +1,23 @@
 {
+  "type": "module",
+  "scripts": {
+    "build:tokens": "tsx scripts/build-tokens.ts",
+    "sync:website": "bash scripts/sync-website.sh",
+    "pdf": "tsx generators/pdf.ts",
+    "image": "tsx generators/image.ts",
+    "export": "tsx scripts/export-assets.ts",
+    "build:skill": "bash scripts/build-skill.sh"
+  },
   "dependencies": {
+    "markdown-it": "^14",
+    "nunjucks": "^3.2",
+    "playwright": "^1.50",
     "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/nunjucks": "^3.2",
+    "tsx": "^4.21",
+    "typescript": "^5.7"
   }
 }
