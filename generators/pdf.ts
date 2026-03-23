@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, unlinkSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, unlinkSync, mkdirSync, existsSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { pathToFileURL } from 'node:url'
@@ -7,11 +7,14 @@ import { tmpdir } from 'node:os'
 import nunjucks from 'nunjucks'
 import MarkdownIt from 'markdown-it'
 import { chromium } from 'playwright'
+import { PDFDocument } from 'pdf-lib'
 import { colors } from '../tokens.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const BRAND_DIR = resolve(__dirname, '..')
-const FONTS_DIR = resolve(BRAND_DIR, '..', 'website', 'fonts')
+const FONTS_DIR = existsSync(resolve(BRAND_DIR, 'fonts'))
+  ? resolve(BRAND_DIR, 'fonts')
+  : resolve(BRAND_DIR, '..', 'website', 'fonts')
 const TEMPLATES_DIR = resolve(BRAND_DIR, 'templates')
 
 // --- i18n ---
@@ -33,8 +36,37 @@ const STRINGS: Record<string, Record<string, string>> = {
 
 // --- Footer ---
 
-function footerTemplate(lang: string): string {
+function footerTemplate(lang: string, docType = 'letter'): string {
   const pageLabel = STRINGS[lang].page_label
+  const pageSpan = `<span style="font-weight: 500; color: #9A948D;">${pageLabel} <span class="pageNumber"></span> / <span class="totalPages"></span></span>`
+
+  if (docType === 'tos') {
+    return `
+<div style="width: 100%; font-family: 'Inter', sans-serif; font-size: 10px;
+            color: #9A948D; display: flex; justify-content: flex-end;
+            align-items: center; padding: 12px 25mm 0; border-top: 0.5px solid #EEEAE4;">
+  ${pageSpan}
+</div>`
+  }
+
+  if (docType === 'offer' || docType === 'invoice') {
+    const sep = `<span style="border-right: 0.5px solid #DDDAD4; height: 10px; margin: 0 8px;"></span>`
+    return `
+<div style="width: 100%; font-family: 'Inter', sans-serif; font-size: 9px;
+            color: #9A948D; display: flex; justify-content: space-between;
+            align-items: center; padding: 12px 25mm 0; border-top: 0.5px solid #EEEAE4;">
+  <div style="display: flex; align-items: center;">
+    <span>Thomas Enenkel GmbH</span>${sep}<span>FN 570703w</span>${sep}<span>UID ATU77669024</span>
+  </div>
+  <div style="display: flex; align-items: center;">
+    <span>IBAN AT03 3266 7000 0003 8695</span>
+    <span style="border-right: 0.5px solid #DDDAD4; height: 10px; margin: 0 8px;"></span>
+    ${pageSpan}
+  </div>
+</div>`
+  }
+
+  // letter (default)
   return `
 <div style="width: 100%; font-family: 'Inter', sans-serif; font-size: 10px;
             color: #9A948D; display: flex; justify-content: space-between;
@@ -46,7 +78,7 @@ function footerTemplate(lang: string): string {
     <span style="border-right: 0.5px solid #DDDAD4; height: 10px; margin: 0 12px;"></span>
     <span>escapevelocity.consulting</span>
   </div>
-  <span style="font-weight: 500; color: #9A948D;">${pageLabel} <span class="pageNumber"></span> / <span class="totalPages"></span></span>
+  ${pageSpan}
 </div>`
 }
 
@@ -80,13 +112,13 @@ function extractTitle(text: string): string {
   return match ? match[1].trim() : ''
 }
 
-function mdToHtml(mdPath: string): { body: string; title: string } {
+function mdToHtml(mdPath: string, keepTitle = false): { body: string; title: string } {
   const text = readFileSync(mdPath, 'utf-8')
   const title = extractTitle(text)
 
-  // Strip the first H1 to avoid double-rendering
+  // Strip the first H1 to avoid double-rendering (unless keepTitle is set)
   let cleaned = text
-  if (title) {
+  if (title && !keepTitle) {
     cleaned = text.replace(new RegExp(`^#\\s+${escapeRegex(title)}\\s*$`, 'm'), '')
   }
 
@@ -123,6 +155,7 @@ function renderTemplate(
     subject?: string
     confidential: boolean
     lang: string
+    showAbout: boolean
   },
 ): string {
   const fontsUri = pathToFileURL(FONTS_DIR).href
@@ -139,12 +172,13 @@ function renderTemplate(
     SUBJECT: opts.subject || '',
     CONFIDENTIAL: opts.confidential,
     SHOW_META: showMeta,
+    SHOW_ABOUT: opts.showAbout,
   })
 }
 
 // --- PDF ---
 
-async function htmlToPdf(html: string, outputPath: string, lang: string): Promise<void> {
+async function htmlToPdf(html: string, outputPath: string, lang: string, docType = 'letter'): Promise<void> {
   const tmpPath = resolve(tmpdir(), `ev-pdf-${Date.now()}.html`)
   writeFileSync(tmpPath, html, 'utf-8')
 
@@ -159,7 +193,7 @@ async function htmlToPdf(html: string, outputPath: string, lang: string): Promis
       printBackground: true,
       displayHeaderFooter: true,
       headerTemplate: '<div></div>',
-      footerTemplate: footerTemplate(lang),
+      footerTemplate: footerTemplate(lang, docType),
     })
     await browser.close()
   } finally {
@@ -182,6 +216,8 @@ async function main() {
       confidential: { type: 'boolean', default: false },
       lang:         { type: 'string', default: 'de' },
       template:     { type: 'string' },
+      attach:       { type: 'string' },
+      'no-about':   { type: 'boolean', default: false },
       debug:        { type: 'boolean', default: false },
     },
     allowPositionals: true,
@@ -213,7 +249,7 @@ async function main() {
   }
 
   // Parse markdown
-  const { body, title } = mdToHtml(resolve(process.cwd(), inputPath))
+  const { body, title } = mdToHtml(resolve(process.cwd(), inputPath), docType === 'tos')
 
   // Resolve options
   const subject = values.subject || title || undefined
@@ -232,6 +268,7 @@ async function main() {
     subject,
     confidential: values.confidential ?? false,
     lang,
+    showAbout: !(values['no-about'] ?? false),
   })
 
   // Debug HTML
@@ -242,7 +279,27 @@ async function main() {
   }
 
   // Generate PDF
-  await htmlToPdf(fullHtml, outputPath, lang)
+  await htmlToPdf(fullHtml, outputPath, lang, docType)
+
+  // Attach additional PDF (e.g. AGB)
+  if (values.attach) {
+    const attachPath = resolve(process.cwd(), values.attach)
+    if (!existsSync(attachPath)) {
+      console.error(`Attachment not found: ${attachPath}`)
+      process.exit(1)
+    }
+    const mainBytes = readFileSync(outputPath)
+    const attachBytes = readFileSync(attachPath)
+    const mainDoc = await PDFDocument.load(mainBytes)
+    const attachDoc = await PDFDocument.load(attachBytes)
+    const copiedPages = await mainDoc.copyPages(attachDoc, attachDoc.getPageIndices())
+    for (const page of copiedPages) {
+      mainDoc.addPage(page)
+    }
+    const merged = await mainDoc.save()
+    writeFileSync(outputPath, merged)
+  }
+
   console.log(`Done: ${outputPath}`)
 
   // Clean up custom template if created

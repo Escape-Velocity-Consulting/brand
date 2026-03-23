@@ -207,12 +207,13 @@ color: terracotta; margin-bottom: 20px;
 
 ### Dividers
 
-- Document header rule: `0.5px solid #EEEAE4`
-- Document accent bar: `height: 3px; background: terracotta`
-- Subject line left border: `2.5px solid terracotta`
+- Document accent bar: `height: 2px; background: terracotta`
+- Meta-strip bottom border: `0.5px solid #E8E5E0` (only structural divider in documents)
+- Subject line left border: `3px solid terracotta`
 - Blockquote left border: `2.5px solid terracotta`
-- Table header bottom: `2px solid terracotta`
+- Offer/invoice table: `border-left: 3px solid terracotta` (contained warm block, not th underline)
 - Newsletter section divider: `1px solid rgba(0,0,0,0.06)`
+- **No** h2 top borders, **no** visible `<hr>` in documents — spacing alone separates sections
 
 ### Newsletter-Specific Components
 
@@ -257,11 +258,21 @@ tun:   background rgba(34,197,94,0.08),  color #16A34A
 | Asset Type | Dimensions / Format | Notes |
 |------------|---------------------|-------|
 | LinkedIn Banner | 1584×396px (4:1 ratio) | Dark bg, left accent bar, wordmark left, tagline right |
+| LinkedIn Feed Landscape | 1200×627px (~1.91:1) | Same ratio as OG, standard feed image |
+| LinkedIn Feed Portrait | 1080×1350px (4:5) | Max vertical real estate in feed |
 | LinkedIn Profile Photo | 400×400px | Not in scope yet |
 | Social Share Graphic | 1200×630px (OG standard) | TBD |
 | Newsletter | Max 620px wide, HTML | Dark header, cream body, inline styles for email clients |
 | Letter / Document | A4 (210×297mm) | 12mm top, 25mm sides, 20mm bottom |
 | Business Card (digital) | Mobile-optimized HTML | Dark theme, minimal, VCF download |
+| OG Image | 1200×630px | Dark bg, parameterized title/subtitle |
+| Quote Card | 1200×1200px | Shareable insight/quote graphic |
+| Stats Card | 1200×1200px | Key metric highlight |
+| Announcement | 1200×630px or 1200×1200px | Service/event announcement |
+| Twitter/X Banner | 1500×500px | Profile cover |
+| YouTube Banner | 2560×1440px (safe: 1546×423) | Channel art |
+| Instagram Post | 1080×1080px | Square post (use templates or custom) |
+| Instagram Story | 1080×1920px | Vertical story |
 | QR Code | SVG + PNG | On brand colors (TBD — currently generic) |
 
 ---
@@ -291,6 +302,7 @@ tun:   background rgba(34,197,94,0.08),  color #16A34A
 - CTAs: imperative + arrow → `Kostenloses Erstgespräch →` / `Weiterlesen →`
 - Logo accent: always "Velocity" in terracotta, never "Escape"
 - Tagline variants: "Digitization · Automation · AI" (EN) / "Digitalisierung & Prozessoptimierung" (DE)
+- Tagline in documents: Inter 11px, mixed-case, `letter-spacing: 0.04em`, `color: #7A756F`. **Not** uppercase Manrope — wide letter-spacing at small sizes causes pixel shimmer on non-retina screens
 
 ---
 
@@ -412,6 +424,14 @@ SVGs are the source of truth. Raster exports are generated artifacts — never e
 | `assets/qr/qr-hi.png` | varies | URL: hi/ page | `generators/qr.ts` | Active |
 | `website/qr.png` | varies | URL: main site | `generators/qr.ts` | Active |
 | `website/qr-lockscreen.png` | varies | URL: main site | `generators/qr.ts` | Active |
+| `assets/raster/quote-card.png` | 1200×1200 | `templates/social/quote-card.html` | `image.ts` | Active |
+| `assets/raster/stats-card.png` | 1200×1200 | `templates/social/stats-card.html` | `image.ts` | Active |
+| `assets/raster/announcement.png` | 1200×630 | `templates/social/announcement.html` | `image.ts` | Active |
+| `assets/raster/og.png` | 1200×630 | `templates/social/og.html` | `image.ts` | Active |
+| `assets/raster/twitter-banner.png` | 1500×500 | `templates/social/twitter-banner.html` | `image.ts` | Active |
+| `assets/raster/youtube-banner.png` | 2560×1440 | `templates/social/youtube-banner.html` | `image.ts` | Active |
+| `assets/logos/ev-wordmark-light.svg` | SVG | Wordmark, light text for dark bg | hand-crafted | — |
+| `assets/logos/ev-wordmark-transparent.svg` | SVG | Wordmark, transparent bg | hand-crafted | — |
 
 > LinkedIn banner is now generated from `templates/social/linkedin-banner.html` via `image.ts`. The Affinity/Figma source files have been removed.
 
@@ -454,6 +474,7 @@ Options:
   --confidential                Add Vertraulich/Confidential label
   --lang <de|en>                Label language (default: de)
   --template <path>             Override template path directly (bypasses --type)
+  --attach <path>               Append a PDF (e.g. AGB) to the output — merged via pdf-lib
   --debug                       Write .debug.html alongside PDF (off by default)
 ```
 
@@ -480,7 +501,17 @@ Each type shares `_base.html` for font loading and CSS tokens. Type-specific tem
 
 **Page format:** A4, margins: top 12mm / right 25mm / bottom 20mm / left 25mm
 
-**Footer:** Auto-generated — phone · email · domain · page X / Y
+**Footer:** Doc-type-aware, auto-generated:
+- **letter** (default): phone · email · domain · page X / Y
+- **offer / invoice**: Thomas Enenkel GmbH · FN 570703w · UID ATU77669024 | IBAN AT03 3266 7000 0003 8695 · page X / Y
+- **tos**: page X / Y only
+
+**Document header layout (letterhead band):**
+All document types share a single-band header: logo-group (logo 24px Space Grotesk + tagline stacked) left, header-contact (company name + address + phone/email) right. Accent bar below. This answers "who sent this" in one glance.
+
+**Recipient format:** `--to "Name · Company"` — the ` · ` separator splits the string: name renders as Space Grotesk 14px 600 (block), company as 12px secondary below.
+
+**h2 in documents:** Always `#1E1C1A` (black), never terracotta. Terracotta was ~3.5:1 contrast on cream (fails WCAG AA) and prints lighter than body text on B&W — inverting the visual hierarchy. Terracotta accent is preserved in accent bar, subject border, table accent, and links.
 
 **i18n strings:**
 
@@ -540,6 +571,84 @@ npx tsx brand/generators/image.ts --input <file> --type <html|svg> -o <output.pn
 | `linkedin-banner` | 1584×396 | LinkedIn profile banner |
 | `linkedin-post` | 1200×1200 | LinkedIn square post |
 | `square` | 1000×1000 | Generic square graphic |
+| `twitter-banner` | 1500×500 | Twitter/X profile banner |
+| `youtube-banner` | 2560×1440 | YouTube channel art |
+| `instagram-post` | 1080×1080 | Instagram square post |
+| `instagram-story` | 1080×1920 | Instagram story |
+| `a4` | 794×1123 | A4 document preview |
+
+**`--var` flag:** Pass arbitrary Nunjucks variables to HTML templates via `--var KEY=VALUE`. Repeatable — use multiple `--var` flags for multiple variables. Keys are case-sensitive (use UPPERCASE by convention). Values are passed as strings to the Nunjucks context.
+
+```bash
+npm run image -- --input templates/social/og.html --type html --preset og \
+  --var "TITLE=Page Title" --var "SUBTITLE=Subheading here" -o og.png
+```
+
+---
+
+### 11.4 Social Template Conventions
+
+- All social templates are standalone HTML with inline styles — no external CSS, no `_base.html` extension
+- Font loading via `{{ FONTS_URI }}` variable (resolved to `file://` path at render time)
+- Variables use UPPERCASE names with `| default()` fallbacks in Nunjucks
+- Dark background (`#1E1C1A`) + terracotta accent bar is the standard visual language
+- Templates set exact pixel dimensions on `html, body` with `overflow: hidden`
+- No JavaScript — pure HTML/CSS for Playwright screenshot compatibility
+
+---
+
+### 11.5 Social Template Variables
+
+**quote-card.html** (1200×1200):
+
+| Variable | Required | Default |
+|----------|----------|---------|
+| `QUOTE` | yes | — |
+| `AUTHOR` | no | "Tommi Enenkel" |
+| `ROLE` | no | "Escape Velocity" |
+
+**stats-card.html** (1200×1200):
+
+| Variable | Required | Default |
+|----------|----------|---------|
+| `STAT` | yes | — |
+| `UNIT` | no | "" |
+| `LABEL` | yes | — |
+| `CONTEXT` | no | "" |
+
+**announcement.html** (1200×630):
+
+| Variable | Required | Default |
+|----------|----------|---------|
+| `EYEBROW` | no | "NEUIGKEIT" |
+| `HEADLINE` | yes | — |
+| `BODY` | no | "" |
+| `CTA` | no | "escapevelocity.consulting" |
+
+**og.html** (1200×630):
+
+| Variable | Required | Default |
+|----------|----------|---------|
+| `TITLE` | no | "Digitalisierung & Prozessoptimierung" |
+| `SUBTITLE` | no | "" |
+
+**linkedin-banner.html** (1584×396):
+
+| Variable | Required | Default |
+|----------|----------|---------|
+| `TAGLINE` | no | "Digitalisierung & Prozessoptimierung" |
+| `CTA_LABEL` | no | "Kostenloses Erstgespräch:" |
+| `URL` | no | "escapevelocity.consulting" |
+
+**twitter-banner.html** (1500×500): Same variables as linkedin-banner.html.
+
+**youtube-banner.html** (2560×1440):
+
+| Variable | Required | Default |
+|----------|----------|---------|
+| `BRAND` | no | "Escape Velocity" |
+| `TAGLINE` | no | "Digitalisierung & Prozessoptimierung" |
+| `URL` | no | "escapevelocity.consulting" |
 
 ---
 
@@ -653,7 +762,70 @@ export const print = {
 
 ---
 
-## 14. Adding a New Asset Type
+## 14. Ideation & Concept Development
+
+Use this workflow when the user wants to brainstorm, concept, or design a new asset and doesn't have a clear type yet. It follows the standard working model: brainstorm freely, iterate, then lock.
+
+### When to use
+
+- User says "I want to design something" but hasn't named a specific template
+- New graphic, layout, or format that doesn't match an existing generator/template
+- Exploring visual directions before committing to a reusable template
+
+### Workflow: Brief → Sketch → Prototype → Iterate → Lock
+
+1. **Brief** — Clarify purpose, placement, and dimensions. Match to a standard preset (§7) or define custom w×h. Who sees this? Where does it go?
+2. **Content sketch** — Draft the text and visual elements. Identify what could become parameterizable later (variable candidates).
+3. **Layout prototype** — Write standalone HTML to `scratch/<name>.html`. Follow general template conventions: inline styles, `{{ FONTS_URI }}` for fonts, fixed pixel dimensions on `html, body`, no JS. Render with `image.ts`, show the screenshot to the user.
+4. **Iterate** — User reacts, agent adjusts, re-render, repeat. This is the creative loop — expect multiple rounds.
+5. **Lock** — Finalize the design. Two outcomes:
+   - **One-off asset:** Export the final PNG/PDF and deliver. Scratch file can be kept for reference or deleted.
+   - **Reusable template** (optional): Promote to `templates/` (social, document, or new category as appropriate), convert hardcoded values to Nunjucks variables with `| default()` fallbacks, document variables in the spec (§12), add to the decision tree, rebuild the skill.
+
+### Scratch directory
+
+`scratch/` is gitignored — it holds WIP prototypes only. Clean up old files between sessions. Not limited to social formats — can prototype any format (documents, infographics, cards, etc.).
+
+### Conventions
+
+Scratch files follow the same conventions as production templates:
+- Standalone HTML, inline styles
+- Font loading via `{{ FONTS_URI }}`
+- Fixed pixel dimensions, `overflow: hidden`
+- No JavaScript
+- Brand tokens only (no hardcoded hex)
+
+### Composition Shortcuts
+
+Three dimensions to pick from when starting a prototype:
+
+**Formats (LinkedIn feed):**
+
+| Preset | Dimensions | Ratio |
+|--------|-----------|-------|
+| `linkedin-landscape` | 1200×627 | ~1.91:1 |
+| `linkedin-post` | 1200×1200 | 1:1 |
+| `linkedin-portrait` | 1080×1350 | 4:5 |
+
+**Color compositions:**
+
+| Name | Background | Heading | Body/secondary | Accent | Use |
+|------|-----------|---------|---------------|--------|-----|
+| dark | `#1E1C1A` | `#F5F3F0` (light) | `#C4BEB8` (muted) | `#E8865A` (accent) | Default. High contrast, feeds. |
+| cream | `#F9F7F4` | `#1A1816` (text) | `#5C5650` (body) | `#D4784A` (terracotta) | Softer/editorial feel, variety. |
+| terracotta | `#D4784A` | `#F5F3F0` (light) | `#F9F7F4` (cream) | `#1E1C1A` (black) | Bold statement, single CTA. |
+
+**Text alignment:**
+
+| Alignment | Content | Footer | Accent bar |
+|-----------|---------|--------|------------|
+| left (default) | left-aligned | wordmark left, URL right | left edge, 4–5px |
+| center | centered | centered, stacked | none (use top/bottom rule) |
+| right | right-aligned | URL left, wordmark right | right edge, 4–5px |
+
+---
+
+## 15. Adding a New Asset Type
 
 When a new asset type is needed (e.g., a new document format, a new social graphic, a new infographic style), the process is:
 
@@ -666,7 +838,7 @@ When a new asset type is needed (e.g., a new document format, a new social graph
 
 ---
 
-## 15. Claude Skill
+## 16. Claude Skill
 
 The Claude skill (`brand/BRAND_SKILL.md`) is a terse, agent-readable brief that lets Claude generate new on-brand assets without being re-briefed on the brand in each session. It is not a repeat of this spec — it is an actionable summary of how to use the system.
 
@@ -687,7 +859,7 @@ The Claude skill (`brand/BRAND_SKILL.md`) is a terse, agent-readable brief that 
 
 ---
 
-## 16. Documentation
+## 17. Documentation
 
 Two documentation artifacts serve different audiences.
 
@@ -701,7 +873,7 @@ Terse. No prose introductions. Organized as lookup tables and decision flows. An
 3. Template variable tables (per template, copy-paste ready)
 4. Common flag combinations (the 5 most frequent invocations with actual example values)
 5. Conflict resolution rules (see §16.2)
-6. Where to add new things (one-liner pointers to §14 and §17)
+6. Where to add new things (one-liner pointers to §15 and §18)
 
 **Tone:** Imperative. "Use `--type offer` for service offers." Not "You might want to consider using..."
 
@@ -709,7 +881,7 @@ Terse. No prose introductions. Organized as lookup tables and decision flows. An
 
 When a generation request conflicts with a spec rule, apply this priority order:
 
-1. **Explicit user override** — user has specifically asked to deviate and understands the implications. Generate the deviation, document it as a variant (§17).
+1. **Explicit user override** — user has specifically asked to deviate and understands the implications. Generate the deviation, document it as a variant (§18).
 2. **Variant context** — the asset is already declared as a variant with known overrides. Apply variant overrides, not spec defaults.
 3. **Spec rule** — apply the rule. If the request is ambiguous, apply the spec rule and note the decision.
 4. **Spec gap** — rule doesn't exist yet. Use best judgment consistent with adjacent rules, then add the rule to the spec.
@@ -720,7 +892,7 @@ When in doubt, flag the conflict explicitly to the user rather than silently cho
 
 ---
 
-## 17. Mutations & Variants
+## 18. Mutations & Variants
 
 A variant is any asset or component that intentionally deviates from one or more spec rules. Variants are first-class — they are expected, named, and documented. They do not pollute the canonical spec.
 
@@ -775,7 +947,7 @@ Create a named entry in `brand/VARIANTS.md`:
 
 ---
 
-## 18. Demo Showcase
+## 19. Demo Showcase
 
 A 6-page static site at `brand/demo/`. No framework, no build step — open any page directly in a browser. Each page has exactly one job.
 
@@ -823,7 +995,7 @@ When a new asset type or component is added to the spec, add a corresponding sec
 
 ---
 
-## 19. Skill Compilation Pipeline
+## 20. Skill Compilation Pipeline
 
 The brand skill is packaged as a proper Cowork `.skill` file, installable by any user. The source lives in `brand/skill/` and is compiled by `brand/scripts/build-skill.sh`.
 

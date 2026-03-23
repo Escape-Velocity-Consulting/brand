@@ -5,26 +5,28 @@ body {
   font-family: 'Inter', sans-serif;
   font-weight: 400;
   font-size: 13px;
-  line-height: 1.75;
+  line-height: 1.7;
   color: #3D3A36;
 }
 
-/* Page header */
+/* Page header — letterhead band */
 .page-header {
   display: flex;
-  align-items: baseline;
   justify-content: space-between;
-  padding-bottom: 14px;
-  border-bottom: 0.5px solid #EEEAE4;
+  align-items: flex-start;
+  padding-bottom: 0;
   margin-bottom: 0;
 }
 
+.logo-group {}
+
 .logo {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   color: #1E1C1A;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 .logo span {
@@ -32,54 +34,95 @@ body {
 }
 
 .header-tagline {
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #B0AAA3;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: #7A756F;
+  margin-top: 3px;
+}
+
+.header-contact {
   text-align: right;
+  font-size: 10px;
+  color: #6B6560;
+  line-height: 1.55;
+}
+.header-contact strong {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  color: #1E1C1A;
 }
 
 .accent-bar {
-  height: 3px;
+  height: 2px;
   background: #D4784A;
-  margin-bottom: 1.5rem;
+  margin-top: 14px;
+  margin-bottom: 28px;
 }
 
+/* Sender block — hidden, info lives in .header-contact now */
+.sender-block { display: none; }
+
 /* Meta strip */
-.meta-strip { display: flex; justify-content: space-between; align-items: first baseline; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 0.5px solid #EEEAE4; }
-.meta-to { font-size: 12px; color: #6B6560; line-height: 1.7; }
-.meta-to strong { color: #1E1C1A; font-weight: 500; }
-.meta-right { text-align: right; font-size: 12px; color: #1E1C1A; font-weight: 500; line-height: 1.7; }
-.meta-right .ref { font-size: 11px; color: #9A948D; font-weight: 400; }
+.meta-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 0.5px solid #E8E5E0;
+}
+.meta-to {
+  font-size: 12px;
+  color: #6B6560;
+  line-height: 1.6;
+}
+.meta-to strong {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1E1C1A;
+  display: block;
+  margin-bottom: 1px;
+}
+.meta-right {
+  text-align: right;
+  font-size: 12px;
+  color: #3D3A36;
+  font-weight: 500;
+  line-height: 1.7;
+  padding-top: 2px;
+}
+.meta-right .ref {
+  font-size: 11px;
+  color: #9A948D;
+  font-weight: 400;
+  display: block;
+}
 
 .confidential-label {
   color: #D4784A;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* Subject line */
 .subject-line {
-  border-left: 2.5px solid #D4784A;
+  border-left: 3px solid #D4784A;
   padding-left: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
-
-.subject-label {
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #9A948D;
-  margin-bottom: 3px;
-}
-
+.subject-label { display: none; }
 .subject-text {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
   color: #1E1C1A;
+  line-height: 1.3;
 }
 
-/* Offer block — pricing/scope sections */
+/* Offer block / blockquote */
 .body-content .offer-block,
 .body-content blockquote {
   border-left: 3px solid #D4784A;
@@ -88,7 +131,6 @@ body {
   background: #FDFCFB;
   border-radius: 0 6px 6px 0;
 }
-
 .body-content blockquote {
   color: #9A948D;
   font-style: italic;
@@ -108,8 +150,9 @@ body {
 }
 .body-content h2 {
   font-family: 'Space Grotesk', sans-serif;
-  font-weight: 700; font-size: 17px; color: #D4784A;
-  margin-top: 24px; margin-bottom: 10px; line-height: 1.3;
+  font-weight: 700; font-size: 15px; color: #1E1C1A;
+  margin-top: 28px; margin-bottom: 10px;
+  line-height: 1.3; letter-spacing: -0.01em;
 }
 .body-content h3 {
   font-family: 'Space Grotesk', sans-serif;
@@ -129,28 +172,81 @@ body {
 .body-content pre { background: #F5F3F0; padding: 14px; border-radius: 6px; overflow-x: auto; margin-bottom: 12px; }
 .body-content pre code { background: none; padding: 0; }
 
-/* Tables */
-.body-content table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 12px; }
-.body-content th { font-family: 'Manrope', sans-serif; font-weight: 700; text-align: left; padding: 8px 10px; border-bottom: 2px solid #D4784A; color: #1E1C1A; }
-.body-content td { padding: 6px 10px; border-bottom: 1px solid #E8E5E0; }
+/* Tables — contained commercial block */
+.body-content table {
+  width: 100%; border-collapse: collapse;
+  margin: 4px 0 16px 0; font-size: 12.5px;
+  background: #FAF8F6; border-left: 3px solid #D4784A;
+  border-radius: 0 4px 4px 0;
+}
+.body-content thead th { padding: 0; border: none; height: 0; line-height: 0; font-size: 0; }
+.body-content td { padding: 10px 14px; border-bottom: 1px solid #F0EDE9; vertical-align: top; }
+.body-content tbody tr:last-child td { border-bottom: none; }
+.body-content td:first-child { width: 110px; font-family: 'Manrope', sans-serif; font-weight: 600; color: #1E1C1A; white-space: nowrap; }
+.body-content tbody tr:first-child td { padding-top: 14px; padding-bottom: 14px; }
+.body-content tbody tr:first-child td:last-child { font-size: 13px; font-weight: 600; color: #1E1C1A; font-family: 'Space Grotesk', sans-serif; }
 
 h1, h2, h3 { break-after: avoid; }
+
+/* About block */
+.about-block {
+  margin-top: 2rem;
+  font-size: 10.5px;
+  color: #9A948D;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+/* Acceptance clause */
+.acceptance-clause {
+  margin-top: 1.5rem;
+  padding-top: 0.75rem;
+  border-top: 0.5px solid #E8E5E0;
+  font-size: 11px;
+  color: #6B6560;
+  line-height: 1.6;
+}
+
+/* AGB clause */
+.agb-clause {
+  margin-top: 0.5rem;
+  font-size: 10px;
+  color: #9A948D;
+  line-height: 1.6;
+}
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
-  <div class="logo">Escape <span>Velocity</span></div>
-  <div class="header-tagline">Digitization · Automation · AI</div>
+  <div class="logo-group">
+    <div class="logo">Escape <span>Velocity</span></div>
+    <div class="header-tagline">Digitization · Automation · AI</div>
+  </div>
+  <div class="header-contact">
+    <strong>Thomas Enenkel GmbH</strong><br>
+    Wiener Straße 11-13/2/3 · 3002 Purkersdorf<br>
+    +43 664 6522083 · tommi.enenkel@escapevelocity.consulting
+  </div>
 </div>
 <div class="accent-bar"></div>
+
+<!-- Hidden — sender info now in .header-contact -->
+<div class="sender-block">
+  <div class="sender-company">Thomas Enenkel GmbH</div>
+  <div class="sender-address">Wiener Straße 11-13/2/3<br>3002 Purkersdorf</div>
+  <div class="sender-registration">UID: ATU77669024<br>IBAN: AT03 3266 7000 0003 8695</div>
+  <div class="sender-contact">+43 664 6522083<br>tommi.enenkel@escapevelocity.consulting</div>
+</div>
 
 {% if SHOW_META %}
 <div class="meta-strip">
   <div class="meta-to">
-    {{ STRINGS.to_label }} <strong>{{ RECIPIENT }}</strong>
+    {% set parts = RECIPIENT.split(' · ') %}
+    <strong>{{ parts[0] }}</strong>
+    {% if parts[1] %}{{ parts[1] }}{% endif %}
   </div>
   <div class="meta-right">
-    {{ DATE }}{% if REF %}<br><span class="ref">Ref: {{ REF }}</span>{% endif %}
+    {{ DATE }}{% if REF %}<span class="ref">Ref: {{ REF }}</span>{% endif %}
     {% if CONFIDENTIAL %}<br><span class="confidential-label">{{ STRINGS.confidential_label }}</span>{% endif %}
   </div>
 </div>
@@ -165,5 +261,31 @@ h1, h2, h3 { break-after: avoid; }
 
 <div class="body-content">
 {{ CONTENT | safe }}
+</div>
+
+{% if SHOW_ABOUT %}
+<div class="about-block">
+  {% if LANG == 'en' %}
+  Escape Velocity helps small and mid-sized organisations make confident technology decisions. The practice draws on 17 years of experience across IT leadership, systems architecture, and organisational development, including building and leading the technology function of a national Austrian political organisation.
+  {% else %}
+  Escape Velocity unterstützt kleine und mittelständische Unternehmen bei fundierten Technologieentscheidungen. Die Praxis baut auf 17 Jahren Erfahrung in IT-Führung, Systemarchitektur und Organisationsentwicklung — darunter der Aufbau und die Leitung der Technologiefunktion einer nationalen österreichischen politischen Organisation.
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="acceptance-clause">
+  {% if LANG == 'en' %}
+  This offer is deemed accepted upon written confirmation or receipt of the first partial payment.
+  {% else %}
+  Dieses Angebot gilt als angenommen bei schriftlicher Bestätigung oder Eingang der ersten Teilzahlung.
+  {% endif %}
+</div>
+
+<div class="agb-clause">
+  {% if LANG == 'en' %}
+  This offer is subject to the General Terms and Conditions (AGB) of Thomas Enenkel GmbH, provided together with this offer. Acceptance of this offer constitutes acceptance of the AGB.
+  {% else %}
+  Es gelten die Allgemeinen Geschäftsbedingungen (AGB) der Thomas Enenkel GmbH, die diesem Angebot beiliegen. Mit Annahme dieses Angebots werden die AGB Vertragsbestandteil.
+  {% endif %}
 </div>
 {% endblock %}
