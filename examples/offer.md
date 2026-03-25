@@ -1,35 +1,49 @@
 <!-- Acceptance + AGB clauses are auto-appended by the offer template. -->
 <!-- Generate with: npx tsx brand/generators/pdf.ts offer.md --type offer --to "Name · Firma" --attach agb-thomas-enenkel-gmbh.pdf -o offer.pdf -->
 
-# Angebot: Prozess-Review
+# Offer: System Architecture & Tool Decisions
 
-## Leistungsumfang
+**Dear Maria,**
 
-### Phase 1 — Bestandsaufnahme (Vor-Ort, 1 Tag)
-- Strukturierte Interviews mit Schlüsselpersonen
-- Prozessbegehung und Dokumentation der Ist-Abläufe
-- Identifikation von Engpässen und Automatisierungspotenzial
+Thank you for the productive conversation on 18 March. Please find below the offer for the System Architecture & Tool Decisions engagement.
 
-### Phase 2 — Analyse & Priorisierung (Remote, 2 Tage)
-- Auswertung der gesammelten Daten
-- Erstellung einer priorisierten Maßnahmenliste (Impact vs. Aufwand)
-- Identifikation von Quick Wins und strategischen Initiativen
+### Background
 
-### Phase 3 — Ergebnispräsentation (Vor-Ort/Remote, 2 Stunden)
-- Präsentation der Ergebnisse an die Geschäftsführung
-- Gemeinsame Diskussion und Priorisierung
-- Übergabe des Ergebnisberichts als PDF
+Acme Corp is building the operational infrastructure to support its campaign activities across editorial production, social media, and events. Candidate tools are on the table, but the team cannot fully commit until it is clear how they work together under real-life conditions: how a campaign flows through the system, how the tools connect, and who owns which part.
 
-## Investition
+This engagement delivers that architectural clarity. The attached Strategic Briefing provides a detailed assessment of Acme Corp's current position and the rationale for this work.
 
-| Position | Betrag |
-|----------|--------|
-| Prozess-Review (Pauschal) | € 4.800,– |
-| Reisekosten (pauschal) | € 400,– |
-| **Gesamt (netto)** | **€ 5.200,–** |
+### Scope
 
-Zahlbar innerhalb von 14 Tagen nach Rechnungslegung.
+We design Acme Corp's system landscape: data model, tool decisions, and integrations. The goal is to give the team the confidence to commit to its infrastructure and begin implementation.
 
-## Gültigkeit
+### Deliverables
 
-Dieses Angebot ist gültig bis 30. April 2026.
+**1. Stakeholder Pre-Interviews & Decision Framework**
+
+Structured conversations with key team members and analysis of the current tool landscape, delivered as a written briefing and decision framework that serve as inputs to the workshop.
+
+**2. Facilitated Architecture Workshop**
+
+7 April 2026, 3 hours. A focused working session with the team to validate tool choices, align on architecture decisions, and resolve open questions around processes and ownership.
+
+**3. System Architecture Blueprint**
+
+A written reference document covering the data model, system map, tool landscape, process overview, role clarity, and a phased execution plan.
+
+### Terms
+
+|  |  |
+| --- | --- |
+| Fee | €2.080 excl. USt / €2.496 incl. USt |
+| Payment | 50 % upon acceptance, 50 % upon delivery of the Blueprint |
+| Acceptance | This offer is accepted upon receipt of the first payment. |
+| Timeline | Pre-interviews in the week of 31 March. Workshop on 7 April. Blueprint delivered within 5 business days of the workshop. |
+
+---
+
+I look forward to working with you.
+
+**Tommi Enenkel**
+
+Escape Velocity
