@@ -32,7 +32,9 @@ PDF document (letter / offer / invoice / ToS)?
   → npm run pdf -- input.md --type <letter|offer|invoice|tos>
 
 Social graphic or banner?
-  → npm run image -- --type html --preset <linkedin-banner|og|linkedin-post|square>
+  → npm run image -- --type html --preset <linkedin-banner|og|linkedin-post|linkedin-landscape|linkedin-portrait|square>
+  LinkedIn landscape   → --preset linkedin-landscape
+  LinkedIn portrait    → --preset linkedin-portrait
 
 SVG logo → PNG?
   → npm run image -- --type svg --input assets/logos/X.svg
@@ -125,6 +127,14 @@ All document templates share:
 4. Spec gap → use judgment consistent with adjacent rules, then add rule to spec
 
 When ambiguous: flag to user, don't silently choose.
+
+---
+
+## Ideation
+
+No clear asset type, or want to concept something new? See BRAND_SPEC.md §14. Write prototype HTML to `scratch/`, render with `image.ts`, iterate with user. Optionally promote to `templates/` if reusable.
+
+Composition shortcuts (format × color × alignment) documented in BRAND_SPEC.md §14.
 
 ---
 

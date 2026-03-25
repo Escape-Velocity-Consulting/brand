@@ -55,7 +55,7 @@ pre { background: var(--color-black); color: var(--color-light); padding: 16px 2
 
 <nav class="demo-nav">
   <div class="container">
-    <a href="./">Overview</a>
+    <a href="index.html">Overview</a>
     <a href="identity.html">Identity</a>
     <a href="components.html">Components</a>
     <a href="documents.html">Documents</a>
@@ -80,12 +80,109 @@ pre { background: var(--color-black); color: var(--color-light); padding: 16px 2
   </div>
 </section>
 
+<!-- Quote Card -->
+<section>
+  <div class="container">
+    <h3>Quote Card</h3>
+    <div style="margin-top: 16px;">
+      <img class="preview-img" src="../assets/raster/quote-card-sample.png" alt="Quote Card — 1200×1200" style="max-width: 100%;">
+      <div class="preview-caption">Quote Card — 1200&times;1200 — brand/templates/social/quote-card.html</div>
+      <div class="action-bar">
+        <a href="../templates/social/quote-card.html" target="_blank">View template &rarr;</a>
+        <a href="../assets/raster/quote-card-sample.png">Download PNG &rarr;</a>
+      </div>
+      <pre><code>npm run image -- --input templates/social/quote-card.html --type html --preset linkedin-post --var "QUOTE=Your text" --var "AUTHOR=Name" -o quote.png</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- Stats Card -->
+<section>
+  <div class="container">
+    <h3>Stats Card</h3>
+    <div style="margin-top: 16px;">
+      <img class="preview-img" src="../assets/raster/stats-card-sample.png" alt="Stats Card — 1200×1200" style="max-width: 100%;">
+      <div class="preview-caption">Stats Card — 1200&times;1200 — brand/templates/social/stats-card.html</div>
+      <div class="action-bar">
+        <a href="../templates/social/stats-card.html" target="_blank">View template &rarr;</a>
+        <a href="../assets/raster/stats-card-sample.png">Download PNG &rarr;</a>
+      </div>
+      <pre><code>npm run image -- --input templates/social/stats-card.html --type html --preset linkedin-post --var "STAT=17+" --var "UNIT=Jahre" --var "LABEL=Description" -o stats.png</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- Announcement -->
+<section>
+  <div class="container">
+    <h3>Announcement</h3>
+    <div style="margin-top: 16px;">
+      <img class="preview-img" src="../assets/raster/announcement-sample.png" alt="Announcement — 1200×630" style="max-width: 100%;">
+      <div class="preview-caption">Announcement — 1200&times;630 — brand/templates/social/announcement.html</div>
+      <div class="action-bar">
+        <a href="../templates/social/announcement.html" target="_blank">View template &rarr;</a>
+        <a href="../assets/raster/announcement-sample.png">Download PNG &rarr;</a>
+      </div>
+      <pre><code>npm run image -- --input templates/social/announcement.html --type html --preset og --var "HEADLINE=Title" --var "EYEBROW=LABEL" -o announce.png</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- OG Image -->
+<section>
+  <div class="container">
+    <h3>OG Image</h3>
+    <div style="margin-top: 16px;">
+      <img class="preview-img" src="../assets/raster/og-sample.png" alt="OG Image — 1200×630" style="max-width: 100%;">
+      <div class="preview-caption">OG Image — 1200&times;630 — brand/templates/social/og.html</div>
+      <div class="action-bar">
+        <a href="../templates/social/og.html" target="_blank">View template &rarr;</a>
+        <a href="../assets/raster/og-sample.png">Download PNG &rarr;</a>
+      </div>
+      <pre><code>npm run image -- --input templates/social/og.html --type html --preset og --var "TITLE=Page Title" -o og.png</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- Twitter/X Banner -->
+<section>
+  <div class="container">
+    <h3>Twitter/X Banner</h3>
+    <div style="margin-top: 16px;">
+      <img class="preview-img" src="../assets/raster/twitter-banner-sample.png" alt="Twitter/X Banner — 1500×500" style="max-width: 100%;">
+      <div class="preview-caption">Twitter/X Banner — 1500&times;500 — brand/templates/social/twitter-banner.html</div>
+      <div class="action-bar">
+        <a href="../templates/social/twitter-banner.html" target="_blank">View template &rarr;</a>
+        <a href="../assets/raster/twitter-banner-sample.png">Download PNG &rarr;</a>
+      </div>
+      <pre><code>npm run image -- --input templates/social/twitter-banner.html --type html --preset twitter-banner -o twitter-banner.png</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- YouTube Banner -->
+<section>
+  <div class="container">
+    <h3>YouTube Banner</h3>
+    <div style="margin-top: 16px;">
+      <img class="preview-img" src="../assets/raster/youtube-banner-sample.png" alt="YouTube Banner — 2560×1440" style="max-width: 100%;">
+      <div class="preview-caption">YouTube Banner — 2560&times;1440 — brand/templates/social/youtube-banner.html</div>
+      <div class="action-bar">
+        <a href="../templates/social/youtube-banner.html" target="_blank">View template &rarr;</a>
+        <a href="../assets/raster/youtube-banner-sample.png">Download PNG &rarr;</a>
+      </div>
+      <pre><code>npm run image -- --input templates/social/youtube-banner.html --type html --preset youtube-banner -o youtube-banner.png</code></pre>
+    </div>
+  </div>
+</section>
+
 <!-- Logo Variants -->
 <section>
   <div class="container">
     <div class="eyebrow">Logos</div>
     <h2>Logo Variants</h2>
 
+    <h3>Dark Background</h3>
     <div class="previews-grid">
       <div>
         <div style="background: var(--color-black); border-radius: 8px; padding: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
@@ -115,6 +212,64 @@ pre { background: var(--color-black); color: var(--color-light); padding: 16px 2
         <div class="action-bar">
           <a href="../assets/logos/logo-dark-square.svg">SVG &rarr;</a>
           <a href="../assets/raster/logo-dark-square-300.png">PNG &rarr;</a>
+        </div>
+      </div>
+    </div>
+
+    <h3>Light Background</h3>
+    <div class="previews-grid">
+      <div>
+        <div style="background: var(--color-cream); border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; padding: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+          <img src="../assets/logos/ev-wordmark-light.svg" alt="EV Wordmark Light" width="150" height="150">
+        </div>
+        <div class="preview-caption">EV Wordmark — Square monogram, light bg</div>
+        <div class="action-bar">
+          <a href="../assets/logos/ev-wordmark-light.svg">SVG &rarr;</a>
+          <a href="../assets/raster/ev-wordmark-light-300.png">PNG &rarr;</a>
+        </div>
+      </div>
+      <div>
+        <div style="background: var(--color-cream); border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; padding: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+          <img src="../assets/logos/logo-light.svg" alt="Logo Light" width="250" height="125">
+        </div>
+        <div class="preview-caption">Full Wordmark — Wide, light bg</div>
+        <div class="action-bar">
+          <a href="../assets/logos/logo-light.svg">SVG &rarr;</a>
+          <a href="../assets/raster/logo-light-300.png">PNG &rarr;</a>
+        </div>
+      </div>
+      <div>
+        <div style="background: var(--color-cream); border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; padding: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+          <img src="../assets/logos/logo-light-square.svg" alt="Logo Light Square" width="150" height="150">
+        </div>
+        <div class="preview-caption">Full Wordmark — Square, light bg</div>
+        <div class="action-bar">
+          <a href="../assets/logos/logo-light-square.svg">SVG &rarr;</a>
+          <a href="../assets/raster/logo-light-square-300.png">PNG &rarr;</a>
+        </div>
+      </div>
+    </div>
+
+    <h3>Transparent</h3>
+    <div class="previews-grid">
+      <div>
+        <div style="background: repeating-conic-gradient(#e0e0e0 0% 25%, #f5f5f5 0% 50%) 50% / 20px 20px; border-radius: 8px; padding: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+          <img src="../assets/logos/ev-wordmark-transparent.svg" alt="EV Wordmark Transparent" width="150" height="150">
+        </div>
+        <div class="preview-caption">EV Wordmark — Square monogram, transparent</div>
+        <div class="action-bar">
+          <a href="../assets/logos/ev-wordmark-transparent.svg">SVG &rarr;</a>
+          <a href="../assets/raster/ev-wordmark-transparent-300.png">PNG &rarr;</a>
+        </div>
+      </div>
+      <div>
+        <div style="background: repeating-conic-gradient(#e0e0e0 0% 25%, #f5f5f5 0% 50%) 50% / 20px 20px; border-radius: 8px; padding: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+          <img src="../assets/logos/logo-transparent.svg" alt="Logo Transparent" width="250" height="125">
+        </div>
+        <div class="preview-caption">Full Wordmark — Wide, transparent</div>
+        <div class="action-bar">
+          <a href="../assets/logos/logo-transparent.svg">SVG &rarr;</a>
+          <a href="../assets/raster/logo-transparent-300.png">PNG &rarr;</a>
         </div>
       </div>
     </div>

@@ -20,6 +20,11 @@ const logoExports = [
   { input: 'ev-wordmark.svg', output: 'ev-wordmark-300.png', width: 300 },
   { input: 'logo-dark.svg', output: 'logo-dark-300.png', width: 300 },
   { input: 'logo-dark-square.svg', output: 'logo-dark-square-300.png', width: 300 },
+  { input: 'ev-wordmark-light.svg', output: 'ev-wordmark-light-300.png', width: 300 },
+  { input: 'logo-light.svg', output: 'logo-light-300.png', width: 300 },
+  { input: 'logo-light-square.svg', output: 'logo-light-square-300.png', width: 300 },
+  { input: 'ev-wordmark-transparent.svg', output: 'ev-wordmark-transparent-300.png', width: 300 },
+  { input: 'logo-transparent.svg', output: 'logo-transparent-300.png', width: 300 },
 ]
 
 for (const { input, output, width } of logoExports) {
@@ -40,6 +45,58 @@ execSync(
   { stdio: 'inherit', cwd: BRAND_DIR },
 )
 console.log('Exported: linkedin-banner.png')
+
+// --- Social template samples ---
+
+const socialSamples = [
+  {
+    template: 'templates/social/quote-card.html',
+    preset: 'linkedin-post',
+    output: 'quote-card-sample.png',
+    vars: { QUOTE: 'Prozesse sind Infrastruktur. Wer sie nicht kennt, optimiert ins Blaue.', AUTHOR: 'Tommi Enenkel' },
+  },
+  {
+    template: 'templates/social/stats-card.html',
+    preset: 'linkedin-post',
+    output: 'stats-card-sample.png',
+    vars: { STAT: '17+', UNIT: 'Jahre', LABEL: 'Erfahrung in Tech & Strategie' },
+  },
+  {
+    template: 'templates/social/announcement.html',
+    preset: 'og',
+    output: 'announcement-sample.png',
+    vars: { EYEBROW: 'NEUES ANGEBOT', HEADLINE: 'Prozess-Review für KMUs', BODY: '5 Tage. Klarheit über alle Geschäftsprozesse.' },
+  },
+  {
+    template: 'templates/social/og.html',
+    preset: 'og',
+    output: 'og-sample.png',
+    vars: { TITLE: 'Digitalisierung & Prozessoptimierung', SUBTITLE: 'Escape Velocity Advisory' },
+  },
+  {
+    template: 'templates/social/twitter-banner.html',
+    preset: 'twitter-banner',
+    output: 'twitter-banner-sample.png',
+    vars: {},
+  },
+  {
+    template: 'templates/social/youtube-banner.html',
+    preset: 'youtube-banner',
+    output: 'youtube-banner-sample.png',
+    vars: {},
+  },
+]
+
+for (const { template, preset, output, vars } of socialSamples) {
+  const templatePath = resolve(BRAND_DIR, template)
+  const outputPath = resolve(RASTER_DIR, output)
+  const varFlags = Object.entries(vars).map(([k, v]) => `--var "${k}=${v}"`).join(' ')
+  execSync(
+    `npx tsx "${imageGen}" --input "${templatePath}" --type html --preset ${preset} ${varFlags} -o "${outputPath}"`,
+    { stdio: 'inherit', cwd: BRAND_DIR },
+  )
+  console.log(`Exported: ${output}`)
+}
 
 // --- Document preview screenshots ---
 // Generate debug HTML via pdf.ts --debug, then screenshot the HTML

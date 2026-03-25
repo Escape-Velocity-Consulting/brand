@@ -116,6 +116,20 @@ npx serve C:/Users/tommi/business -p 3006
 
 Do not open as `file://` — fonts won't load.
 
+## Skill Workflow
+
+The brand skill is packaged from `brand/skill/brand-engine/`. **Never edit the deployed copy** at `.claude/skills/brand-engine/` — it gets overwritten on reinstall.
+
+**Edit flow:** Always edit source files in `brand/` → rebuild → redeploy.
+
+| What changed | Edit | Then |
+|-------------|------|------|
+| `SKILL.md` (instructions) | `skill/brand-engine/SKILL.md` | `npm run build:skill` → reinstall |
+| Reference content | `BRAND_SKILL.md` or `AGENT_GUIDE.md` | `npm run build:skill` → reinstall |
+| Skill references (in-repo copies) | `skill/brand-engine/references/` | Keep in sync with sources above; overwritten by `build:skill` staging but not auto-updated in repo |
+
+`build:skill` copies `BRAND_SKILL.md` → staging `references/brand-reference.md` and `AGENT_GUIDE.md` → staging `references/agent-guide.md` for the `.skill` package. The in-repo copies under `skill/brand-engine/references/` must be updated manually to stay in sync.
+
 ## Legacy
 
 - `generate_qr.py` — Python QR generator. Still active. Will be replaced by `generators/qr.ts` in a future step.

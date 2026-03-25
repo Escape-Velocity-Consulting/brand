@@ -128,4 +128,29 @@ When ambiguous: flag to user, don't silently choose.
 
 ---
 
+## Social Template Sizing
+
+Templates render at full pixel dimensions (1200–1584px). Web-scale font sizes (16–52px) look tiny at these resolutions. Calibrated ranges:
+
+| Element | Banner (1584×396 / 1500×500) | Square card (1200×1200) | OG (1200×630) |
+|---------|------------------------------|------------------------|---------------|
+| Headline / quote | 52–62px | 72–78px | 64–72px |
+| Wordmark | 46–48px | 48–51px | 38–42px |
+| Stat number | — | 200–260px | — |
+| Author / label | — | 45–48px | — |
+| Subtitle / CTA | 24px | 28–36px | 24–28px |
+| Domain / URL | 24px | 28–30px | 18–22px |
+| Footer wordmark | — | 48–51px | — |
+| Footer domain | — | 28–30px | — |
+
+**Rule:** When creating new templates, start with these ranges. Go bigger if unsure — easier to scale down than iterate up.
+
+---
+
+## Ideation
+
+No clear asset type, or want to concept something new? See BRAND_SPEC.md §14. Write prototype HTML to `scratch/`, render with `image.ts`, iterate with user. Optionally promote to `templates/` if reusable.
+
+---
+
 → Full spec: `BRAND_SPEC.md`  →  CLI reference: `AGENT_GUIDE.md`  →  Variants: `VARIANTS.md`

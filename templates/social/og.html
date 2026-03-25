@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('{{ FONTS_URI }}/space-grotesk.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('{{ FONTS_URI }}/space-grotesk-ext.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+  unicode-range: U+0100-024F;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('{{ FONTS_URI }}/manrope.woff2') format('woff2');
+  font-weight: 400 800;
+  font-display: swap;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 1200px;
+  height: 630px;
+  overflow: hidden;
+}
+
+body {
+  background: #1E1C1A;
+  position: relative;
+}
+
+.accent-bar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: #D4784A;
+}
+
+.wordmark {
+  position: absolute;
+  top: 48px;
+  left: 64px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 42px;
+  letter-spacing: -0.01em;
+  color: #F5F3F0;
+}
+
+.wordmark .v {
+  color: #E8865A;
+}
+
+.title-block {
+  position: absolute;
+  right: 64px;
+  top: 50%;
+  transform: translateY(-50%);
+  max-width: 700px;
+  text-align: right;
+}
+
+.title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 72px;
+  line-height: 1.15;
+  color: #F5F3F0;
+}
+
+.subtitle {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 500;
+  font-size: 28px;
+  color: #C4BEB8;
+  margin-top: 12px;
+}
+
+.domain {
+  position: absolute;
+  bottom: 48px;
+  right: 64px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  font-size: 22px;
+  letter-spacing: 0.5px;
+  color: #D4784A;
+}
+</style>
+</head>
+<body>
+  <div class="accent-bar"></div>
+
+  <div class="wordmark">Escape <span class="v">Velocity</span></div>
+
+  <div class="title-block">
+    <div class="title">{{ TITLE | default("Digitalisierung &amp; Prozessoptimierung") }}</div>
+    {% if SUBTITLE %}<div class="subtitle">{{ SUBTITLE }}</div>{% endif %}
+  </div>
+
+  <div class="domain">escapevelocity.consulting</div>
+</body>
+</html>

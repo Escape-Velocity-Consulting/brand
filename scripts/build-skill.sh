@@ -1,115 +1,96 @@
 #!/usr/bin/env bash
-# build-skill.sh — Compile brand-engine.skill from source
-#
-# What it does:
-#   1. Copies BRAND_SKILL.md and AGENT_GUIDE.md into skill/brand-engine/references/
-#   2. Validates that SKILL.md is not a placeholder
-#   3. Runs package_skill.py to produce dist/brand-engine.skill
+# build-skill.sh — Package brand-engine into a self-contained .skill file
 #
 # Usage:
 #   cd brand && npm run build:skill
 #
-# Requirements:
-#   skill-creator must be installed. Expected at:
-#     ~/.claude/plugins/*/skill-creator/scripts/package_skill.py
-#   OR at the hardcoded fallback:
-#     /sessions/loving-trusting-tesla/mnt/.skills/skills/skill-creator/scripts/package_skill.py
+# Output:
+#   dist/brand-engine.skill (~2MB ZIP containing everything except node_modules)
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BRAND_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-SKILL_DIR="$BRAND_DIR/skill/brand-engine"
-REFS_DIR="$SKILL_DIR/references"
+STAGE_DIR="$BRAND_DIR/dist/.stage/brand-engine"
 DIST_DIR="$BRAND_DIR/dist"
 
-# ── 1. Locate skill-creator ───────────────────────────────────────────────────
+# ── 1. Clean staging ─────────────────────────────────────────────────────────
 
-# Try common locations in order
-SKILL_CREATOR_DIR=""
+rm -rf "$BRAND_DIR/dist/.stage"
+mkdir -p "$STAGE_DIR"
 
-# Option A: Cowork plugin cache (current machine pattern)
-COWORK_CANDIDATE=$(find /sessions/loving-trusting-tesla/mnt/.skills/skills/skill-creator \
-  -name "package_skill.py" -maxdepth 3 2>/dev/null | head -1)
-if [ -n "$COWORK_CANDIDATE" ]; then
-  SKILL_CREATOR_DIR="$(dirname "$(dirname "$COWORK_CANDIDATE")")"
-fi
+# ── 2. Copy skill core ───────────────────────────────────────────────────────
 
-# Option B: user home plugins
-if [ -z "$SKILL_CREATOR_DIR" ]; then
-  HOME_CANDIDATE=$(find ~/.claude/plugins -name "package_skill.py" -maxdepth 6 2>/dev/null | head -1)
-  if [ -n "$HOME_CANDIDATE" ]; then
-    SKILL_CREATOR_DIR="$(dirname "$(dirname "$HOME_CANDIDATE")")"
-  fi
-fi
+cp "$BRAND_DIR/skill/brand-engine/SKILL.md" "$STAGE_DIR/"
+cp "$BRAND_DIR/skill/brand-engine/setup.sh" "$STAGE_DIR/"
+cp "$BRAND_DIR/package.json" "$STAGE_DIR/"
+cp "$BRAND_DIR/tsconfig.json" "$STAGE_DIR/"
+cp "$BRAND_DIR/tokens.ts" "$STAGE_DIR/"
+cp "$BRAND_DIR/tokens.css" "$STAGE_DIR/"
 
-if [ -z "$SKILL_CREATOR_DIR" ]; then
-  echo ""
-  echo "❌  Cannot find package_skill.py."
-  echo ""
-  echo "    The skill-creator plugin is required to build .skill files."
-  echo "    Install it in Cowork, then re-run: cd brand && npm run build:skill"
-  echo ""
-  echo "    Expected locations searched:"
-  echo "      /sessions/loving-trusting-tesla/mnt/.skills/skills/skill-creator/"
-  echo "      ~/.claude/plugins/**/skill-creator/"
-  echo ""
-  exit 1
-fi
+echo "  Copied skill core files"
 
-echo "✓  skill-creator found at: $SKILL_CREATOR_DIR"
+# ── 3. Generators ────────────────────────────────────────────────────────────
 
-# ── 2. Validate SKILL.md ──────────────────────────────────────────────────────
+mkdir -p "$STAGE_DIR/generators"
+cp "$BRAND_DIR/generators/"*.ts "$STAGE_DIR/generators/"
 
-SKILL_MD="$SKILL_DIR/SKILL.md"
-if [ ! -f "$SKILL_MD" ]; then
-  echo "❌  SKILL.md not found at $SKILL_MD"
-  exit 1
-fi
+echo "  Copied generators"
 
-# Reject placeholder (must have YAML frontmatter with name:)
-if ! grep -q "^name:" "$SKILL_MD"; then
-  echo "❌  SKILL.md looks like a placeholder — missing 'name:' in frontmatter."
-  echo "    Edit $SKILL_MD before packaging."
-  exit 1
-fi
+# ── 4. Scripts ────────────────────────────────────────────────────────────────
 
-echo "✓  SKILL.md validated"
+mkdir -p "$STAGE_DIR/scripts"
+cp "$BRAND_DIR/scripts/export-assets.ts" "$STAGE_DIR/scripts/"
+cp "$BRAND_DIR/scripts/build-tokens.ts" "$STAGE_DIR/scripts/"
 
-# ── 3. Copy reference files into references/ ─────────────────────────────────
+echo "  Copied scripts"
 
-mkdir -p "$REFS_DIR"
+# ── 5. Templates ─────────────────────────────────────────────────────────────
 
-cp "$BRAND_DIR/BRAND_SKILL.md"  "$REFS_DIR/brand-reference.md"
-cp "$BRAND_DIR/AGENT_GUIDE.md"  "$REFS_DIR/agent-guide.md"
+mkdir -p "$STAGE_DIR/templates/social"
+cp "$BRAND_DIR/templates/"*.html "$STAGE_DIR/templates/"
+cp "$BRAND_DIR/templates/social/"*.html "$STAGE_DIR/templates/social/"
 
-echo "✓  References copied:"
-echo "     BRAND_SKILL.md  → references/brand-reference.md"
-echo "     AGENT_GUIDE.md  → references/agent-guide.md"
+echo "  Copied templates"
 
-# ── 4. Run packager ───────────────────────────────────────────────────────────
+# ── 6. Logos ──────────────────────────────────────────────────────────────────
+
+mkdir -p "$STAGE_DIR/assets/logos"
+cp "$BRAND_DIR/assets/logos/"*.svg "$STAGE_DIR/assets/logos/"
+
+echo "  Copied logos"
+
+# ── 7. Fonts (self-contained) ────────────────────────────────────────────────
+
+mkdir -p "$STAGE_DIR/fonts"
+cp "$BRAND_DIR/../website/fonts/"*.woff2 "$STAGE_DIR/fonts/"
+
+echo "  Copied fonts"
+
+# ── 8. References ────────────────────────────────────────────────────────────
+
+mkdir -p "$STAGE_DIR/references"
+cp "$BRAND_DIR/BRAND_SKILL.md" "$STAGE_DIR/references/brand-reference.md"
+cp "$BRAND_DIR/AGENT_GUIDE.md" "$STAGE_DIR/references/agent-guide.md"
+
+echo "  Copied references"
+
+# ── 9. Package as .skill (ZIP) ───────────────────────────────────────────────
 
 mkdir -p "$DIST_DIR"
+cd "$BRAND_DIR/dist/.stage"
+rm -f "$DIST_DIR/brand-engine.skill"
 
-echo "📦  Packaging skill…"
+# Convert MSYS paths to Windows paths for PowerShell
+WIN_DEST=$(cygpath -w "$DIST_DIR/brand-engine.zip" 2>/dev/null || echo "$DIST_DIR/brand-engine.zip")
+WIN_SRC=$(cygpath -w "$BRAND_DIR/dist/.stage/brand-engine" 2>/dev/null || echo "$BRAND_DIR/dist/.stage/brand-engine")
+powershell -Command "Compress-Archive -Path '$WIN_SRC' -DestinationPath '$WIN_DEST' -Force"
+mv "$DIST_DIR/brand-engine.zip" "$DIST_DIR/brand-engine.skill"
 
-cd "$SKILL_CREATOR_DIR"
-python -m scripts.package_skill "$SKILL_DIR" "$DIST_DIR"
+# ── 10. Cleanup & report ─────────────────────────────────────────────────────
 
-# ── 5. Report ─────────────────────────────────────────────────────────────────
+rm -rf "$BRAND_DIR/dist/.stage"
 
-OUTPUT="$DIST_DIR/brand-engine.skill"
-if [ -f "$OUTPUT" ]; then
-  SIZE=$(du -h "$OUTPUT" | cut -f1)
-  echo ""
-  echo "✅  Built: dist/brand-engine.skill ($SIZE)"
-  echo ""
-  echo "    Install in Cowork: Settings → Plugins → Install from file"
-  echo ""
-else
-  echo ""
-  echo "⚠️   Packager ran but dist/brand-engine.skill not found."
-  echo "    Check output above for errors."
-  echo ""
-  exit 1
-fi
+SIZE=$(du -h "$DIST_DIR/brand-engine.skill" | cut -f1)
+echo ""
+echo "Built: dist/brand-engine.skill ($SIZE)"

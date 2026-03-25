@@ -9,42 +9,6 @@ body {
   color: #3D3A36;
 }
 
-/* Page header — minimal: logo + accent bar only */
-.page-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding-bottom: 14px;
-  border-bottom: 0.5px solid #EEEAE4;
-  margin-bottom: 0;
-}
-
-.logo {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-  color: #1E1C1A;
-  letter-spacing: -0.01em;
-}
-
-.logo span {
-  color: #D4784A;
-}
-
-.header-tagline {
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #B0AAA3;
-  text-align: right;
-}
-
-.accent-bar {
-  height: 3px;
-  background: #D4784A;
-  margin-bottom: 1.5rem;
-}
-
 /* Body content (markdown) — clean long-form reading layout */
 .body-content p { margin-bottom: 12px; }
 .body-content strong { font-weight: 600; color: #1E1C1A; }
@@ -95,13 +59,7 @@ h1, h2, h3 { break-after: avoid; }
 {% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <div class="logo">Escape <span>Velocity</span></div>
-  <div class="header-tagline">Digitization · Automation · AI</div>
-</div>
-<div class="accent-bar"></div>
-
-{# No meta strip, no subject line — clean reading layout for legal text #}
+{# No header, no meta strip — clean reading layout for legal text #}
 
 <div class="body-content">
 {{ CONTENT | safe }}

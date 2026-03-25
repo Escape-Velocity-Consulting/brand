@@ -47,7 +47,37 @@ Run all commands from the `brand/` directory.
 
 ### social/linkedin-banner.html
 
-`FONTS_URI` only — content is hardcoded in the template.
+`FONTS_URI` + optional `TAGLINE`, `CTA_LABEL`, `URL` — see Social Templates below.
+
+---
+
+## Social Templates
+
+| Template | Preset | Key Vars |
+|----------|--------|----------|
+| `quote-card.html` | `linkedin-post` / `square` | `QUOTE`, `AUTHOR` |
+| `stats-card.html` | `linkedin-post` | `STAT`, `UNIT`, `LABEL` |
+| `announcement.html` | `og` / `linkedin-post` | `HEADLINE`, `EYEBROW`, `BODY` |
+| `og.html` | `og` | `TITLE`, `SUBTITLE` |
+| `linkedin-banner.html` | `linkedin-banner` | `TAGLINE`, `CTA_LABEL`, `URL` |
+| `twitter-banner.html` | `twitter-banner` | `TAGLINE`, `CTA_LABEL`, `URL` |
+| `youtube-banner.html` | `youtube-banner` | `BRAND`, `TAGLINE`, `URL` |
+
+All social templates live in `templates/social/`. Pass variables via `--var "KEY=value"` (repeatable).
+
+```bash
+# Quote card
+npm run image -- --input templates/social/quote-card.html --type html --preset linkedin-post --var "QUOTE=Your insight here" -o quote.png
+
+# Stats graphic
+npm run image -- --input templates/social/stats-card.html --type html --preset linkedin-post --var "STAT=17+" --var "LABEL=Jahre Erfahrung" -o stats.png
+
+# OG image
+npm run image -- --input templates/social/og.html --type html --preset og --var "TITLE=Page Title" -o og.png
+
+# Announcement
+npm run image -- --input templates/social/announcement.html --type html --preset og --var "HEADLINE=New Service" -o announce.png
+```
 
 ---
 
@@ -110,7 +140,8 @@ When ambiguous: flag to user, don't silently choose.
 
 | What | Where |
 |------|-------|
-| New asset type | BRAND_SPEC.md §14 — follow the 6-step protocol |
+| New asset (no clear type yet) | BRAND_SPEC.md §14 — ideation workflow. Write prototype to `scratch/`, iterate, optionally promote |
+| New asset type | BRAND_SPEC.md §15 — follow the 6-step protocol |
 | New document template | `templates/`, extend `_base.html`, document variables in spec §12 |
 | New social template | `templates/social/`, standalone HTML, 1584×396 or standard preset |
 | New generator | `generators/`, document CLI in spec §11 |

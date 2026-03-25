@@ -51,7 +51,7 @@ body {
   left: 64px;
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 700;
-  font-size: 42px;
+  font-size: 48px;
   letter-spacing: -0.01em;
   color: #F5F3F0;
 }
@@ -62,7 +62,8 @@ body {
 
 .right {
   position: absolute;
-  top: 48px;
+  top: 50%;
+  transform: translateY(-50%);
   right: 64px;
   text-align: right;
 }
@@ -99,9 +100,9 @@ body {
   <div class="wordmark">Escape <span class="v">Velocity</span></div>
 
   <div class="right">
-    <div class="tagline">Digitalisierung &amp;<br>Prozessoptimierung</div>
-    <div class="cta-label">Kostenloses Erstgespräch:</div>
-    <div class="url">escapevelocity.consulting</div>
+    <div class="tagline">{{ TAGLINE | default("Digitalisierung &amp;<br>Prozessoptimierung") }}</div>
+    <div class="cta-label">{{ CTA_LABEL | default("Kostenloses Erstgespräch:") }}</div>
+    <div class="url">{{ URL | default("escapevelocity.consulting") }}</div>
   </div>
 </body>
 </html>

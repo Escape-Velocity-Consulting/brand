@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, unlinkSync } from 'node:fs'
+import { readFileSync, writeFileSync, unlinkSync, existsSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { pathToFileURL } from 'node:url'
@@ -8,13 +8,22 @@ import sharp from 'sharp'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const BRAND_DIR = resolve(__dirname, '..')
-const FONTS_DIR = resolve(BRAND_DIR, '..', 'website', 'fonts')
+const FONTS_DIR = existsSync(resolve(BRAND_DIR, 'fonts'))
+  ? resolve(BRAND_DIR, 'fonts')
+  : resolve(BRAND_DIR, '..', 'website', 'fonts')
 
 const PRESETS: Record<string, { width: number; height: number }> = {
   'og':              { width: 1200, height: 630 },
   'linkedin-banner': { width: 1584, height: 396 },
   'linkedin-post':   { width: 1200, height: 1200 },
+  'linkedin-landscape': { width: 1200, height: 627 },
+  'linkedin-portrait':  { width: 1080, height: 1350 },
   'square':          { width: 1000, height: 1000 },
+  'twitter-banner':  { width: 1500, height: 500 },
+  'youtube-banner':  { width: 2560, height: 1440 },
+  'instagram-post':  { width: 1080, height: 1080 },
+  'instagram-story': { width: 1080, height: 1920 },
+  'a4':              { width: 794, height: 1123 },
 }
 
 // --- SVG → PNG ---
@@ -28,14 +37,14 @@ async function svgToPng(input: string, output: string, width: number, height: nu
 
 // --- HTML → PNG ---
 
-async function htmlToPng(input: string, output: string, width: number, height: number): Promise<void> {
+async function htmlToPng(input: string, output: string, width: number, height: number, vars: Record<string, string> = {}): Promise<void> {
   const fontsUri = pathToFileURL(FONTS_DIR).href
 
   // Always run Nunjucks rendering — no-op if template has no variables
   const nunjucks = await import('nunjucks')
   const env = nunjucks.default.configure(dirname(input), { autoescape: false })
   const raw = readFileSync(input, 'utf-8')
-  const html = env.renderString(raw, { FONTS_URI: fontsUri })
+  const html = env.renderString(raw, { FONTS_URI: fontsUri, ...vars })
 
   const tmpPath = resolve(tmpdir(), `ev-img-${Date.now()}.html`)
   writeFileSync(tmpPath, html, 'utf-8')
@@ -65,6 +74,7 @@ async function main() {
       preset: { type: 'string' },
       width:  { type: 'string' },
       height: { type: 'string' },
+      var:    { type: 'string', multiple: true, short: 'v' },
     },
   })
 
@@ -96,10 +106,18 @@ async function main() {
     process.exit(1)
   }
 
+  // Parse --var KEY=VALUE flags
+  const vars: Record<string, string> = {}
+  for (const v of (values.var ?? [])) {
+    const eq = v.indexOf('=')
+    if (eq === -1) { console.error(`Invalid --var: ${v} (expected KEY=VALUE)`); process.exit(1) }
+    vars[v.slice(0, eq)] = v.slice(eq + 1)
+  }
+
   if (values.type === 'svg') {
     await svgToPng(inputPath, outputPath, width, height)
   } else if (values.type === 'html') {
-    await htmlToPng(inputPath, outputPath, width, height)
+    await htmlToPng(inputPath, outputPath, width, height, vars)
   } else {
     console.error(`Unknown type: ${values.type}. Use "html" or "svg".`)
     process.exit(1)

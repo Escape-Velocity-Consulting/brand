@@ -2,7 +2,7 @@
 
 > Track intentional deviations from BRAND_SPEC.md here.
 > Max 3 active experimental variants at a time.
-> See BRAND_SPEC.md §17 for rules.
+> See BRAND_SPEC.md §18 for rules.
 
 ## Template
 

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('{{ FONTS_URI }}/space-grotesk.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('{{ FONTS_URI }}/space-grotesk-ext.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+  unicode-range: U+0100-024F;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('{{ FONTS_URI }}/manrope.woff2') format('woff2');
+  font-weight: 400 800;
+  font-display: swap;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 2560px;
+  height: 1440px;
+  overflow: hidden;
+}
+
+body {
+  background: #1E1C1A;
+  position: relative;
+}
+
+.safe-zone {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 1546px;
+  height: 423px;
+}
+
+.accent-bar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: #D4784A;
+}
+
+.wordmark {
+  position: absolute;
+  top: 50%;
+  left: 24px;
+  transform: translateY(-50%);
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 36px;
+  letter-spacing: -0.01em;
+  color: #F5F3F0;
+}
+
+.wordmark .v {
+  color: #E8865A;
+}
+
+.right {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  text-align: right;
+}
+
+.tagline {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 44px;
+  line-height: 1.15;
+  color: #F5F3F0;
+}
+
+.url {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  color: #D4784A;
+}
+</style>
+</head>
+<body>
+  <div class="safe-zone">
+    <div class="accent-bar"></div>
+
+    <div class="wordmark">{{ BRAND | default('Escape <span class="v">Velocity</span>') }}</div>
+
+    <div class="right">
+      <div class="tagline">{{ TAGLINE | default("Digitalisierung &amp;<br>Prozessoptimierung") }}</div>
+    </div>
+
+    <div class="url">{{ URL | default("escapevelocity.consulting") }}</div>
+  </div>
+</body>
+</html>
