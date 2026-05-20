@@ -60,8 +60,12 @@ npm run pdf -- input.md --type letter --to "Name · Company" --ref "EV-2026-042"
 # Offer
 npm run pdf -- input.md --type offer --to "Name · Company" --subject "Angebot: Prozess-Review"
 
-# Invoice
-npm run pdf -- input.md --type invoice --to "Name · Company" --ref "EV-2026-042"
+# Invoice (structured recipient REQUIRED — see AGENT_GUIDE.md → "Recipient flags")
+npm run pdf -- input.md --type invoice \
+  --to-company "Acme GmbH" --to-name "z.H. Erika Muster" \
+  --to-address "Hauptstr. 1\n1010 Wien" --to-uid "ATU12345678" \
+  --ref "2026-11" --output-dir ../drafts
+# Filename derived automatically: "AR 2026-11 - YYYY-MM-DD - Acme GmbH - <subject>.pdf"
 
 # Terms of Service
 npm run pdf -- input.md --type tos
@@ -114,6 +118,8 @@ All document templates share:
 ## Known Quirks
 
 - **H1 stripping:** pdf.ts always strips the first H1 from the markdown body (used as subject). Pass `--subject` to override the value without affecting stripping behaviour.
+- **Template adds signature and (offer) legal notes:** Don't paste "Mit freundlichen Grüßen / Tommi Enenkel / Escape Velocity" or AGB clauses into the markdown — the template renders them. Suppress signature with `--no-signature`. See AGENT_GUIDE.md → "Before rendering: cleanup pass".
+- **Invoices require structured recipient flags.** `--to` alone is rejected. See AGENT_GUIDE.md → "Recipient flags".
 - **Smart quotes:** markdown-it runs with `typographer: true` — straight quotes become curly. Intentional.
 - **image.ts always templates:** All HTML input runs through Nunjucks before screenshotting. Safe to inject any variable even if the template doesn't use it.
 

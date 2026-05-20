@@ -1,0 +1,21 @@
+{# Shared recipient block macro.
+   Usage: {% import "_recipient.html" as r %}{{ r.block(RECIPIENT_OBJ, STRINGS) }}
+   RECIPIENT_OBJ shape: { name, company, address (multi-line string), uid, private (bool), extra_lines (string[]) } #}
+
+{% macro block(rec, strings) %}
+  {%- if rec.company -%}
+    <strong>{{ rec.company }}</strong>
+    {%- if rec.name %}{{ rec.name }}<br>{% endif %}
+  {%- elif rec.name -%}
+    <strong>{{ rec.name }}</strong>
+  {%- endif %}
+  {%- if rec.address %}
+    {%- set lines = rec.address.split('\n') -%}
+    {%- for line in lines -%}{{ line }}{% if not loop.last %}<br>{% endif %}{%- endfor -%}
+  {%- endif %}
+  {%- if rec.extra_lines %}
+    {%- for line in rec.extra_lines %}<br>{{ line }}{% endfor -%}
+  {%- endif %}
+  {%- if rec.uid %}<br><span class="uid-line">{{ strings.uid_label }} {{ rec.uid }}</span>{% endif %}
+  {%- if rec.private %}<br><span class="private-label">{{ strings.private_label }}</span>{% endif %}
+{% endmacro %}
