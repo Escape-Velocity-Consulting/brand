@@ -1,4 +1,5 @@
 {% extends "_base.html" %}
+{% import "_recipient.html" as r %}
 
 {% block styles %}
 body {
@@ -188,32 +189,38 @@ body {
 
 h1, h2, h3 { break-after: avoid; }
 
-/* About block */
-.about-block {
-  margin-top: 2rem;
+/* Legal notes — acceptance + AGB grouped tight under body */
+.legal-notes {
+  margin-top: 1.5rem;
+  padding-top: 0.75rem;
+  border-top: 0.5px solid #E8E5E0;
   font-size: 10.5px;
+  color: #9A948D;
+  line-height: 1.55;
+}
+.legal-notes p { margin-bottom: 4px; }
+.legal-notes p:last-child { margin-bottom: 0; }
+
+/* About block — last in flow, slightly smaller */
+.about-block {
+  margin-top: 1.25rem;
+  font-size: 10px;
   color: #9A948D;
   line-height: 1.5;
   font-style: italic;
 }
 
-/* Acceptance clause */
-.acceptance-clause {
+/* Signature */
+.signature-block {
   margin-top: 1.5rem;
-  padding-top: 0.75rem;
-  border-top: 0.5px solid #E8E5E0;
-  font-size: 11px;
-  color: #6B6560;
+  font-size: 13px;
+  color: #3D3A36;
   line-height: 1.6;
 }
+.signature-block .closing { margin-bottom: 0.5rem; }
+.signature-block .name { font-weight: 600; color: #1E1C1A; }
 
-/* AGB clause */
-.agb-clause {
-  margin-top: 0.5rem;
-  font-size: 10px;
-  color: #9A948D;
-  line-height: 1.6;
-}
+.uid-line, .private-label { font-size: 11px; color: #6B6560; }
 {% endblock %}
 
 {% block content %}
@@ -241,9 +248,7 @@ h1, h2, h3 { break-after: avoid; }
 {% if SHOW_META %}
 <div class="meta-strip">
   <div class="meta-to">
-    {% set parts = RECIPIENT.split(' · ') %}
-    <strong>{{ parts[0] }}</strong>
-    {% if parts[1] %}{{ parts[1] }}{% endif %}
+    {% if HAS_RECIPIENT %}{{ r.block(RECIPIENT_OBJ, STRINGS) }}{% endif %}
   </div>
   <div class="meta-right">
     {{ DATE }}{% if REF %}<span class="ref">Ref: {{ REF }}</span>{% endif %}
@@ -263,29 +268,31 @@ h1, h2, h3 { break-after: avoid; }
 {{ CONTENT | safe }}
 </div>
 
-{% if SHOW_ABOUT %}
-<div class="about-block">
-  {% if LANG == 'en' %}
-  Escape Velocity helps small and mid-sized organisations make confident technology decisions. The practice draws on 17 years of experience across IT leadership, systems architecture, and organisational development, including building and leading the technology function of a national Austrian political organisation.
-  {% else %}
-  Escape Velocity unterstützt kleine und mittelständische Unternehmen bei fundierten Technologieentscheidungen. Die Praxis baut auf 17 Jahren Erfahrung in IT-Führung, Systemarchitektur und Organisationsentwicklung — darunter der Aufbau und die Leitung der Technologiefunktion einer nationalen österreichischen politischen Organisation.
-  {% endif %}
+{% if SHOW_SIGNATURE %}
+<div class="signature-block">
+  <div class="closing">{{ STRINGS.signature_closing }}</div>
+  <div class="name">{{ STRINGS.signature_name }}</div>
+  <div class="org">{{ STRINGS.signature_org }}</div>
 </div>
 {% endif %}
 
-<div class="acceptance-clause">
+<div class="legal-notes">
   {% if LANG == 'en' %}
-  This offer is deemed accepted upon written confirmation or receipt of the first partial payment.
+  <p>This offer is deemed accepted upon written confirmation or receipt of the first partial payment. The General Terms and Conditions (AGB) of Thomas Enenkel GmbH, provided together with this offer, apply and become part of the contract upon acceptance.</p>
   {% else %}
-  Dieses Angebot gilt als angenommen bei schriftlicher Bestätigung oder Eingang der ersten Teilzahlung.
+  <p>Dieses Angebot gilt als angenommen bei schriftlicher Bestätigung oder Eingang der ersten Teilzahlung. Es gelten die Allgemeinen Geschäftsbedingungen (AGB) der Thomas Enenkel GmbH, die diesem Angebot beiliegen und mit Annahme Vertragsbestandteil werden.</p>
   {% endif %}
 </div>
 
-<div class="agb-clause">
+{% if SHOW_ABOUT %}
+<div class="about-block">
   {% if LANG == 'en' %}
-  This offer is subject to the General Terms and Conditions (AGB) of Thomas Enenkel GmbH, provided together with this offer. Acceptance of this offer constitutes acceptance of the AGB.
+  Escape Velocity Consulting helps Austrian companies with digitization, automation and the introduction of AI.<br><br>
+  Behind Escape Velocity is Tommi Enenkel. 17 years in digitization, including as CIO at NEOS, responsible for 2,500 users and the entire systems landscape. Independent in Vienna since early 2026.
   {% else %}
-  Es gelten die Allgemeinen Geschäftsbedingungen (AGB) der Thomas Enenkel GmbH, die diesem Angebot beiliegen. Mit Annahme dieses Angebots werden die AGB Vertragsbestandteil.
+  Escape Velocity Consulting unterstützt österreichische Unternehmen bei Digitalisierung, Automatisierung und KI-Einführungen.<br><br>
+  Hinter Escape Velocity steht Tommi Enenkel. Seit 17 Jahren in der Digitalisierung tätig, u.a. als CIO bei NEOS für 2.500 User und die gesamte Systemlandschaft verantwortlich. Seit Anfang 2026 selbstständig in Wien.
   {% endif %}
 </div>
+{% endif %}
 {% endblock %}

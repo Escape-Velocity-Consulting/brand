@@ -25,12 +25,24 @@ const STRINGS: Record<string, Record<string, string>> = {
     subject_label: 'Betreff',
     confidential_label: 'Vertraulich',
     page_label: 'Seite',
+    tagline: 'Digitalisierung · Automatisierung · KI',
+    uid_label: 'UID:',
+    private_label: 'Privatkunde',
+    signature_closing: 'Mit freundlichen Grüßen,',
+    signature_name: 'Tommi Enenkel',
+    signature_org: 'Escape Velocity',
   },
   en: {
     to_label: 'To:',
     subject_label: 'Subject',
     confidential_label: 'Confidential',
     page_label: 'Page',
+    tagline: 'Digitization · Automation · AI',
+    uid_label: 'VAT ID:',
+    private_label: 'Private customer',
+    signature_closing: 'Kind regards,',
+    signature_name: 'Tommi Enenkel',
+    signature_org: 'Escape Velocity',
   },
 }
 
@@ -103,27 +115,49 @@ function footerTemplate(lang: string, docType = 'letter', subject = ''): string 
 </div>`
 }
 
-// --- Date ---
+// --- Dates ---
 
-function dateToday(lang: string): string {
-  const today = new Date()
-  const day = today.getDate()
-  const year = today.getFullYear()
-  const month = today.getMonth()
+const DE_MONTHS = [
+  'Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
+]
+const EN_MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+]
 
-  if (lang === 'en') {
-    const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
-    ]
-    return `${day} ${months[month]} ${year}`
+function formatDate(d: Date, lang: string): string {
+  const day = d.getDate()
+  const year = d.getFullYear()
+  const month = d.getMonth()
+  if (lang === 'en') return `${day} ${EN_MONTHS[month]} ${year}`
+  return `${day}. ${DE_MONTHS[month]} ${year}`
+}
+
+function isoDate(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+/** Parse a date string in ISO (YYYY-MM-DD), German ("20. Mai 2026" / "20 Mai 2026"), or English form. Returns null if unparseable. */
+function parseDate(input: string): Date | null {
+  if (!input) return null
+  // ISO
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input.trim())
+  if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]))
+  // German or English: "DD[.] Month YYYY"
+  const named = /^(\d{1,2})\.?\s+([A-Za-zÄäÖöÜü]+)\.?\s+(\d{4})$/.exec(input.trim())
+  if (named) {
+    const day = Number(named[1])
+    const monthName = named[2]
+    const year = Number(named[3])
+    let m = DE_MONTHS.findIndex((n) => n.toLowerCase() === monthName.toLowerCase())
+    if (m < 0) m = EN_MONTHS.findIndex((n) => n.toLowerCase() === monthName.toLowerCase())
+    if (m >= 0) return new Date(year, m, day)
   }
-
-  const months = [
-    'Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni',
-    'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
-  ]
-  return `${day}. ${months[month]} ${year}`
+  return null
 }
 
 // --- Markdown ---
@@ -137,7 +171,6 @@ function mdToHtml(mdPath: string, keepTitle = false): { body: string; title: str
   const text = readFileSync(mdPath, 'utf-8')
   const title = extractTitle(text)
 
-  // Strip the first H1 to avoid double-rendering (unless keepTitle is set)
   let cleaned = text
   if (title && !keepTitle) {
     cleaned = text.replace(new RegExp(`^#\\s+${escapeRegex(title)}\\s*$`, 'm'), '')
@@ -170,6 +203,77 @@ function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+// --- Slug / filename ---
+
+function slugForFilename(s: string, maxLen = 40): string {
+  return s
+    .replace(/&/g, ' und ')
+    .replace(/·/g, ' ')
+    .replace(/[\\/:*?"<>|]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLen)
+    .trim()
+}
+
+// --- Recipient ---
+
+interface Recipient {
+  name?: string
+  company?: string
+  address?: string  // newlines allowed
+  uid?: string
+  private?: boolean
+  extra_lines?: string[]
+}
+
+function buildRecipient(values: Record<string, any>): Recipient | null {
+  const hasStructured = values['to-name'] || values['to-company'] || values['to-address'] || values['to-uid'] || values['to-private']
+  if (hasStructured) {
+    return {
+      name: values['to-name'],
+      company: values['to-company'],
+      address: values['to-address']?.replace(/\\n/g, '\n'),
+      uid: values['to-uid'],
+      private: values['to-private'] ?? false,
+    }
+  }
+  if (values.to) {
+    // Backward-compat fallback: split on " · "
+    const parts = String(values.to).split(' · ')
+    return {
+      name: parts[0],
+      extra_lines: parts.slice(1),
+    }
+  }
+  return null
+}
+
+function validateForInvoice(rec: Recipient | null, values: Record<string, any>): string | null {
+  if (values.to) {
+    return 'Invoice does not accept --to. Use --to-name, --to-company, --to-address, and --to-uid (or --to-private).'
+  }
+  if (!rec) {
+    return 'Invoice requires structured recipient flags: --to-name (or --to-company), --to-address, --to-uid (or --to-private).'
+  }
+  if (!rec.name && !rec.company) {
+    return 'Invoice requires --to-name or --to-company.'
+  }
+  if (!rec.address) {
+    return 'Invoice requires --to-address (multi-line allowed via \\n).'
+  }
+  if (rec.uid && rec.private) {
+    return '--to-uid and --to-private are mutually exclusive.'
+  }
+  if (!rec.uid && !rec.private) {
+    return 'Invoice requires either --to-uid (business) or --to-private (private customer acknowledgement).'
+  }
+  if (rec.uid && !/^[A-Z]{2}[A-Z0-9]+$/.test(rec.uid)) {
+    return `--to-uid must be an EU VAT ID (e.g. ATU12345678). Got: ${rec.uid}`
+  }
+  return null
+}
+
 // --- Template ---
 
 const env = nunjucks.configure(TEMPLATES_DIR, {
@@ -189,7 +293,7 @@ function renderTemplate(
   templateFile: string,
   bodyHtml: string,
   opts: {
-    to?: string
+    recipient: Recipient | null
     date: string
     ref?: string
     subject?: string
@@ -198,10 +302,16 @@ function renderTemplate(
     confidential: boolean
     lang: string
     showAbout: boolean
+    showSignature: boolean
   },
 ): string {
   const fontsUri = pathToFileURL(FONTS_DIR).href
-  const showMeta = !!(opts.to || opts.ref || opts.confidential)
+  const showMeta = !!(opts.recipient || opts.ref || opts.confidential)
+  // Compose legacy RECIPIENT string for any reference to {{ RECIPIENT }}
+  const rec = opts.recipient
+  const legacyRecipient = rec
+    ? [rec.company, rec.name, rec.address, ...(rec.extra_lines ?? [])].filter(Boolean).join(' · ')
+    : ''
 
   return env.render(templateFile, {
     CONTENT: bodyHtml,
@@ -210,13 +320,16 @@ function renderTemplate(
     FONTS_URI: fontsUri,
     LANG: opts.lang,
     STRINGS: STRINGS[opts.lang],
-    RECIPIENT: opts.to || '',
+    RECIPIENT: legacyRecipient,
+    RECIPIENT_OBJ: rec ?? {},
+    HAS_RECIPIENT: !!rec,
     DATE: opts.date,
     REF: opts.ref || '',
     SUBJECT: opts.subject || '',
     CONFIDENTIAL: opts.confidential,
     SHOW_META: showMeta,
     SHOW_ABOUT: opts.showAbout,
+    SHOW_SIGNATURE: opts.showSignature,
   })
 }
 
@@ -269,26 +382,63 @@ async function htmlToPdf(
   }
 }
 
+// --- Canonical filename ---
+
+function canonicalFilename(opts: {
+  docType: string
+  ref?: string
+  date: Date
+  recipient: Recipient | null
+  subject?: string
+  inputStem: string
+}): string {
+  const { docType, ref, date, recipient, subject, inputStem } = opts
+  if (docType !== 'invoice' && docType !== 'offer') {
+    return `${inputStem}.pdf`
+  }
+  const iso = isoDate(date)
+  const customer = recipient ? (recipient.company || recipient.name || '') : ''
+  const customerSlug = slugForFilename(customer, 50)
+  const subjectSlug = subject ? slugForFilename(subject, 50) : ''
+  let refStr = (ref || '').trim()
+
+  if (docType === 'invoice') {
+    if (refStr && !/^AR\b/i.test(refStr)) refStr = `AR ${refStr}`
+    const parts = [refStr, iso, customerSlug, subjectSlug].filter(Boolean)
+    return parts.join(' - ') + '.pdf'
+  }
+  // offer
+  const parts = [refStr, iso, customerSlug, subjectSlug].filter(Boolean)
+  return parts.join(' - ') + '.pdf'
+}
+
 // --- CLI ---
 
 async function main() {
   const { values, positionals } = parseArgs({
     args: process.argv.slice(2),
     options: {
-      output:       { type: 'string', short: 'o' },
-      type:         { type: 'string', default: 'letter' },
-      to:           { type: 'string' },
-      date:         { type: 'string' },
-      ref:          { type: 'string' },
-      subject:      { type: 'string' },
-      confidential: { type: 'boolean', default: false },
-      lang:         { type: 'string', default: 'de' },
-      template:     { type: 'string' },
-      cover:        { type: 'string' },
-      eyebrow:      { type: 'string' },
-      attach:       { type: 'string' },
-      'no-about':   { type: 'boolean', default: false },
-      debug:        { type: 'boolean', default: false },
+      output:        { type: 'string', short: 'o' },
+      'output-dir':  { type: 'string' },
+      type:          { type: 'string', default: 'letter' },
+      to:            { type: 'string' },
+      'to-name':     { type: 'string' },
+      'to-company':  { type: 'string' },
+      'to-address':  { type: 'string' },
+      'to-uid':      { type: 'string' },
+      'to-private':  { type: 'boolean', default: false },
+      date:          { type: 'string' },
+      ref:           { type: 'string' },
+      subject:       { type: 'string' },
+      cover:         { type: 'string' },
+      eyebrow:       { type: 'string' },
+      confidential:  { type: 'boolean', default: false },
+      lang:          { type: 'string', default: 'de' },
+      template:      { type: 'string' },
+      attach:        { type: 'string' },
+      'no-about':    { type: 'boolean', default: false },
+      'no-signature':{ type: 'boolean', default: false },
+      debug:         { type: 'boolean', default: false },
     },
     allowPositionals: true,
   })
@@ -302,10 +452,24 @@ async function main() {
   const lang = values.lang ?? 'de'
   const docType = values.type ?? 'letter'
 
+  // Recipient
+  const recipient = buildRecipient(values)
+
+  // Invoice validation
+  if (docType === 'invoice') {
+    const err = validateForInvoice(recipient, values)
+    if (err) {
+      console.error(`error: ${err}`)
+      process.exit(1)
+    }
+  } else if (values.to && (values['to-name'] || values['to-company'] || values['to-address'] || values['to-uid'] || values['to-private'])) {
+    console.error('error: --to is mutually exclusive with --to-name / --to-company / --to-address / --to-uid / --to-private.')
+    process.exit(1)
+  }
+
   // Resolve template
   let templateFile: string
   if (values.template) {
-    // Direct template override — resolve relative to cwd, render from string
     const tplContent = readFileSync(resolve(process.cwd(), values.template), 'utf-8')
     const tmpTpl = `_custom-${Date.now()}.html`
     writeFileSync(resolve(TEMPLATES_DIR, tmpTpl), tplContent, 'utf-8')
@@ -318,15 +482,39 @@ async function main() {
     }
   }
 
+  // Date
+  const parsedDate = values.date ? parseDate(values.date) : null
+  const effectiveDate = parsedDate ?? new Date()
+  const dateStr = values.date && parsedDate
+    ? formatDate(parsedDate, lang)
+    : (values.date && !parsedDate ? values.date : formatDate(new Date(), lang))
+
   // Parse markdown
   const { body, title } = mdToHtml(resolve(process.cwd(), inputPath), docType === 'tos')
 
-  // Resolve options
+  // Subject
   const subject = values.subject || title || undefined
-  const dateStr = values.date || dateToday(lang)
-  const outputPath = values.output
-    ? resolve(process.cwd(), values.output)
-    : resolve(process.cwd(), inputPath.replace(/\.md$/, '.pdf'))
+
+  // Output path
+  const inputStem = inputPath.replace(/\.md$/, '').split(/[\\/]/).pop() || 'output'
+  const outputDir = values['output-dir']
+    ? resolve(process.cwd(), values['output-dir'])
+    : process.cwd()
+
+  let outputPath: string
+  if (values.output) {
+    outputPath = resolve(process.cwd(), values.output)
+  } else {
+    const filename = canonicalFilename({
+      docType,
+      ref: values.ref,
+      date: effectiveDate,
+      recipient,
+      subject,
+      inputStem,
+    })
+    outputPath = resolve(outputDir, filename)
+  }
 
   mkdirSync(dirname(outputPath), { recursive: true })
 
@@ -335,7 +523,7 @@ async function main() {
 
   // Render
   const fullHtml = renderTemplate(templateFile, body, {
-    to: values.to,
+    recipient,
     date: dateStr,
     ref: values.ref,
     subject,
@@ -344,6 +532,7 @@ async function main() {
     confidential: values.confidential ?? false,
     lang,
     showAbout: !(values['no-about'] ?? false),
+    showSignature: !(values['no-signature'] ?? false),
   })
 
   // Debug HTML
@@ -353,14 +542,13 @@ async function main() {
     console.log(`Debug HTML: ${debugPath}`)
   }
 
-  // Generate PDF
   await htmlToPdf(fullHtml, outputPath, lang, docType, {
     subject,
     date: dateStr,
     recipient: values.to,
   })
 
-  // Attach additional PDF (e.g. AGB)
+  // Attach
   if (values.attach) {
     const attachPath = resolve(process.cwd(), values.attach)
     if (!existsSync(attachPath)) {
@@ -381,7 +569,6 @@ async function main() {
 
   console.log(`Done: ${outputPath}`)
 
-  // Clean up custom template if created
   if (values.template) {
     try { unlinkSync(resolve(TEMPLATES_DIR, templateFile)) } catch {}
   }

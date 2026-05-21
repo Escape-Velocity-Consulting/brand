@@ -1,4 +1,5 @@
 {% extends "_base.html" %}
+{% import "_recipient.html" as r %}
 
 {% block styles %}
 body {
@@ -209,6 +210,18 @@ body {
 .body-content pre code { background: none; padding: 0; }
 
 h1, h2, h3 { break-after: avoid; }
+
+/* Signature */
+.signature-block {
+  margin-top: 1.5rem;
+  font-size: 13px;
+  color: #3D3A36;
+  line-height: 1.6;
+}
+.signature-block .closing { margin-bottom: 0.5rem; }
+.signature-block .name { font-weight: 600; color: #1E1C1A; }
+
+.uid-line, .private-label { font-size: 11px; color: #6B6560; }
 {% endblock %}
 
 {% block content %}
@@ -228,9 +241,7 @@ h1, h2, h3 { break-after: avoid; }
 {# Meta strip always shown for invoices #}
 <div class="meta-strip">
   <div class="meta-to">
-    {% set parts = RECIPIENT.split(' · ') %}
-    <strong>{{ parts[0] }}</strong>
-    {% for part in parts %}{% if loop.index0 > 0 %}{{ part }}{% if not loop.last %} · {% endif %}{% endif %}{% endfor %}
+    {% if HAS_RECIPIENT %}{{ r.block(RECIPIENT_OBJ, STRINGS) }}{% endif %}
   </div>
   <div class="meta-right">
     {{ DATE }}{% if REF %}<span class="ref">{{ REF }}</span>{% endif %}
@@ -248,4 +259,12 @@ h1, h2, h3 { break-after: avoid; }
 <div class="body-content">
 {{ CONTENT | safe }}
 </div>
+
+{% if SHOW_SIGNATURE %}
+<div class="signature-block">
+  <div class="closing">{{ STRINGS.signature_closing }}</div>
+  <div class="name">{{ STRINGS.signature_name }}</div>
+  <div class="org">{{ STRINGS.signature_org }}</div>
+</div>
+{% endif %}
 {% endblock %}
