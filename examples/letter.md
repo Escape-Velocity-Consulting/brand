@@ -17,6 +17,3 @@ Das Review umfasst einen Vor-Ort-Termin (ca. 4 Stunden) sowie eine anschließend
 ## Nächste Schritte
 
 Ich schlage vor, dass wir den Termin in KW 14 legen. Bitte lassen Sie mich wissen, welche Tage Ihnen passen.
-
-Mit freundlichen Grüßen,
-Tommi Enenkel

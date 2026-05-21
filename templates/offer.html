@@ -216,6 +216,8 @@ h1, h2, h3 { break-after: avoid; }
   font-size: 13px;
   color: #3D3A36;
   line-height: 1.6;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 .signature-block .closing { margin-bottom: 0.5rem; }
 .signature-block .name { font-weight: 600; color: #1E1C1A; }
@@ -227,7 +229,7 @@ h1, h2, h3 { break-after: avoid; }
 <div class="page-header">
   <div class="logo-group">
     <div class="logo">Escape <span>Velocity</span></div>
-    <div class="header-tagline">Digitization · Automation · AI</div>
+    <div class="header-tagline">{{ STRINGS.tagline }}</div>
   </div>
   <div class="header-contact">
     <strong>Thomas Enenkel GmbH</strong><br>
