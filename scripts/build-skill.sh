@@ -83,11 +83,20 @@ mkdir -p "$DIST_DIR"
 cd "$BRAND_DIR/dist/.stage"
 rm -f "$DIST_DIR/brand-engine.skill"
 
-# Convert MSYS paths to Windows paths for PowerShell
-WIN_DEST=$(cygpath -w "$DIST_DIR/brand-engine.zip" 2>/dev/null || echo "$DIST_DIR/brand-engine.zip")
-WIN_SRC=$(cygpath -w "$BRAND_DIR/dist/.stage/brand-engine" 2>/dev/null || echo "$BRAND_DIR/dist/.stage/brand-engine")
-powershell -Command "Compress-Archive -Path '$WIN_SRC' -DestinationPath '$WIN_DEST' -Force"
-mv "$DIST_DIR/brand-engine.zip" "$DIST_DIR/brand-engine.skill"
+# Use Python's zipfile (forward-slash separators, per ZIP spec).
+# PowerShell's Compress-Archive writes backslashes, which Claude's skill installer rejects.
+WIN_DEST=$(cygpath -w "$DIST_DIR/brand-engine.skill" 2>/dev/null || echo "$DIST_DIR/brand-engine.skill")
+python -c "
+import os, zipfile
+src = 'brand-engine'
+dest = r'$WIN_DEST'
+with zipfile.ZipFile(dest, 'w', zipfile.ZIP_DEFLATED) as z:
+    for root, dirs, files in os.walk(src):
+        for f in files:
+            full = os.path.join(root, f)
+            arc = full.replace(os.sep, '/')
+            z.write(full, arc)
+"
 
 # ── 10. Cleanup & report ─────────────────────────────────────────────────────
 
