@@ -32,7 +32,9 @@ PDF document (letter / offer / invoice / ToS)?
   → npm run pdf -- input.md --type <letter|offer|invoice|tos>
 
 Social graphic or banner?
-  → npm run image -- --type html --preset <linkedin-banner|og|linkedin-post|square>
+  → npm run image -- --type html --preset <linkedin-banner|og|linkedin-post|linkedin-landscape|linkedin-portrait|square>
+  LinkedIn landscape   → --preset linkedin-landscape
+  LinkedIn portrait    → --preset linkedin-portrait
 
 SVG logo → PNG?
   → npm run image -- --type svg --input assets/logos/X.svg
@@ -72,6 +74,9 @@ npm run image -- --input templates/social/linkedin-banner.html --type html --pre
 
 # SVG logo → PNG
 npm run image -- --input assets/logos/ev-wordmark.svg --type svg -o assets/raster/ev-wordmark-300.png --width 300
+
+# Carousel (multi-slide PDF for LinkedIn)
+npx tsx generators/carousel.ts --spec carousel.json -o carousel.pdf
 ```
 
 ---
@@ -96,6 +101,16 @@ All document templates share:
 **Per-type overrides:**
 - `invoice.html` — meta strip always shown
 - `tos.html` — no meta strip, no subject line
+
+### Carousel templates (`templates/carousel/`)
+
+**title.html** — `EYEBROW` (opt), `BIGNUMBER` (req), `HEADLINE` (req, `| safe`)
+
+**numbered-item.html** — `PILL` (req), `PROGRESS` (auto-injected, optional manual override), `NUMBER` (req), `TITLE` (req, `| safe`)
+
+**cta.html** — `EYEBROW` (opt), `HEADLINE` (req, `| safe`), `SUBTITLE` (opt), `BUTTON` (req), `URL` (req)
+
+All three templates expose `.accent { color: #E8865A; }` for inline emphasis (`<span class="accent">word</span>`). `WIDTH` and `HEIGHT` vars are auto-injected by `carousel.ts` based on the format. Auto-progress counts only `numbered-item.html` slides.
 
 ---
 
@@ -128,28 +143,11 @@ When ambiguous: flag to user, don't silently choose.
 
 ---
 
-## Social Template Sizing
-
-Templates render at full pixel dimensions (1200–1584px). Web-scale font sizes (16–52px) look tiny at these resolutions. Calibrated ranges:
-
-| Element | Banner (1584×396 / 1500×500) | Square card (1200×1200) | OG (1200×630) |
-|---------|------------------------------|------------------------|---------------|
-| Headline / quote | 52–62px | 72–78px | 64–72px |
-| Wordmark | 46–48px | 48–51px | 38–42px |
-| Stat number | — | 200–260px | — |
-| Author / label | — | 45–48px | — |
-| Subtitle / CTA | 24px | 28–36px | 24–28px |
-| Domain / URL | 24px | 28–30px | 18–22px |
-| Footer wordmark | — | 48–51px | — |
-| Footer domain | — | 28–30px | — |
-
-**Rule:** When creating new templates, start with these ranges. Go bigger if unsure — easier to scale down than iterate up.
-
----
-
 ## Ideation
 
 No clear asset type, or want to concept something new? See BRAND_SPEC.md §14. Write prototype HTML to `scratch/`, render with `image.ts`, iterate with user. Optionally promote to `templates/` if reusable.
+
+Composition shortcuts (format × color × alignment) documented in BRAND_SPEC.md §14.
 
 ---
 

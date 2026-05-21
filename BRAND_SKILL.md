@@ -74,6 +74,9 @@ npm run image -- --input templates/social/linkedin-banner.html --type html --pre
 
 # SVG logo → PNG
 npm run image -- --input assets/logos/ev-wordmark.svg --type svg -o assets/raster/ev-wordmark-300.png --width 300
+
+# Carousel (multi-slide PDF for LinkedIn)
+npx tsx generators/carousel.ts --spec carousel.json -o carousel.pdf
 ```
 
 ---
@@ -98,6 +101,16 @@ All document templates share:
 **Per-type overrides:**
 - `invoice.html` — meta strip always shown
 - `tos.html` — no meta strip, no subject line
+
+### Carousel templates (`templates/carousel/`)
+
+**title.html** — `EYEBROW` (opt), `BIGNUMBER` (req), `HEADLINE` (req, `| safe`)
+
+**numbered-item.html** — `PILL` (req), `PROGRESS` (auto-injected, optional manual override), `NUMBER` (req), `TITLE` (req, `| safe`)
+
+**cta.html** — `EYEBROW` (opt), `HEADLINE` (req, `| safe`), `SUBTITLE` (opt), `BUTTON` (req), `URL` (req)
+
+All three templates expose `.accent { color: #E8865A; }` for inline emphasis (`<span class="accent">word</span>`). `WIDTH` and `HEIGHT` vars are auto-injected by `carousel.ts` based on the format. Auto-progress counts only `numbered-item.html` slides.
 
 ---
 

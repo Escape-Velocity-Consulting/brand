@@ -79,6 +79,12 @@ User wants a social or marketing graphic?
   Instagram post       → --preset instagram-post (use any template)
   Instagram story      → --preset instagram-story (use any template)
 
+User wants a multi-slide carousel (LinkedIn / Instagram, exported as PDF)?
+  → carousel.ts --spec <spec.json> -o <output.pdf>
+  Templates in templates/carousel/: title.html, numbered-item.html, cta.html
+  Formats: linkedin-portrait (1080×1350, default), linkedin-square (1200×1200)
+  Auto-injects PROGRESS ("N / total") on numbered-item slides; title and CTA are excluded from the count.
+
 User wants a logo export?
   SVG → PNG            → image.ts --input assets/logos/{name}.svg --type svg
 
@@ -94,6 +100,7 @@ User wants to update tokens?
 For documents:
 - You need markdown content. If the user hasn't provided it, ask for it or offer to draft it based on their description.
 - Ask for `--to` (recipient), `--ref` (reference number), `--subject` if not obvious from the content.
+- **`--to` supports a name/company split:** pass `"Name · Company"` (space-middot-space) to render the name in bold with the company below in regular weight. Use this whenever you have both. Example: `--to "Christian Skihar · Die Skischule W&S GmbH & Co. KG"`.
 - Default language is German (`--lang de`). Ask if the user needs English.
 
 For social graphics:
@@ -154,6 +161,14 @@ npx --prefix ${CLAUDE_SKILL_DIR} tsx ${CLAUDE_SKILL_DIR}/generators/image.ts --i
 ```bash
 npx --prefix ${CLAUDE_SKILL_DIR} tsx ${CLAUDE_SKILL_DIR}/generators/image.ts --input ${CLAUDE_SKILL_DIR}/assets/logos/ev-wordmark.svg --type svg --preset og -o wordmark.png
 ```
+
+#### Carousel (multi-slide PDF)
+
+```bash
+npx --prefix ${CLAUDE_SKILL_DIR} tsx ${CLAUDE_SKILL_DIR}/generators/carousel.ts --spec carousel.json -o carousel.pdf
+```
+
+The spec is JSON: `{ "format": "linkedin-portrait", "slides": [{ "template": "templates/carousel/title.html", "vars": { ... } }, ...] }`. Template paths are resolved relative to the skill dir. Side-effects: writes individual `slide-NN.png` files and a copy of the spec to a sidecar `<output_basename>/` folder next to the PDF.
 
 #### Batch Export
 

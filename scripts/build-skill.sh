@@ -48,8 +48,10 @@ echo "  Copied scripts"
 # ── 5. Templates ─────────────────────────────────────────────────────────────
 
 mkdir -p "$STAGE_DIR/templates/social"
+mkdir -p "$STAGE_DIR/templates/carousel"
 cp "$BRAND_DIR/templates/"*.html "$STAGE_DIR/templates/"
 cp "$BRAND_DIR/templates/social/"*.html "$STAGE_DIR/templates/social/"
+cp "$BRAND_DIR/templates/carousel/"*.html "$STAGE_DIR/templates/carousel/"
 
 echo "  Copied templates"
 

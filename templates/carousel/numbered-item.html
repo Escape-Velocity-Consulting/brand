@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('{{ FONTS_URI }}/space-grotesk.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('{{ FONTS_URI }}/space-grotesk-ext.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+  unicode-range: U+0100-024F;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('{{ FONTS_URI }}/manrope.woff2') format('woff2');
+  font-weight: 400 800;
+  font-display: swap;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: {{ WIDTH | default(1080) }}px;
+  height: {{ HEIGHT | default(1350) }}px;
+  overflow: hidden;
+}
+
+body {
+  background: #1E1C1A;
+  position: relative;
+}
+
+.accent { color: #E8865A; }
+
+.pill {
+  position: absolute;
+  top: 96px;
+  left: 96px;
+  display: inline-flex;
+  align-items: center;
+  padding: 16px 28px;
+  background: #E8865A;
+  border-radius: 999px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #1E1C1A;
+}
+
+.progress {
+  position: absolute;
+  top: 112px;
+  right: 96px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  font-size: 28px;
+  color: #E8865A;
+  letter-spacing: 0.05em;
+}
+
+.content {
+  position: absolute;
+  top: 350px;
+  left: 96px;
+  right: 96px;
+  display: flex;
+  flex-direction: column;
+}
+
+.number {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 300px;
+  line-height: 0.85;
+  color: #E8865A;
+  letter-spacing: -0.05em;
+  margin-bottom: 32px;
+}
+
+.title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 92px;
+  line-height: 1.05;
+  color: #F5F3F0;
+  letter-spacing: -0.02em;
+}
+
+.swipe {
+  position: absolute;
+  bottom: 140px;
+  right: 96px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 64px;
+  line-height: 1;
+  color: #E8865A;
+  letter-spacing: -0.01em;
+}
+
+.footer {
+  position: absolute;
+  bottom: 64px;
+  left: 96px;
+  right: 96px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wordmark {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 44px;
+  letter-spacing: -0.01em;
+  color: #F5F3F0;
+}
+
+.wordmark .v {
+  color: #E8865A;
+}
+
+.domain {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 400;
+  font-size: 26px;
+  color: #E8865A;
+}
+</style>
+</head>
+<body>
+  <div class="pill">{{ PILL }}</div>
+  {% if PROGRESS %}<div class="progress">{{ PROGRESS }}</div>{% endif %}
+
+  <div class="content">
+    <div class="number">{{ NUMBER }}.</div>
+    <div class="title">{{ TITLE | safe }}</div>
+  </div>
+
+  <div class="swipe">→</div>
+
+  <div class="footer">
+    <div class="wordmark">Escape <span class="v">Velocity</span></div>
+    <div class="domain">escapevelocity.consulting</div>
+  </div>
+</body>
+</html>

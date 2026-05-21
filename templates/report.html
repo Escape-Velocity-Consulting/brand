@@ -9,161 +9,158 @@ body {
   color: #3D3A36;
 }
 
-/* Page header — letterhead band */
-.page-header {
+/* ======== Cover Page ======== */
+.cover {
+  page-break-after: always;
+  break-after: page;
+  /* Fill A4 minus margins: 297mm - 12mm top - 20mm bottom = 265mm */
+  height: 265mm;
+  display: flex;
+  flex-direction: column;
+}
+
+.cover-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding-bottom: 0;
-  margin-bottom: 0;
 }
-
-.logo-group {}
-
-.logo {
+.cover-logo {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
   color: #1E1C1A;
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
-
-.logo span {
-  color: #D4784A;
-}
-
-.header-tagline {
+.cover-logo span { color: #D4784A; }
+.cover-tagline {
   font-family: 'Inter', sans-serif;
   font-size: 11px;
   letter-spacing: 0.04em;
-  text-transform: none;
   color: #7A756F;
-  margin-top: 3px;
+  margin-top: 4px;
 }
-
-.header-contact {
+.cover-date {
   text-align: right;
-  font-size: 10px;
-  color: #6B6560;
-  line-height: 1.55;
-}
-.header-contact strong {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px;
   font-weight: 600;
-  font-size: 11px;
   color: #1E1C1A;
+  letter-spacing: 0.04em;
 }
 
-.accent-bar {
-  height: 2px;
+.cover-accent {
+  height: 3px;
   background: #D4784A;
-  margin-top: 14px;
-  margin-bottom: 28px;
+  width: 80px;
+  margin: 28px 0 36px;
 }
 
-/* Meta strip */
-.meta-strip {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 28px;
-  padding-bottom: 16px;
-  border-bottom: 0.5px solid #E8E5E0;
-}
-.meta-to {
+.cover-eyebrow {
+  font-family: 'Manrope', sans-serif;
   font-size: 12px;
-  color: #6B6560;
-  line-height: 1.6;
-}
-.meta-to strong {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1E1C1A;
-  display: block;
-  margin-bottom: 1px;
-}
-.meta-right {
-  text-align: right;
-  font-size: 12px;
-  color: #3D3A36;
-  font-weight: 500;
-  line-height: 1.7;
-  padding-top: 2px;
-}
-.meta-right .ref {
-  font-size: 11px;
-  color: #9A948D;
-  font-weight: 400;
-  display: block;
-}
-
-.confidential-label {
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
   color: #D4784A;
-  font-weight: 600;
+  margin-bottom: 16px;
 }
 
-/* Subject line */
-.subject-line {
-  border-left: 3px solid #D4784A;
-  padding-left: 16px;
-  margin-bottom: 24px;
-}
-.subject-label { display: none; }
-.subject-text {
+.cover-title {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 17px;
+  font-weight: 700;
+  font-size: 44px;
+  line-height: 1.1;
+  color: #1E1C1A;
+  letter-spacing: -0.015em;
+  margin-bottom: 22px;
+  max-width: 140mm;
+}
+
+.cover-recipient {
+  font-size: 13px;
+  color: #6B6560;
+  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+}
+.cover-recipient-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 18px;
   font-weight: 600;
   color: #1E1C1A;
-  line-height: 1.3;
 }
 
-/* Body content (markdown) */
+.cover-image {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 40px;
+  min-height: 0;
+}
+.cover-image .inline-svg {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+.cover-image .inline-svg svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+}
+.cover-image img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
 .body-content p { margin-bottom: 12px; }
 .body-content strong { font-weight: 600; color: #1E1C1A; }
 .body-content a { color: #D4784A; text-decoration: none; }
 
-/* Headings */
 .body-content h1 {
   font-family: 'Space Grotesk', sans-serif;
-  font-weight: 700; font-size: 22px; color: #1E1C1A;
-  margin-top: 28px; margin-bottom: 12px; line-height: 1.25;
+  font-weight: 700; font-size: 24px; color: #1E1C1A;
+  margin-top: 32px; margin-bottom: 14px; line-height: 1.2;
+  page-break-before: always;
+  break-before: page;
 }
 .body-content h2 {
   font-family: 'Space Grotesk', sans-serif;
-  font-weight: 700; font-size: 15px; color: #1E1C1A;
+  font-weight: 700; font-size: 17px; color: #1E1C1A;
   margin-top: 28px; margin-bottom: 10px;
   line-height: 1.3; letter-spacing: -0.01em;
 }
 .body-content h3 {
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 600; font-size: 14px; color: #1E1C1A;
-  margin-top: 20px; margin-bottom: 8px; line-height: 1.35;
+  margin-top: 22px; margin-bottom: 8px; line-height: 1.35;
 }
 
-/* Lists */
 .body-content ul, .body-content ol { margin-bottom: 12px; padding-left: 24px; }
 .body-content li { margin-bottom: 4px; }
 
-/* HR — invisible, spacing only */
 .body-content hr { border: none; margin: 20px 0; }
 
-/* Blockquote */
 .body-content blockquote {
   border-left: 2.5px solid #D4784A;
   padding-left: 16px;
   margin: 16px 0;
-  color: #9A948D;
+  color: #6B6560;
   font-style: italic;
 }
 
-/* Code */
 .body-content code { font-family: 'Courier New', monospace; font-size: 11px; background: #F5F3F0; padding: 1px 4px; border-radius: 3px; }
 .body-content pre { background: #F5F3F0; padding: 14px; border-radius: 6px; overflow-x: auto; margin-bottom: 12px; }
 .body-content pre code { background: none; padding: 0; }
 
-/* Images */
 .body-content img,
 .body-content .inline-svg {
   display: block;
@@ -183,7 +180,6 @@ body {
   margin: 0 auto;
 }
 
-/* Tables */
 .body-content table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 12px; }
 .body-content th { font-family: 'Manrope', sans-serif; font-weight: 700; text-align: left; padding: 8px 10px; border-bottom: 2px solid #D4784A; color: #1E1C1A; }
 .body-content td { padding: 8px 10px; border-bottom: 1px solid #E8E5E0; }
@@ -195,39 +191,29 @@ h1, h2, h3 { break-after: avoid; }
 {% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <div class="logo-group">
-    <div class="logo">Escape <span>Velocity</span></div>
-    <div class="header-tagline">Digitalisierung · Automatisierung · KI</div>
+<div class="cover">
+  <div class="cover-header">
+    <div>
+      <div class="cover-logo">Escape <span>Velocity</span></div>
+      <div class="cover-tagline">Digitization · Automation · AI</div>
+    </div>
+    <div class="cover-date">{{ DATE }}</div>
   </div>
-  <div class="header-contact">
-    <strong>Thomas Enenkel GmbH</strong><br>
-    Wiener Straße 11-13/2/3 · 3002 Purkersdorf<br>
-    +43 664 6522083 · tommi.enenkel@escapevelocity.consulting
-  </div>
-</div>
-<div class="accent-bar"></div>
 
-{% if SHOW_META %}
-<div class="meta-strip">
-  <div class="meta-to">
-    {% set parts = RECIPIENT.split(' · ') %}
-    <strong>{{ parts[0] }}</strong>
-    {% if parts[1] %}{{ parts[1] }}{% endif %}
-  </div>
-  <div class="meta-right">
-    {{ DATE }}{% if REF %}<span class="ref">Ref: {{ REF }}</span>{% endif %}
-    {% if CONFIDENTIAL %}<br><span class="confidential-label">{{ STRINGS.confidential_label }}</span>{% endif %}
-  </div>
-</div>
-{% endif %}
+  <div class="cover-accent"></div>
 
-{% if SUBJECT %}
-<div class="subject-line">
-  <div class="subject-label">{{ STRINGS.subject_label }}</div>
-  <div class="subject-text">{{ SUBJECT }}</div>
+  {% if EYEBROW %}<div class="cover-eyebrow">{{ EYEBROW }}</div>{% endif %}
+  <div class="cover-title">{{ SUBJECT }}</div>
+
+  {% if RECIPIENT %}
+  <div class="cover-recipient">{% if LANG == 'de' %}Erstellt für{% else %}Created for{% endif %}</div>
+  <div class="cover-recipient-name">{{ RECIPIENT }}</div>
+  {% endif %}
+
+  {% if COVER %}
+  <div class="cover-image">{{ COVER | safe }}</div>
+  {% endif %}
 </div>
-{% endif %}
 
 <div class="body-content">
 {{ CONTENT | safe }}

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('{{ FONTS_URI }}/space-grotesk.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('{{ FONTS_URI }}/space-grotesk-ext.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+  unicode-range: U+0100-024F;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('{{ FONTS_URI }}/manrope.woff2') format('woff2');
+  font-weight: 400 800;
+  font-display: swap;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: {{ WIDTH | default(1080) }}px;
+  height: {{ HEIGHT | default(1350) }}px;
+  overflow: hidden;
+}
+
+body {
+  background: #1E1C1A;
+  position: relative;
+}
+
+.accent { color: #E8865A; }
+
+.eyebrow {
+  position: absolute;
+  top: 108px;
+  left: 96px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 36px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #E8865A;
+}
+
+.content {
+  position: absolute;
+  top: 240px;
+  left: 96px;
+  right: 96px;
+  bottom: 440px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.headline {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 84px;
+  line-height: 1.05;
+  color: #F5F3F0;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 500;
+  font-size: 36px;
+  line-height: 1.35;
+  color: #C4BEB8;
+  margin-top: 40px;
+  max-width: 820px;
+}
+
+.cta-stack {
+  position: absolute;
+  bottom: 200px;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 36px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+  padding: 26px 44px;
+  background: #E8865A;
+  border-radius: 999px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 38px;
+  letter-spacing: -0.01em;
+  color: #1E1C1A;
+}
+
+.cta-url {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  font-size: 52px;
+  color: #F5F3F0;
+  letter-spacing: -0.01em;
+}
+</style>
+</head>
+<body>
+  {% if EYEBROW %}<div class="eyebrow">{{ EYEBROW }}</div>{% endif %}
+
+  <div class="content">
+    <div class="headline">{{ HEADLINE | safe }}</div>
+    {% if SUBTITLE %}<div class="subtitle">{{ SUBTITLE | safe }}</div>{% endif %}
+  </div>
+
+  <div class="cta-stack">
+    <div class="button">{{ BUTTON }}</div>
+    <div class="cta-url">{{ URL }}</div>
+  </div>
+</body>
+</html>

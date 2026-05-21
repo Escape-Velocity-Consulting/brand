@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('{{ FONTS_URI }}/space-grotesk.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('{{ FONTS_URI }}/space-grotesk-ext.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+  unicode-range: U+0100-024F;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('{{ FONTS_URI }}/manrope.woff2') format('woff2');
+  font-weight: 400 800;
+  font-display: swap;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: {{ WIDTH | default(1080) }}px;
+  height: {{ HEIGHT | default(1350) }}px;
+  overflow: hidden;
+}
+
+body {
+  background: #1E1C1A;
+  position: relative;
+}
+
+.accent { color: #E8865A; }
+
+.eyebrow {
+  position: absolute;
+  top: 112px;
+  left: 96px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #E8865A;
+}
+
+.content {
+  position: absolute;
+  top: 220px;
+  left: 96px;
+  right: 96px;
+  bottom: 320px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.bignumber {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 480px;
+  line-height: 0.85;
+  color: #E8865A;
+  letter-spacing: -0.06em;
+  margin-bottom: 24px;
+}
+
+.headline {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 84px;
+  line-height: 1.05;
+  color: #F5F3F0;
+  letter-spacing: -0.02em;
+  max-width: 880px;
+}
+
+.swipe {
+  position: absolute;
+  bottom: 140px;
+  right: 96px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 42px;
+  color: #F5F3F0;
+  letter-spacing: -0.01em;
+}
+
+.swipe .arrow {
+  color: #E8865A;
+  margin-left: 8px;
+}
+
+.footer {
+  position: absolute;
+  bottom: 64px;
+  left: 96px;
+  right: 96px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wordmark {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 44px;
+  letter-spacing: -0.01em;
+  color: #F5F3F0;
+}
+
+.wordmark .v {
+  color: #E8865A;
+}
+
+.domain {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 400;
+  font-size: 26px;
+  color: #E8865A;
+}
+</style>
+</head>
+<body>
+  {% if EYEBROW %}<div class="eyebrow">{{ EYEBROW }}</div>{% endif %}
+
+  <div class="content">
+    <div class="bignumber">{{ BIGNUMBER }}</div>
+    <div class="headline">{{ HEADLINE | safe }}</div>
+  </div>
+
+  <div class="swipe">Swipe<span class="arrow">→</span></div>
+
+  <div class="footer">
+    <div class="wordmark">Escape <span class="v">Velocity</span></div>
+    <div class="domain">escapevelocity.consulting</div>
+  </div>
+</body>
+</html>

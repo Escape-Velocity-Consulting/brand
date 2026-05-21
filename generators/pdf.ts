@@ -34,11 +34,38 @@ const STRINGS: Record<string, Record<string, string>> = {
   },
 }
 
+// --- Header ---
+
+function headerTemplate(subject: string, dateStr: string, recipient?: string): string {
+  const right = [dateStr, recipient].filter(Boolean).join(' · ')
+  return `
+<div style="width: 100%; font-family: 'Inter', sans-serif; font-size: 9px;
+            color: #9A948D; display: flex; justify-content: space-between;
+            align-items: center; padding: 0 25mm 6px;">
+  <span>${escapeHtml(subject)}</span>
+  <span>${escapeHtml(right)}</span>
+</div>`
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
+}
+
 // --- Footer ---
 
-function footerTemplate(lang: string, docType = 'letter'): string {
+function footerTemplate(lang: string, docType = 'letter', subject = ''): string {
   const pageLabel = STRINGS[lang].page_label
   const pageSpan = `<span style="font-weight: 500; color: #9A948D;">${pageLabel} <span class="pageNumber"></span> / <span class="totalPages"></span></span>`
+
+  if (docType === 'report') {
+    return `
+<div style="width: 100%; font-family: 'Inter', sans-serif; font-size: 10px;
+            color: #9A948D; display: flex; justify-content: space-between;
+            align-items: center; padding: 12px 25mm 0; border-top: 0.5px solid #EEEAE4;">
+  <span>${escapeHtml(subject)}</span>
+  ${pageSpan}
+</div>`
+  }
 
   if (docType === 'tos') {
     return `
@@ -71,13 +98,7 @@ function footerTemplate(lang: string, docType = 'letter'): string {
 <div style="width: 100%; font-family: 'Inter', sans-serif; font-size: 10px;
             color: #9A948D; display: flex; justify-content: space-between;
             align-items: center; padding: 12px 25mm 0; border-top: 0.5px solid #EEEAE4;">
-  <div style="display: flex; align-items: center;">
-    <span>+43 664 6522083</span>
-    <span style="border-right: 0.5px solid #DDDAD4; height: 10px; margin: 0 12px;"></span>
-    <span>tommi.enenkel@escapevelocity.consulting</span>
-    <span style="border-right: 0.5px solid #DDDAD4; height: 10px; margin: 0 12px;"></span>
-    <span>escapevelocity.consulting</span>
-  </div>
+  <span>${escapeHtml(subject)}</span>
   ${pageSpan}
 </div>`
 }
@@ -123,7 +144,25 @@ function mdToHtml(mdPath: string, keepTitle = false): { body: string; title: str
   }
 
   const md = new MarkdownIt({ html: true, typographer: true })
-  const body = md.render(cleaned)
+  let body = md.render(cleaned)
+
+  // Resolve relative image srcs. Local SVGs inline (so they inherit page fonts);
+  // other formats get absolute file:// URLs (PDF renders from tmpdir).
+  const mdDir = dirname(mdPath)
+  body = body.replace(/<img([^>]*?)\ssrc="([^"]+)"([^>]*)>/g, (match, pre, src, post) => {
+    if (/^(https?:|data:|file:|\/)/i.test(src)) return match
+    const decoded = decodeURI(src)
+    const absPath = resolve(mdDir, decoded)
+    if (absPath.toLowerCase().endsWith('.svg') && existsSync(absPath)) {
+      const svgRaw = readFileSync(absPath, 'utf-8')
+      // Strip XML declaration and doctype; keep the <svg> element as-is
+      const svgEl = svgRaw.replace(/<\?xml[^?]*\?>/g, '').replace(/<!DOCTYPE[^>]*>/gi, '').trim()
+      return `<span class="inline-svg">${svgEl}</span>`
+    }
+    const fileUrl = pathToFileURL(absPath).href
+    return `<img${pre} src="${fileUrl}"${post}>`
+  })
+
   return { body, title }
 }
 
@@ -143,6 +182,7 @@ const TEMPLATE_MAP: Record<string, string> = {
   offer: 'offer.html',
   invoice: 'invoice.html',
   tos: 'tos.html',
+  report: 'report.html',
 }
 
 function renderTemplate(
@@ -153,6 +193,8 @@ function renderTemplate(
     date: string
     ref?: string
     subject?: string
+    eyebrow?: string
+    cover?: string
     confidential: boolean
     lang: string
     showAbout: boolean
@@ -163,6 +205,8 @@ function renderTemplate(
 
   return env.render(templateFile, {
     CONTENT: bodyHtml,
+    COVER: opts.cover || '',
+    EYEBROW: opts.eyebrow || '',
     FONTS_URI: fontsUri,
     LANG: opts.lang,
     STRINGS: STRINGS[opts.lang],
@@ -176,11 +220,35 @@ function renderTemplate(
   })
 }
 
+function loadCoverAsset(coverPath: string): string {
+  const abs = resolve(process.cwd(), coverPath)
+  if (!existsSync(abs)) {
+    console.error(`Cover asset not found: ${abs}`)
+    process.exit(1)
+  }
+  if (abs.toLowerCase().endsWith('.svg')) {
+    const svgRaw = readFileSync(abs, 'utf-8')
+    const svgEl = svgRaw.replace(/<\?xml[^?]*\?>/g, '').replace(/<!DOCTYPE[^>]*>/gi, '').trim()
+    return `<span class="inline-svg">${svgEl}</span>`
+  }
+  const url = pathToFileURL(abs).href
+  return `<img src="${url}" alt="">`
+}
+
 // --- PDF ---
 
-async function htmlToPdf(html: string, outputPath: string, lang: string, docType = 'letter'): Promise<void> {
+async function htmlToPdf(
+  html: string,
+  outputPath: string,
+  lang: string,
+  docType = 'letter',
+  opts: { subject?: string; date?: string; recipient?: string } = {},
+): Promise<void> {
   const tmpPath = resolve(tmpdir(), `ev-pdf-${Date.now()}.html`)
   writeFileSync(tmpPath, html, 'utf-8')
+
+  const header = '<div></div>'
+  const topMargin = '12mm'
 
   try {
     const browser = await chromium.launch()
@@ -189,11 +257,11 @@ async function htmlToPdf(html: string, outputPath: string, lang: string, docType
     await page.pdf({
       path: outputPath,
       format: 'A4',
-      margin: { top: '12mm', right: '25mm', bottom: '20mm', left: '25mm' },
+      margin: { top: topMargin, right: '25mm', bottom: '20mm', left: '25mm' },
       printBackground: true,
       displayHeaderFooter: true,
-      headerTemplate: '<div></div>',
-      footerTemplate: footerTemplate(lang, docType),
+      headerTemplate: header,
+      footerTemplate: footerTemplate(lang, docType, opts.subject),
     })
     await browser.close()
   } finally {
@@ -216,6 +284,8 @@ async function main() {
       confidential: { type: 'boolean', default: false },
       lang:         { type: 'string', default: 'de' },
       template:     { type: 'string' },
+      cover:        { type: 'string' },
+      eyebrow:      { type: 'string' },
       attach:       { type: 'string' },
       'no-about':   { type: 'boolean', default: false },
       debug:        { type: 'boolean', default: false },
@@ -260,12 +330,17 @@ async function main() {
 
   mkdirSync(dirname(outputPath), { recursive: true })
 
+  // Cover asset (report type)
+  const coverHtml = values.cover ? loadCoverAsset(values.cover) : undefined
+
   // Render
   const fullHtml = renderTemplate(templateFile, body, {
     to: values.to,
     date: dateStr,
     ref: values.ref,
     subject,
+    eyebrow: values.eyebrow,
+    cover: coverHtml,
     confidential: values.confidential ?? false,
     lang,
     showAbout: !(values['no-about'] ?? false),
@@ -279,7 +354,11 @@ async function main() {
   }
 
   // Generate PDF
-  await htmlToPdf(fullHtml, outputPath, lang, docType)
+  await htmlToPdf(fullHtml, outputPath, lang, docType, {
+    subject,
+    date: dateStr,
+    recipient: values.to,
+  })
 
   // Attach additional PDF (e.g. AGB)
   if (values.attach) {

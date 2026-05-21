@@ -273,6 +273,7 @@ tun:   background rgba(34,197,94,0.08),  color #16A34A
 | YouTube Banner | 2560×1440px (safe: 1546×423) | Channel art |
 | Instagram Post | 1080×1080px | Square post (use templates or custom) |
 | Instagram Story | 1080×1920px | Vertical story |
+| LinkedIn Carousel | Multi-page PDF, 1080×1350px per slide | Built via `carousel.ts` from a JSON spec; each slide rendered as PNG and merged via `pdf-lib` |
 | QR Code | SVG + PNG | On brand colors (TBD — currently generic) |
 
 ---
@@ -649,6 +650,75 @@ npm run image -- --input templates/social/og.html --type html --preset og \
 | `BRAND` | no | "Escape Velocity" |
 | `TAGLINE` | no | "Digitalisierung & Prozessoptimierung" |
 | `URL` | no | "escapevelocity.consulting" |
+
+**carousel/title.html** (1080×1350):
+
+| Variable | Required | Default | Notes |
+|----------|----------|---------|-------|
+| `EYEBROW` | no | "" | Top-left uppercase label |
+| `BIGNUMBER` | yes | — | Hero number, terracotta, 480px |
+| `HEADLINE` | yes | — | `\| safe` — accepts `<span class="accent">…</span>` |
+
+**carousel/numbered-item.html** (1080×1350):
+
+| Variable | Required | Default | Notes |
+|----------|----------|---------|-------|
+| `PILL` | yes | — | Solid terracotta pill, top-left |
+| `PROGRESS` | no | auto | Auto-injected by `carousel.ts` (e.g. `"3 / 9"`) — manual override allowed |
+| `NUMBER` | yes | — | List number (terracotta, 300px); rendered with trailing `.` |
+| `TITLE` | yes | — | `\| safe` — accepts `<br>` for explicit line breaks |
+
+**carousel/cta.html** (1080×1350):
+
+| Variable | Required | Default | Notes |
+|----------|----------|---------|-------|
+| `EYEBROW` | no | "" | Top-left uppercase label |
+| `HEADLINE` | yes | — | `\| safe` — accepts `<span class="accent">…</span>` |
+| `SUBTITLE` | no | "" | Manrope cream-grey paragraph below headline |
+| `BUTTON` | yes | — | Pill-styled label (decorative, not a link) |
+| `URL` | yes | — | Large white centered URL below button |
+
+All carousel templates expose a global `.accent { color: #E8865A; }` class for inline emphasis spans.
+
+---
+
+### 11.6 `carousel.ts` — Carousel PDF Generator
+
+Generates multi-page PDFs (LinkedIn / Instagram carousels) from a JSON spec. Each slide is rendered to PNG via Playwright using a Nunjucks template, then merged into a single PDF via `pdf-lib`.
+
+**Input:** JSON spec describing format + ordered slide list.
+
+**Output:** PDF file. Side-effects: individual PNGs and a copy of the spec are written to a sidecar directory `<output_basename>/` next to the PDF.
+
+**CLI:**
+```bash
+npx tsx brand/generators/carousel.ts --spec <spec.json> -o <output.pdf> [--debug]
+```
+
+**Spec format:**
+```json
+{
+  "format": "linkedin-portrait",
+  "slides": [
+    { "template": "templates/carousel/title.html", "vars": { "BIGNUMBER": "9", "HEADLINE": "…" } },
+    { "template": "templates/carousel/numbered-item.html", "vars": { "PILL": "GF Partner", "NUMBER": "1", "TITLE": "…" } },
+    { "template": "templates/carousel/cta.html", "vars": { "HEADLINE": "…", "BUTTON": "Termin buchen →", "URL": "escapevelocity.consulting" } }
+  ]
+}
+```
+
+**Supported `format` values:**
+
+| Format | Page size | Notes |
+|--------|-----------|-------|
+| `linkedin-portrait` | 1080×1350 | Default; canonical templates are tuned for this |
+| `linkedin-square` | 1200×1200 | Same templates, different viewport — visual review recommended |
+
+**Auto-progress:** For slides whose `template` ends in `carousel/numbered-item.html`, the generator counts the items and injects `PROGRESS = "<n> / <total>"` per slide. Title and CTA slides are excluded from the count. A manual `PROGRESS` in `vars` overrides the injection.
+
+**Side-effects:**
+- `<output_basename>/slide-NN.png` for each slide (1-indexed, zero-padded).
+- `<output_basename>/spec.json` — copy of the input spec for re-rendering.
 
 ---
 
