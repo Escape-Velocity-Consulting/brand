@@ -16,7 +16,7 @@ import {
   type Recipient,
 } from '../../core/document.js'
 import { mdToHtmlFromText } from '../../core/markdown.js'
-import { renderHtmlToPng } from '../../core/render.js'
+import { renderHtmlToPng, renderHtmlToPdf } from '../../core/render.js'
 import { GeneratorError } from '../../core/errors.js'
 import { TEMPLATE_REGISTRY, getTemplateMeta } from '../../../templates.meta.js'
 import { runTool, successResult } from '../shared/toolResult.js'
@@ -67,8 +67,9 @@ export function registerRenderTemplate(server: McpServer, ctx: ServerContext) {
       attachPath: z.string().optional().describe('PDF to append at the end (documents only).'),
 
       // Optional overrides:
-      width: z.number().int().positive().optional().describe('Override the template\'s default width (PNG templates).'),
-      height: z.number().int().positive().optional().describe('Override the template\'s default height (PNG templates).'),
+      width: z.number().int().positive().optional().describe('Override the template\'s default width (PNG templates) or custom PDF page width in px.'),
+      height: z.number().int().positive().optional().describe('Override the template\'s default height (PNG templates) or custom PDF page height in px.'),
+      format: z.enum(['A4', 'A3', 'Letter', 'Legal']).optional().describe('Override page format for PDF templates. Width+height takes priority.'),
       outputPath: z.string().optional().describe('Local mode: output path. Remote mode: filename hint.'),
     },
   }, async (args) => runTool(async () => {
@@ -178,9 +179,50 @@ export function registerRenderTemplate(server: McpServer, ctx: ServerContext) {
         })
       }
 
-      // Non-document PDF templates: not currently used, but the registry could
-      // grow to include them. Render via renderHtmlToPdf with template defaults.
-      throw new GeneratorError('UNSUPPORTED_PDF_TEMPLATE', `PDF template "${args.template}" is not a recognized document type. Currently supported: ${[...DOCUMENT_TEMPLATES].join(', ')}`)
+      // Generic non-document PDF templates: render the template HTML through
+      // Nunjucks (with optional markdown body), then feed to renderHtmlToPdf
+      // using the format/margin/footer from template metadata.
+      const tplPath = resolve(ctx.paths.templatesDir, `${args.template.replace(/^templates\//, '')}.html`)
+      const tplPathAlt = resolve(ctx.paths.brandDir, 'templates', `${args.template}.html`)
+      const finalTplPath = existsSync(tplPath) ? tplPath : tplPathAlt
+      if (!existsSync(finalTplPath)) {
+        throw new GeneratorError('TEMPLATE_FILE_NOT_FOUND', `Template file not found: ${finalTplPath}`)
+      }
+
+      let vars: Record<string, string> = { ...(args.vars ?? {}) }
+      if (meta.acceptsBody && args.markdown) {
+        const { body } = mdToHtmlFromText(args.markdown, process.cwd(), false)
+        vars.CONTENT = body
+        vars.BODY = body
+      }
+
+      // Resolve format: explicit override > template metadata > A4 default.
+      let format: 'A4' | 'A3' | 'Letter' | 'Legal' | { width: number; height: number } | undefined
+      if (args.width && args.height) {
+        format = { width: args.width, height: args.height }
+      } else if (args.format) {
+        format = args.format
+      } else if (meta.format) {
+        format = meta.format
+      }
+
+      const buffer = await renderHtmlToPdf(
+        { htmlPath: finalTplPath, vars },
+        {
+          format,
+          margin: meta.margin,
+        },
+        ctx.paths,
+        ctx.pool,
+      )
+
+      const suggested = `${basename(args.template)}.pdf`
+      const result = await ctx.outputSink.write(buffer, {
+        mime: 'application/pdf',
+        suggestedName: suggested,
+        requestedPath: args.outputPath,
+      })
+      return successResult({ ...result, template: args.template })
     }
 
     throw new GeneratorError('UNKNOWN_OUTPUT', `Template "${args.template}" has unknown output type: ${meta.output}`)

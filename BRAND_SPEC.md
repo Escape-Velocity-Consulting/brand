@@ -374,26 +374,23 @@ brand/                             ← own git repo, canonical brand source
 │   └── qr.ts                      ← URL → QR code PNG (replaces generate_qr.py)
 ├── scripts/
 │   ├── export-assets.ts           ← SVG logos → raster exports (runs in CI or on demand)
-│   └── sync-website.sh            ← copies tokens.css into website repo
+│   └── build-tokens.ts            ← emits tokens.css + tokens.json
 ├── package.json
-├── tsconfig.json
-└── requirements.txt               ← legacy; deprecate once pdf.ts is stable
+└── tsconfig.json
 
 website/                           ← own git repo, autodeploys independently
-├── fonts/                         ← self-hosted woff2; also referenced by brand generators
-├── styles/
-│   ├── tokens.css                 ← copy synced from brand/tokens.css (checked in, not gitignored)
-│   └── base.css                   ← @import './tokens.css'; no longer defines tokens itself
-└── ...
+└── _brand/                        ← git submodule pinned at a brand-repo commit; CI builds `dist/site/` from the pinned source
 ```
 
-**Sync workflow:**
+**Sync workflow (submodule-based, current):**
 
 When brand tokens change:
 1. Edit `brand/tokens.ts`
-2. Run `npm run build:tokens` → regenerates `brand/tokens.css`
-3. Run `brand/scripts/sync-website.sh` → copies `tokens.css` into `website/styles/tokens.css`
-4. Commit both repos separately
+2. Run `npm run build:tokens` → regenerates `brand/tokens.css` and `brand/tokens.json`
+3. Commit + push the brand repo
+4. In `website/`: `git submodule update --remote _brand && git commit` → push. CI rebuilds the brand dist from the new pin and deploys.
+
+There is **no sync script** anymore. The old `sync-website.sh` is gone — replaced by the submodule pin.
 
 **CSS rule:** `@import` must appear before all other rules in `base.css` (including `@font-face`). This is a CSS spec requirement — placing it after `@font-face` causes browsers to silently ignore the import.
 
@@ -998,23 +995,20 @@ The Claude skill (`brand/BRAND_SKILL.md`) is a terse, agent-readable brief that 
 
 ## 17. Documentation
 
-Two documentation artifacts serve different audiences.
+The agent-facing surface has two layers (see `brand/CLAUDE.md` for the current operational reference; this section captures the principles).
 
-### 16.1 `AGENT_GUIDE.md` — For AI Agents
+### 17.1 Layers
 
-Terse. No prose introductions. Organized as lookup tables and decision flows. An agent should be able to find the answer to "how do I generate X" in under 5 seconds of reading.
+| Layer | File | Audience |
+|-------|------|----------|
+| **Skill** | `skill/brand-engine/SKILL.md` | Claude: workflow routing + tool reference. Thin guidance, ~8KB. |
+| **Brand reference** | `BRAND_SKILL.md` (shipped in the .skill as `references/brand-reference.md`) | Claude: token table, CSS vars, layout patterns, voice rules. Authoring reference only — no workflow. |
+| **Spec** | `BRAND_SPEC.md` (this file) | Designers + maintainers: normative design rules, history, rationale. |
+| **Operational** | `CLAUDE.md` | Repo maintainers: where things live, npm scripts, MCP tool surface, CI/CD, registration. |
 
-**Structure:**
-1. Generator quick-reference table (generator → what it does → one-line CLI example)
-2. Document type map (what the user wants → `--type` flag value)
-3. Template variable tables (per template, copy-paste ready)
-4. Common flag combinations (the 5 most frequent invocations with actual example values)
-5. Conflict resolution rules (see §16.2)
-6. Where to add new things (one-liner pointers to §15 and §18)
+The MCP `list_templates` + `get_tokens` tools are runtime sources — agents can query the live registry instead of reading static docs.
 
-**Tone:** Imperative. "Use `--type offer` for service offers." Not "You might want to consider using..."
-
-### 16.2 Conflict Resolution
+### 17.2 Conflict Resolution
 
 When a generation request conflicts with a spec rule, apply this priority order:
 
@@ -1025,7 +1019,7 @@ When a generation request conflicts with a spec rule, apply this priority order:
 
 When in doubt, flag the conflict explicitly to the user rather than silently choosing.
 
-**Extendability:** Both `AGENT_GUIDE.md` and conflict resolution rules are designed to be appended, not rewritten. New document types, generators, and rules get added as new rows in tables or new numbered items — existing content stays stable.
+**Extendability:** New document types, templates, and rules get added as new rows in tables or new numbered items — existing content stays stable.
 
 ---
 
@@ -1077,9 +1071,9 @@ Create a named entry in `brand/VARIANTS.md`:
 
 1. Update the relevant sections of `BRAND_SPEC.md` with the new canonical values.
 2. Update `tokens.ts` if the change involves token values.
-3. Run `sync-website.sh` if `tokens.css` changed.
-4. Update `AGENT_GUIDE.md` quick-reference tables.
-5. Update `BRAND_SKILL.md` if the decision tree or cheatsheet is affected.
+3. Commit + push the brand repo, then bump the submodule pin in `website/` (replaces the old `sync-website.sh` flow).
+4. Update `BRAND_SKILL.md` if the token table / CSS-var reference changes.
+5. Update `templates.meta.ts` if the change adds / removes a template.
 6. Mark the variant as "promoted" in `VARIANTS.md` and archive the variant files.
 
 ---
@@ -1134,32 +1128,29 @@ When a new asset type or component is added to the spec, add a corresponding sec
 
 ## 20. Skill Compilation Pipeline
 
-The brand skill is packaged as a proper Cowork `.skill` file, installable by any user. The source lives in `brand/skill/` and is compiled by `brand/scripts/build-skill.sh`.
+The brand skill is packaged as a thin `.skill` ZIP (~8KB). Source lives in `brand/skill/brand-engine/`, compiled by `brand/scripts/build-skill.sh`.
 
 ### Skill folder structure
 
 ```
 brand/skill/
 └── brand-engine/
-    ├── SKILL.md                         ← YAML frontmatter + lean instructions (<200 lines)
-    └── references/
-        ├── brand-reference.md           ← copy of BRAND_SKILL.md (token tables, cheatsheet)
-        └── agent-guide.md               ← copy of AGENT_GUIDE.md (CLI reference, quirks)
+    └── SKILL.md                         ← YAML frontmatter + workflow guidance
 ```
+
+The `references/brand-reference.md` sidecar is **generated at build time** from the repo's `BRAND_SKILL.md` — not edited in place.
 
 ### SKILL.md structure
 
-Follows the Cowork skill format:
+Follows the standard Claude Code skill format:
 ```yaml
 ---
 name: brand-engine
-description: [triggering description — see below]
+description: [triggering description — see SKILL.md for current wording]
 ---
 ```
 
-Body: decision tree, how to invoke generators, when to read reference files. Under 200 lines. Heavy reference material stays in `references/`.
-
-The description must be specific enough to trigger on natural requests: "write a letter to a client", "generate an offer PDF", "create a LinkedIn banner", "regenerate the brand assets", "update the LinkedIn banner", etc.
+Body: mental model, 6-tool reference, routing decision tree, HTML authoring rules, examples. The skill assumes brand-mcp is registered; if not, the skill still works for HTML authoring (graceful degradation).
 
 ### Compilation
 
@@ -1168,19 +1159,21 @@ npm run build:skill
 ```
 
 This runs `scripts/build-skill.sh` which:
-1. Copies `BRAND_SKILL.md` → `skill/brand-engine/references/brand-reference.md`
-2. Copies `AGENT_GUIDE.md` → `skill/brand-engine/references/agent-guide.md`
-3. Validates that `SKILL.md` is not a placeholder
-4. Runs `package_skill.py` from the skill-creator tools
-5. Outputs `brand/dist/brand-engine.skill`
+1. Stages `skill/brand-engine/SKILL.md` into a temp dir
+2. Copies `BRAND_SKILL.md` → `references/brand-reference.md` in the staging dir
+3. ZIPs to `dist/brand-engine.skill`
+
+### Phase 3 redesign (current)
+
+The skill **does not** ship generators, templates, fonts, tokens, or a `setup.sh` bootstrap. All rendering is delegated to the brand-mcp MCP server (see §11 for the tool surface and `CLAUDE.md` for registration). The skill teaches the design system + routing; the MCP renders.
 
 ### Installation
 
-User installs `brand-engine.skill` via Cowork's plugin/skill install flow. Once installed, Claude can generate brand assets in any Cowork session without being re-briefed.
+User installs `brand-engine.skill` via the skill install flow in Claude Code / Claude Desktop. Once installed, Claude knows the design system and routes render requests through the MCP.
 
 ### Maintenance rule
 
-`SKILL.md` is edited by hand when the system's capabilities change meaningfully. `references/` files are overwritten on every `build:skill` run — never edit them directly in the skill folder, always edit the source (`BRAND_SKILL.md`, `AGENT_GUIDE.md`) and rebuild.
+Edit `skill/brand-engine/SKILL.md` (workflow) and `BRAND_SKILL.md` (brand reference) at the repo root. Run `npm run build:skill` to repackage. The contents of `skill/brand-engine/references/` are not version-controlled (regenerated each build).
 
 ## 21. Brand Kit
 

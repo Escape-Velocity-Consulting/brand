@@ -1,11 +1,11 @@
-import { existsSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { BrowserPool } from '../src/core/browserPool.js'
 import { resolveBrandPaths } from '../src/core/paths.js'
 import { GeneratorError } from '../src/core/errors.js'
-import { renderPresentation } from '../src/core/presentation.js'
+import { renderSlides, type DimensionsInput } from '../src/core/slides.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const BRAND_DIR = resolve(__dirname, '..')
@@ -42,22 +42,53 @@ async function main() {
     ? resolve(process.cwd(), values.output)
     : resolve(process.cwd(), stem)
 
+  const dimensions: DimensionsInput = values.ratio === '4-3' ? 'slide-4-3' : 'slide-16-9'
+
   const paths = resolveBrandPaths(BRAND_DIR)
   const pool = new BrowserPool()
 
   try {
-    await renderPresentation({
-      mdPath: absInput,
-      outputDir: outDir,
-      stem,
-      ratio: (values.ratio ?? '16-9') as '16-9' | '4-3',
-      theme: values.theme,
+    const markdown = readFileSync(absInput, 'utf-8')
+    const result = await renderSlides({
+      markdown,
+      markdownDir: dirname(absInput),
+      dimensions,
+      outputs: { viewer: true, pdf: !!values.pdf, pngs: !!values.png },
       title: values.title,
-      pdf: !!values.pdf,
-      png: !!values.png,
-      debug: !!values.debug,
-      log: (msg) => console.log(msg),
+      theme: values.theme,
     }, paths, pool)
+
+    if (!result.viewer) throw new GeneratorError('NO_VIEWER', 'renderSlides did not return a viewer bundle')
+
+    // Copy the staged bundle (index.html + fonts/ + components/) into outDir.
+    mkdirSync(outDir, { recursive: true })
+    if (result.viewer.bundleDir) {
+      cpSync(result.viewer.bundleDir, outDir, { recursive: true })
+      try { rmSync(result.viewer.bundleDir, { recursive: true, force: true }) } catch {}
+    } else {
+      // Fallback if bundleDir is missing — just write index.html
+      writeFileSync(resolve(outDir, 'index.html'), result.viewer.html, 'utf-8')
+    }
+    console.log(`Viewer: ${resolve(outDir, 'index.html')}`)
+
+    if (result.pdf) {
+      const pdfPath = resolve(outDir, `${stem}.pdf`)
+      writeFileSync(pdfPath, result.pdf)
+      console.log(`PDF: ${pdfPath}`)
+    }
+
+    if (result.pngs.length > 0) {
+      const pngDir = resolve(outDir, 'slides')
+      mkdirSync(pngDir, { recursive: true })
+      for (let i = 0; i < result.pngs.length; i++) {
+        const num = String(i + 1).padStart(2, '0')
+        const pngPath = resolve(pngDir, `slide-${num}.png`)
+        writeFileSync(pngPath, result.pngs[i])
+        console.log(`PNG: ${pngPath}`)
+      }
+    }
+
+    console.log(`Done: ${result.slideCount} slides, ratio ${values.ratio}`)
   } catch (err) {
     if (err instanceof GeneratorError) {
       console.error(`error [${err.code}]: ${err.message}`)

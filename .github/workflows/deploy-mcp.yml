@@ -25,6 +25,10 @@ permissions:
 
 env:
   IMAGE_NAME: ghcr.io/escape-velocity-consulting/brand-mcp
+  # Opt actions running on Node.js 20 into Node.js 24 ahead of GitHub's
+  # 2026-06-02 deprecation deadline. Once Node 24 becomes the default we can
+  # drop this; until then it silences the deprecation warnings on every run.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 jobs:
   build:

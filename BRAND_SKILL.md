@@ -1,160 +1,144 @@
-# Escape Velocity — Brand Skill
+# Escape Velocity — Brand Reference
 
-> Terse agent brief. Rationale lives in BRAND_SPEC.md. CLI detail in AGENT_GUIDE.md.
-
----
-
-## Token Quick-Reference
-
-| Token | Hex | Use |
-|-------|-----|-----|
-| `cream` | `#F9F7F4` | Default background |
-| `black` | `#1E1C1A` | Dark sections, hero, nav |
-| `terracotta` | `#D4784A` | Primary accent — CTAs, borders, eyebrows |
-| `terracottaHover` | `#C2653A` | Button hover |
-| `accent` | `#E8865A` | Light accent on dark bg ("Velocity" in logo) |
-| `light` | `#F5F3F0` | Text on dark bg |
-| `muted` | `#C4BEB8` | Secondary text on dark bg |
-| `subtle` | `#807A74` | Tertiary text, labels |
-| `body` | `#5C5650` | Body copy on light bg |
-| `text` | `#1A1816` | Headings on light bg |
-
-**Fonts:** Space Grotesk (headlines, 700) · Manrope (UI/labels/CTAs, 600) · Inter (body, 400) · JetBrains Mono (URL display only, rare)
-
-**Rule:** Never hardcode hex. Max 3 fonts per asset. No black backgrounds on print assets.
+> Token table + CSS vars + layout patterns. Authoring reference only — no
+> workflow guidance (that lives in `SKILL.md`). Shipped in the brand-engine
+> skill as `references/brand-reference.md`.
 
 ---
 
-## Decision Tree
+## Color tokens
 
-```
-PDF document (letter / offer / invoice / ToS)?
-  → npm run pdf -- input.md --type <letter|offer|invoice|tos>
+All colors live in `tokens.ts` → emitted to `tokens.css` as CSS custom
+properties. Use the CSS var name when writing HTML; the hex column is for
+reference only.
 
-Social graphic or banner?
-  → npm run image -- --type html --preset <linkedin-banner|og|linkedin-post|linkedin-landscape|linkedin-portrait|square>
-  LinkedIn landscape   → --preset linkedin-landscape
-  LinkedIn portrait    → --preset linkedin-portrait
+| Token name | CSS var | Hex | Use |
+|------------|---------|-----|-----|
+| `cream` | `var(--color-cream)` | `#F9F7F4` | Default background (light mode) |
+| `black` | `var(--color-black)` | `#1E1C1A` | Dark sections, hero, nav, dark backgrounds |
+| `terracotta` | `var(--color-terracotta)` | `#D4784A` | Primary accent — CTAs, borders, eyebrows, key data |
+| `terracottaHover` | `var(--color-terracotta-hover)` | `#C2653A` | Button / link hover state |
+| `accent` | `var(--color-accent)` | `#E8865A` | Light accent on dark bg (e.g. "Velocity" in logo) |
+| `light` | `var(--color-light)` | `#F5F3F0` | Primary text on dark bg |
+| `muted` | `var(--color-muted)` | `#C4BEB8` | Secondary text on dark bg |
+| `subtle` | `var(--color-subtle)` | `#807A74` | Tertiary text, labels, captions |
+| `body` | `var(--color-body)` | `#5C5650` | Body copy on light bg |
+| `text` | `var(--color-text)` | `#1A1816` | Headings on light bg |
 
-SVG logo → PNG?
-  → npm run image -- --type svg --input assets/logos/X.svg
-
-Infographic / chart?
-  → svg.ts (not yet implemented — placeholder in demo)
-
-Regenerate all raster assets + demo previews?
-  → npm run export
-
-Token change → sync to website?
-  → npm run build:tokens && npm run sync:website
-```
+Need the live values at runtime? Call `get_tokens` (returns parsed
+`tokens.json`).
 
 ---
 
-## Generator Cheatsheet
+## Type tokens
 
-```bash
-# Letter
-npm run pdf -- input.md --type letter --to "Name · Company" --ref "EV-2026-042" --lang de
+| Family | CSS var | Weights | Use |
+|--------|---------|---------|-----|
+| Space Grotesk | `var(--font-headline)` | 700 | Headlines, big numbers, title slides |
+| Manrope | `var(--font-ui)` | 600 | UI, labels, CTAs, button text |
+| Inter | `var(--font-body)` | 400 | Body copy, paragraphs |
+| JetBrains Mono | `var(--font-mono)` | 400 | URL display only (rare — avoid otherwise) |
 
-# Offer
-npm run pdf -- input.md --type offer --to "Name · Company" --subject "Angebot: Prozess-Review"
-
-# Invoice (structured recipient REQUIRED — see AGENT_GUIDE.md → "Recipient flags")
-npm run pdf -- input.md --type invoice \
-  --to-company "Acme GmbH" --to-name "z.H. Erika Muster" \
-  --to-address "Hauptstr. 1\n1010 Wien" --to-uid "ATU12345678" \
-  --ref "2026-11" --output-dir ../drafts
-# Filename derived automatically: "AR 2026-11 - YYYY-MM-DD - Acme GmbH - <subject>.pdf"
-
-# Terms of Service
-npm run pdf -- input.md --type tos
-
-# Debug (inspect HTML before committing to PDF)
-npm run pdf -- input.md --type letter --debug
-
-# LinkedIn banner
-npm run image -- --input templates/social/linkedin-banner.html --type html --preset linkedin-banner -o assets/raster/linkedin-banner.png
-
-# SVG logo → PNG
-npm run image -- --input assets/logos/ev-wordmark.svg --type svg -o assets/raster/ev-wordmark-300.png --width 300
-
-# Carousel (multi-slide PDF for LinkedIn)
-npx tsx generators/carousel.ts --spec carousel.json -o carousel.pdf
-```
+**Type-system rules**
+- Max 3 fonts per asset (the 4th, mono, is reserved for URLs).
+- Headlines: always Space Grotesk 700.
+- UI / button / label: Manrope 600.
+- Body: Inter 400.
+- Line-height: 1.0 for big numbers, 1.15 for headlines, 1.5 for body.
 
 ---
 
-## Template Variables
+## Hard rules (never break these)
 
-All document templates share:
-
-| Variable | Required | Notes |
-|----------|----------|-------|
-| `CONTENT` | yes | Rendered HTML from markdown |
-| `SUBJECT` | no | Auto-extracted from first H1 if omitted (H1 then stripped from body) |
-| `RECIPIENT` | no | "Name · Company" format |
-| `DATE` | no | Today in locale format |
-| `REF` | no | e.g. "EV-2026-042" |
-| `CONFIDENTIAL` | no | Boolean |
-| `SHOW_META` | derived | True if RECIPIENT, REF, or CONFIDENTIAL present |
-| `LANG` | no | "de" (default) or "en" |
-| `STRINGS` | auto | Injected by pdf.ts |
-| `FONTS_URI` | auto | Injected by pdf.ts — file:// path to website/fonts/ |
-
-**Per-type overrides:**
-- `invoice.html` — meta strip always shown
-- `tos.html` — no meta strip, no subject line
-
-### Carousel templates (`templates/carousel/`)
-
-**title.html** — `EYEBROW` (opt), `BIGNUMBER` (req), `HEADLINE` (req, `| safe`)
-
-**numbered-item.html** — `PILL` (req), `PROGRESS` (auto-injected, optional manual override), `NUMBER` (req), `TITLE` (req, `| safe`)
-
-**cta.html** — `EYEBROW` (opt), `HEADLINE` (req, `| safe`), `SUBTITLE` (opt), `BUTTON` (req), `URL` (req)
-
-All three templates expose `.accent { color: #E8865A; }` for inline emphasis (`<span class="accent">word</span>`). `WIDTH` and `HEIGHT` vars are auto-injected by `carousel.ts` based on the format. Auto-progress counts only `numbered-item.html` slides.
+1. **Never hardcode hex values or font-family strings.** Always `var(--color-X)` / `var(--font-X)`.
+2. **Inject `{{ TOKENS_CSS | safe }}`** at the top of any `<style>` block in HTML you author. The MCP auto-fills this when you call render tools.
+3. **No black backgrounds on print assets** — PDFs render with light mode (`--color-cream` background). Dark mode is for screen / social only.
+4. **White on dark = `#fff`, not `--color-light`** — on truly black backgrounds, use `#fff` for max contrast. `--color-light` (`#F5F3F0`) is for the standard dark-mode panel, not absolute black.
+5. **Max 3 fonts per asset.** Mixing 4 fonts is a brand violation.
 
 ---
 
-## Pre-Generation Checklist
+## Layout patterns
 
-- [ ] Colors from tokens only — no hardcoded hex
-- [ ] Max 3 fonts per asset
-- [ ] Print asset? → no black backgrounds; white foregrounds → `#fff` not `#F5F3F0`
-- [ ] New template? → extends `_base.html`; uses `FONTS_URI` for font paths
-- [ ] Variant (deviates from spec)? → document in `VARIANTS.md`, put files in `templates/variants/`
+### Vertical rhythm
+- **Spacing scale**: multiples of 8px (8, 16, 24, 32, 48, 64, 96, 128).
+- **Accent rule**: 4px-wide terracotta vertical bar, 60–80px tall, common as a left-side delimiter on hero text:
+  ```html
+  <div class="accent-rule" style="width:4px;height:80px;background:var(--color-terracotta);"></div>
+  ```
 
----
+### Eyebrow
+- Small uppercase label above a headline, usually terracotta.
+- Letter-spacing 0.05em, font Manrope 600, font-size 14–18px.
 
-## Known Quirks
+### Big number
+- The headline pattern for stats cards / carousel titles.
+- Space Grotesk 700, 200–280px, color `var(--color-terracotta)`.
+- Pair with a short label (Manrope 600, uppercase, `--color-body` or `--color-subtle`).
 
-- **H1 stripping:** pdf.ts always strips the first H1 from the markdown body (used as subject). Pass `--subject` to override the value without affecting stripping behaviour.
-- **Template adds signature and (offer) legal notes:** Don't paste "Mit freundlichen Grüßen / Tommi Enenkel / Escape Velocity" or AGB clauses into the markdown — the template renders them. Suppress signature with `--no-signature`. See AGENT_GUIDE.md → "Before rendering: cleanup pass".
-- **Invoices require structured recipient flags.** `--to` alone is rejected. See AGENT_GUIDE.md → "Recipient flags".
-- **Smart quotes:** markdown-it runs with `typographer: true` — straight quotes become curly. Intentional.
-- **image.ts always templates:** All HTML input runs through Nunjucks before screenshotting. Safe to inject any variable even if the template doesn't use it.
+### Card / panel
+- Light bg → `var(--color-cream)`, rounded 16px, 32–48px inner padding.
+- Dark bg → `var(--color-black)`, same radius/padding, foreground in `var(--color-light)`.
 
----
+### CTA button
+- Background `var(--color-terracotta)`, text `#fff`, padding 16px 32px.
+- Font Manrope 600, letter-spacing 0.02em.
+- Hover: `var(--color-terracotta-hover)`.
 
-## Conflict Resolution
-
-1. Explicit user override → generate it, document as variant in `VARIANTS.md`
-2. Known active variant → apply variant overrides from `VARIANTS.md`
-3. Spec rule exists → apply it, note the decision
-4. Spec gap → use judgment consistent with adjacent rules, then add rule to spec
-
-When ambiguous: flag to user, don't silently choose.
-
----
-
-## Ideation
-
-No clear asset type, or want to concept something new? See BRAND_SPEC.md §14. Write prototype HTML to `scratch/`, render with `image.ts`, iterate with user. Optionally promote to `templates/` if reusable.
-
-Composition shortcuts (format × color × alignment) documented in BRAND_SPEC.md §14.
+### Hero / banner
+- Eyebrow (terracotta) → accent rule → big headline (Space Grotesk 700) → optional subtitle (Inter 400, `--color-body`).
+- For social banners with the brand wordmark, position it at top-left, 48–72px from edge.
 
 ---
 
-→ Full spec: `BRAND_SPEC.md`  →  CLI reference: `AGENT_GUIDE.md`  →  Variants: `VARIANTS.md`
+## Voice & content rules
+
+- **German default.** All client-facing copy is German unless explicitly English. Headlines use German typography rules (capitalize nouns, "ß" not "ss", curly quotes).
+- **Sentence case** for headlines and labels — not Title Case (English convention).
+- **No emoji** in client-facing assets. Use icons or accent colors for emphasis.
+- **No exclamation marks** in formal documents (letters, offers, invoices, ToS).
+- **Active voice**, present tense. "Wir liefern" not "geliefert wird".
+
+---
+
+## Tone of voice anchors
+
+| Adjective | What it means | Anti-pattern |
+|-----------|---------------|--------------|
+| **Clear** | One idea per sentence. No jargon without explanation. | "Wir orchestrieren end-to-end Digital Transformation." |
+| **Concrete** | Numbers, names, timelines. No "innovative solutions." | "Wir machen Sie zukunftsfähig." |
+| **Calm** | No urgency theatre, no all-caps, no "exclusive offer." | "JETZT NUR BIS FREITAG: 20% RABATT!!!" |
+| **Direct** | Say what you mean. No corporate hedging. | "Möglicherweise könnten wir eventuell evaluieren..." |
+
+---
+
+## Reference: known templates
+
+These ship in the registry — see the `list_templates` MCP tool for the
+authoritative list with required vars + dimensions.
+
+**Documents (PDF, A4 + branded footer):**
+- `letter`, `offer`, `invoice`, `tos`, `report`
+
+**Social (PNG):**
+- `social/og` (1200×630) — website / blog OG
+- `social/linkedin-banner` (1584×396) — LinkedIn profile banner
+- `social/twitter-banner` (1500×500) — X / Twitter banner
+- `social/youtube-banner` (2560×1440, safe area 1546×423)
+- `social/announcement` (1200×630) — announcement post
+- `social/quote-card` (1200×1200) — quote + attribution
+- `social/stats-card` (1200×1200) — big number + label
+
+**Carousel slides (PNG, LinkedIn portrait 1080×1350):**
+- `carousel/title` — opening slide
+- `carousel/numbered-item` — list item with auto-progress
+- `carousel/cta` — closing CTA slide
+
+---
+
+## Files in the repo
+
+- `tokens.ts` → emits `tokens.css` + `tokens.json` (single source of truth).
+- `templates.meta.ts` — registry for the MCP tools (dims, required vars, tags).
+- `templates/` — HTML templates rendered by `render_template`.
+- `BRAND_SPEC.md` — full normative spec (rules, design rationale, history).
