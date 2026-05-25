@@ -22,6 +22,7 @@ import {
   type OAuthConfig,
 } from './shared/oauthServer.js'
 import { resolveBrandDir } from './shared/resolveBrandDir.js'
+import { SessionStore } from './shared/sessionStore.js'
 
 /**
  * Streamable-HTTP MCP entrypoint.
@@ -141,19 +142,39 @@ async function main() {
   // Per-session transports. Each MCP client connection gets one.
   const transports = new Map<string, StreamableHTTPServerTransport>()
 
-  async function createSessionTransport(): Promise<StreamableHTTPServerTransport> {
+  // Session ID persistence: survives container restarts so clients don't need
+  // to re-register. On startup we pre-create transports for all known session
+  // IDs — see the pre-load loop below.
+  const sessionStore = new SessionStore(resolve(storeDir, 'sessions.json'))
+
+  /**
+   * Create a transport+McpServer pair for one MCP session.
+   *
+   * @param forcedId  Optional: reuse a known session ID (for post-restart
+   *                  pre-loading). If omitted a fresh UUID is generated.
+   *                  The transport is added to `transports` immediately so
+   *                  that reconnecting clients find it before the initialize
+   *                  handshake completes.
+   */
+  async function createSessionTransport(forcedId?: string): Promise<StreamableHTTPServerTransport> {
     const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
+      sessionIdGenerator: forcedId ? () => forcedId! : () => randomUUID(),
       onsessioninitialized: (sid: string) => {
         transports.set(sid, transport)
+        sessionStore.set(sid, ttlSeconds)
       },
       allowedOrigins: allowedOrigins.length ? allowedOrigins : undefined,
     } as any)
     transport.onclose = () => {
       if (transport.sessionId && transports.get(transport.sessionId) === transport) {
         transports.delete(transport.sessionId)
+        sessionStore.delete(transport.sessionId)
       }
     }
+    // Pre-register forced IDs immediately — before the initialize handshake
+    // fires onsessioninitialized — so requests with this session ID are routed
+    // to the transport right away.
+    if (forcedId) transports.set(forcedId, transport)
     const mcp = createServer(ctx)
     await mcp.connect(transport)
     return transport
@@ -185,6 +206,21 @@ async function main() {
   }
   process.on('SIGINT', () => shutdown('SIGINT'))
   process.on('SIGTERM', () => shutdown('SIGTERM'))
+
+  // Pre-create transports for sessions that were active before the last
+  // restart. This lets reconnecting clients find their session ID in the Map
+  // and complete the re-initialization handshake without obtaining a new ID.
+  const restoredIds = sessionStore.getAll()
+  for (const id of restoredIds) {
+    try {
+      await createSessionTransport(id)
+    } catch (err) {
+      console.error(`[escape-velocity-brand MCP/http] failed to restore session ${id}:`, err)
+    }
+  }
+  if (restoredIds.length > 0) {
+    console.error(`[escape-velocity-brand MCP/http] restored ${restoredIds.length} session(s) from disk`)
+  }
 
   httpServer.listen(port, host, () => {
     console.error(`[escape-velocity-brand MCP/http] listening on http://${host}:${port}`)
@@ -320,13 +356,15 @@ async function route(
       } else if (!sessionId && isInitializeRequest(body)) {
         transport = await createSessionTransport()
       } else {
-        res.writeHead(400, { 'Content-Type': 'application/json' })
+        // 404 is the MCP-spec-compliant response for unknown sessions — it
+        // signals compliant clients to drop the stale ID and reinitialize.
+        res.writeHead(404, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({
           jsonrpc: '2.0',
           error: {
             code: -32000,
             message: sessionId
-              ? `Unknown session: ${sessionId}`
+              ? `Session not found (server may have restarted): ${sessionId}`
               : 'Missing Mcp-Session-Id header (only an initialize request can omit it)',
           },
           id: null,
@@ -341,8 +379,8 @@ async function route(
     // GET: streaming response channel for an existing session.
     if (method === 'GET') {
       if (!sessionId || !transports.has(sessionId)) {
-        res.writeHead(400, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ error: 'invalid_or_missing_session_id' }))
+        res.writeHead(404, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'session_not_found' }))
         return
       }
       await transports.get(sessionId)!.handleRequest(req, res)
@@ -352,8 +390,8 @@ async function route(
     // DELETE: terminate a session.
     if (method === 'DELETE') {
       if (!sessionId || !transports.has(sessionId)) {
-        res.writeHead(400, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ error: 'invalid_or_missing_session_id' }))
+        res.writeHead(404, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'session_not_found' }))
         return
       }
       await transports.get(sessionId)!.handleRequest(req, res)
