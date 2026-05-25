@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
+import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
 import { BrowserPool } from '../core/browserPool.js'
 import { resolveBrandPaths } from '../core/paths.js'
 import { createServer, type ServerContext } from './shared/createServer.js'
@@ -14,23 +15,28 @@ import { checkBearer } from './shared/bearerAuth.js'
 import { resolveBrandDir } from './shared/resolveBrandDir.js'
 
 /**
- * Streamable-HTTP MCP entrypoint. Stateless: each POST /mcp request is
- * independent. Artifacts written by tools land in a local on-disk store and
- * are served via HMAC-signed download URLs at GET /artifacts/<token>.
+ * Streamable-HTTP MCP entrypoint.
  *
- * Environment variables:
- *   BRAND_DIR                  — absolute path to the brand repo root (required in container).
- *   MCP_BEARER_TOKEN           — required. Gates POST /mcp.
- *   MCP_SIGNING_SECRET         — required. HMAC secret for artifact tokens.
- *   MCP_PUBLIC_BASE_URL        — required. e.g. https://mcp.escapevelocity.consulting
- *   MCP_PORT                   — listen port. Default 8080.
- *   MCP_BIND_HOST              — listen host. Default 0.0.0.0.
- *   MCP_TMP_DIR                — artifact store directory. Default <os.tmpdir>/brand-mcp.
- *   MCP_ARTIFACT_TTL_SECONDS   — artifact URL TTL. Default 3600.
- *   MCP_CLEANUP_INTERVAL_SECONDS — cleanup loop cadence. Default 300.
- *   MCP_ALLOWED_ORIGINS        — comma-separated list of allowed Origin values
- *                                (browser DNS-rebinding defense). Default empty
- *                                (no Origin enforcement; rely on bearer token).
+ * Per-session transport management: each MCP client connection gets its own
+ * `StreamableHTTPServerTransport` instance keyed by the `Mcp-Session-Id`
+ * header. This is the SDK's recommended pattern for stateful servers — a
+ * single shared transport breaks when a second client (or a re-initializing
+ * client like `mcp-remote`) hits the same process, because the SDK transport
+ * carries "initialized" state per instance.
+ *
+ * Artifacts written by tools land in a local on-disk store and are served
+ * via HMAC-signed download URLs at GET /artifacts/<token>.
+ *
+ * Routes:
+ *   POST   /mcp              — MCP requests. Bearer-gated. New session if no
+ *                              Mcp-Session-Id and request is `initialize`.
+ *   GET    /mcp              — MCP streaming responses (SSE). Bearer-gated.
+ *                              Requires existing Mcp-Session-Id.
+ *   DELETE /mcp              — Terminate an MCP session. Bearer-gated.
+ *   GET    /artifacts/:token — Download a rendered artifact. HMAC-signed URL.
+ *   GET    /health           — Liveness probe.
+ *
+ * Environment variables: see brand/CLAUDE.md § MCP Server → Env vars.
  */
 function requireEnv(name: string): string {
   const v = process.env[name]
@@ -50,6 +56,15 @@ function optEnvInt(name: string, fallback: number): number {
     process.exit(1)
   }
   return n
+}
+
+async function readBody(req: IncomingMessage): Promise<unknown> {
+  const chunks: Buffer[] = []
+  for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+  const raw = Buffer.concat(chunks).toString('utf-8')
+  if (!raw) return undefined
+  try { return JSON.parse(raw) }
+  catch { return undefined }
 }
 
 async function main() {
@@ -74,32 +89,40 @@ async function main() {
   })
   store.startCleanup(cleanupIntervalSeconds)
 
+  // Shared across sessions: BrowserPool (warm Chromium) and the OutputSink
+  // (just an artifact-store adapter). Cheap to share — no per-session state.
   const pool = new BrowserPool()
-
   const sink = new RemoteOutputSink(async (buffer, opts) => {
     const r = await store.write(buffer, { mime: opts.mime, filename: opts.filename })
     return { url: r.url, expiresAt: r.expiresAt }
   })
 
   const ctx: ServerContext = { paths, pool, outputSink: sink }
-  const mcpServer = createServer(ctx)
 
-  // Stateful transport: server generates a session ID per client connection
-  // and tracks it across requests. Needed so the client's
-  // `notifications/initialized` POST has a session to attach to. Stateless mode
-  // (sessionIdGenerator: undefined) returns 500 for these notifications.
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => randomUUID(),
-    // Origin enforcement is optional; we rely on bearer auth as primary defense.
-    // Pass `allowedOrigins` if browser-origin enforcement is desired.
-    allowedOrigins: allowedOrigins.length ? allowedOrigins : undefined,
-  } as any)
+  // Per-session transports. Each MCP client connection gets one.
+  const transports = new Map<string, StreamableHTTPServerTransport>()
 
-  await mcpServer.connect(transport)
+  async function createSessionTransport(): Promise<StreamableHTTPServerTransport> {
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => randomUUID(),
+      onsessioninitialized: (sid: string) => {
+        transports.set(sid, transport)
+      },
+      allowedOrigins: allowedOrigins.length ? allowedOrigins : undefined,
+    } as any)
+    transport.onclose = () => {
+      if (transport.sessionId && transports.get(transport.sessionId) === transport) {
+        transports.delete(transport.sessionId)
+      }
+    }
+    const mcp = createServer(ctx)
+    await mcp.connect(transport)
+    return transport
+  }
 
   const httpServer = createHttpServer(async (req, res) => {
     try {
-      await route(req, res, transport, store, bearerToken)
+      await route(req, res, transports, createSessionTransport, store, bearerToken)
     } catch (err) {
       console.error('[brand-engine MCP/http] unhandled:', err)
       if (!res.headersSent) {
@@ -113,7 +136,10 @@ async function main() {
     console.error(`[brand-engine MCP/http] ${signal} — shutting down`)
     store.stopCleanup()
     try { httpServer.close() } catch {}
-    try { await mcpServer.close() } catch {}
+    for (const t of transports.values()) {
+      try { await t.close() } catch {}
+    }
+    transports.clear()
     try { await pool.close() } catch {}
     process.exit(0)
   }
@@ -132,7 +158,8 @@ async function main() {
 async function route(
   req: IncomingMessage,
   res: ServerResponse,
-  transport: StreamableHTTPServerTransport,
+  transports: Map<string, StreamableHTTPServerTransport>,
+  createSessionTransport: () => Promise<StreamableHTTPServerTransport>,
   store: ArtifactStore,
   bearerToken: string,
 ): Promise<void> {
@@ -145,14 +172,7 @@ async function route(
     return
   }
 
-  if (url === '/mcp' || url.startsWith('/mcp?')) {
-    if (!checkBearer(req, res, bearerToken)) return
-    // Body parsing is delegated to the transport (handleRequest handles it).
-    await transport.handleRequest(req, res)
-    return
-  }
-
-  if (url.startsWith('/artifacts/')) {
+  if (url.startsWith('/artifacts/') && method === 'GET') {
     const token = url.slice('/artifacts/'.length).split('?')[0]
     if (!token) {
       res.writeHead(404, { 'Content-Type': 'application/json' })
@@ -171,6 +191,66 @@ async function route(
       'Cache-Control': 'private, max-age=60',
     })
     createReadStream(resolved.filePath).pipe(res)
+    return
+  }
+
+  if (url === '/mcp' || url.startsWith('/mcp?')) {
+    if (!checkBearer(req, res, bearerToken)) return
+
+    const sessionId = req.headers['mcp-session-id'] as string | undefined
+
+    // POST: route to existing session or create a new one (initialize request).
+    if (method === 'POST') {
+      const body = await readBody(req)
+      let transport: StreamableHTTPServerTransport | undefined
+
+      if (sessionId && transports.has(sessionId)) {
+        transport = transports.get(sessionId)!
+      } else if (!sessionId && isInitializeRequest(body)) {
+        transport = await createSessionTransport()
+      } else {
+        res.writeHead(400, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({
+          jsonrpc: '2.0',
+          error: {
+            code: -32000,
+            message: sessionId
+              ? `Unknown session: ${sessionId}`
+              : 'Missing Mcp-Session-Id header (only an initialize request can omit it)',
+          },
+          id: null,
+        }))
+        return
+      }
+
+      await transport.handleRequest(req, res, body)
+      return
+    }
+
+    // GET: streaming response channel for an existing session.
+    if (method === 'GET') {
+      if (!sessionId || !transports.has(sessionId)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'invalid_or_missing_session_id' }))
+        return
+      }
+      await transports.get(sessionId)!.handleRequest(req, res)
+      return
+    }
+
+    // DELETE: terminate a session.
+    if (method === 'DELETE') {
+      if (!sessionId || !transports.has(sessionId)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'invalid_or_missing_session_id' }))
+        return
+      }
+      await transports.get(sessionId)!.handleRequest(req, res)
+      return
+    }
+
+    res.writeHead(405, { 'Content-Type': 'application/json', 'Allow': 'POST, GET, DELETE' })
+    res.end(JSON.stringify({ error: 'method_not_allowed' }))
     return
   }
 
