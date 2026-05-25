@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand Starter — Escape Velocity</title>
+
+<!--
+  Loads the brand fonts from Google Fonts (no build step needed).
+  For an offline / self-hosted setup, replace this link with @font-face
+  rules pointing at ../fonts/*.woff2 (those files ship in this kit).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<!--
+  Brand stylesheet bundle. Load order matters: tokens defines the CSS
+  custom properties that the other two consume. print.css only kicks in
+  at @media print.
+-->
+<link rel="stylesheet" href="./css/tokens.css">
+<link rel="stylesheet" href="./css/site.css">
+<link rel="stylesheet" href="./css/print.css" media="print">
+
+<style>
+  /* Page-local styles — only what this starter needs beyond the brand CSS. */
+  .hero { padding: 80px 0 60px; }
+  .hero .eyebrow { margin-bottom: 16px; }
+  .hero h1 {
+    font-family: var(--font-headline);
+    font-weight: 700;
+    font-size: 48px;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    margin-bottom: 20px;
+    color: var(--color-text);
+  }
+  .hero p {
+    font-size: 18px;
+    color: var(--color-body);
+    max-width: 640px;
+    margin-bottom: 32px;
+  }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+  .card {
+    background: white;
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .card h3 {
+    font-family: var(--font-headline);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text);
+    text-transform: none;
+    letter-spacing: 0;
+    margin: 0 0 8px;
+  }
+  .card p { color: var(--color-body); margin: 0; font-size: 15px; }
+  footer { padding: 24px 0; text-align: center; font-family: var(--font-mono); font-size: 12px; color: var(--color-subtle); }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="container">
+    <div class="eyebrow">Brand Starter</div>
+    <h1>Drop this in. <br>Style is taken care of.</h1>
+    <p>
+      This file shows what the Escape Velocity brand looks like once you load
+      <code>tokens.css</code>, <code>site.css</code>, and the four brand fonts.
+      Copy this whole folder into a new project, open <code>starter.html</code>,
+      and you're on-brand.
+    </p>
+    <a href="#" class="btn-primary">Erstgespräch buchen →</a>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Components</div>
+    <h2>Use the same building blocks</h2>
+    <div class="cards">
+      <div class="card">
+        <h3>Tokens are the source</h3>
+        <p>Every color, font, and radius comes from <code>tokens.css</code>. Override them at <code>:root</code> to theme.</p>
+      </div>
+      <div class="card">
+        <h3>Components in site.css</h3>
+        <p>Buttons, cards, eyebrows, tags. See the full live gallery at <a href="https://escapevelocity.consulting/brand/components/">brand/components</a>.</p>
+      </div>
+      <div class="card">
+        <h3>Templates in /templates</h3>
+        <p>Letter, offer, invoice, ToS, and social card HTML — designed for Playwright rendering, adaptable to any stack.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Escape Velocity · escapevelocity.consulting/brand
+</footer>
+
+</body>
+</html>

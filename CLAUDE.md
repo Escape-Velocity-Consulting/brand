@@ -159,6 +159,11 @@ The Brand Kit (`dist/brand-kit.zip`) bundles logos, colors, fonts, sample docume
 | `documents/*.pdf` | `previews/` |
 | `press/boilerplate.{md,pdf}` | `press/boilerplate.md` |
 | `press/photos/` | `press/photos/` |
+| `web/starter.html`, `web/README.md` | `web/` (authored in-repo) |
+| `web/css/{tokens,site,print}.css` | `tokens.css`, `site/site.css`, `site/print.css` |
+| `web/css/fonts/*.woff2` | `fonts/*.woff2` (colocated so `site.css`'s `@font-face` paths resolve) |
+| `web/templates/documents/*.html` | `templates/{letter,offer,invoice,tos,report,_base,_recipient}.html` |
+| `web/templates/social/*.html` | `templates/social/*.html` |
 | `LICENSE.txt` | `press/LICENSE.txt` |
 
 **Update flow:**

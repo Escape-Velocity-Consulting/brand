@@ -1199,10 +1199,21 @@ escape-velocity-brand-kit/
 │   └── brand-guide.pdf         multi-page print of dist/site/
 ├── social/                     curated subset of assets/raster/
 ├── documents/                  from previews/*.pdf
-└── press/
-    ├── boilerplate.md          from press/boilerplate.md
-    ├── boilerplate.pdf         rendered via generators/pdf.ts
-    └── photos/                 from press/photos/
+├── press/
+│   ├── boilerplate.md          from press/boilerplate.md
+│   ├── boilerplate.pdf         rendered via generators/pdf.ts
+│   └── photos/                 from press/photos/
+└── web/
+    ├── README.md               from web/README.md
+    ├── starter.html            from web/starter.html
+    ├── css/
+    │   ├── tokens.css          from tokens.css
+    │   ├── site.css            from site/site.css
+    │   ├── print.css           from site/print.css
+    │   └── fonts/              from fonts/*.woff2 (colocated so site.css resolves)
+    └── templates/
+        ├── documents/          from templates/{letter,offer,invoice,tos,report,_base,_recipient}.html
+        └── social/             from templates/social/*.html
 ```
 
 ### Source-of-truth contract

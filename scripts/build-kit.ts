@@ -44,6 +44,8 @@ assertExists(resolve(BRAND_DIR, 'dist', 'site'), 'npm run build:site')
 assertExists(resolve(BRAND_DIR, 'press', 'boilerplate.md'), 'create brand/press/boilerplate.md')
 assertExists(resolve(BRAND_DIR, 'press', 'LICENSE.txt'), 'create brand/press/LICENSE.txt')
 assertExists(resolve(BRAND_DIR, 'fonts', 'LICENSES'), 'create brand/fonts/LICENSES/')
+assertExists(resolve(BRAND_DIR, 'web', 'starter.html'), 'create brand/web/starter.html')
+assertExists(resolve(BRAND_DIR, 'web', 'README.md'), 'create brand/web/README.md')
 
 // --- Reset staging dir ----------------------------------------------------
 
@@ -198,7 +200,34 @@ execSync(
 )
 console.log('Staged: press/')
 
-// --- 8. README + LICENSE at kit root -------------------------------------
+// --- 8. Web (CSS bundle + template sources + starter) -------------------
+// Ships the raw source for partners building web pages on the brand:
+// the CSS bundle, document & social HTML templates, and a working starter.
+
+const webDir    = mkdirIn('web')
+const webCss    = mkdirIn('web/css')
+const webCssFonts = mkdirIn('web/css/fonts')
+const webDocs   = mkdirIn('web/templates/documents')
+const webSocial = mkdirIn('web/templates/social')
+
+copyFile(resolve(BRAND_DIR, 'tokens.css'),         webCss)
+copyFile(resolve(BRAND_DIR, 'site', 'site.css'),   webCss)
+copyFile(resolve(BRAND_DIR, 'site', 'print.css'),  webCss)
+
+// site.css's @font-face rules use the relative path `fonts/*.woff2`, so
+// the woff2 files have to sit alongside it for the bundle to be self-contained.
+copyDirFiltered(resolve(BRAND_DIR, 'fonts'), webCssFonts, (n) => n.endsWith('.woff2'))
+
+for (const name of ['_base.html', '_recipient.html', 'letter.html', 'offer.html', 'invoice.html', 'tos.html', 'report.html']) {
+  copyFile(resolve(BRAND_DIR, 'templates', name), webDocs)
+}
+copyDirFiltered(resolve(BRAND_DIR, 'templates', 'social'), webSocial, (n) => n.endsWith('.html'))
+
+copyFile(resolve(BRAND_DIR, 'web', 'starter.html'), webDir)
+copyFile(resolve(BRAND_DIR, 'web', 'README.md'),    webDir)
+console.log('Staged: web/')
+
+// --- 9. README + LICENSE at kit root -------------------------------------
 
 const sha = gitSha()
 const date = isoDate()
@@ -231,6 +260,10 @@ Contents
                       ToS, report) as PDF.
   press/              Boilerplate copy (DE + EN), founder photos, and
                       boilerplate.pdf.
+  web/                CSS bundle (tokens + components + print), document &
+                      social HTML template sources, and a standalone
+                      starter.html demo. Open web/starter.html in a browser
+                      to see the brand in code. See web/README.md.
 
 LICENSE.txt          Usage terms for the assets in this kit.
 
