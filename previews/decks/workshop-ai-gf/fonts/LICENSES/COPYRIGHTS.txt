@@ -1,0 +1,37 @@
+Font Copyrights
+===============
+
+The fonts shipped in this kit are all licensed under the SIL Open Font
+License, Version 1.1 (see OFL.txt in this directory).
+
+Per-family copyright notices:
+
+Inter
+-----
+Copyright (c) 2016-2024 The Inter Project Authors
+(https://github.com/rsms/inter).
+Reserved Font Name: "Inter".
+
+Manrope
+-------
+Copyright (c) 2018-2024 The Manrope Project Authors
+(https://github.com/sharanda/manrope).
+Reserved Font Name: "Manrope".
+
+Space Grotesk
+-------------
+Copyright (c) 2020 The Space Grotesk Project Authors
+(https://github.com/floriankarsten/space-grotesk).
+Reserved Font Name: "Space Grotesk".
+
+JetBrains Mono
+--------------
+Copyright (c) 2020 The JetBrains Mono Project Authors
+(https://github.com/JetBrains/JetBrainsMono).
+Reserved Font Name: "JetBrains Mono".
+
+All four families are available on Google Fonts:
+- https://fonts.google.com/specimen/Inter
+- https://fonts.google.com/specimen/Manrope
+- https://fonts.google.com/specimen/Space+Grotesk
+- https://fonts.google.com/specimen/JetBrains+Mono

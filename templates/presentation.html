@@ -333,16 +333,12 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
 {% endfor %}
 </div>
 
-<div class="hud" id="hud"></div>
-<div class="hud-hint">← → navigate · F fullscreen · P print</div>
-
 <script>
 (function () {
   var slides = Array.from(document.querySelectorAll('.slide'));
   var total = slides.length;
   var current = 0;
   var deck = document.getElementById('deck');
-  var hud = document.getElementById('hud');
 
   // Print mode via ?print
   var params = new URLSearchParams(location.search);
@@ -360,7 +356,7 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
   function fit() {
     var slideW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--slide-w'));
     var slideH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--slide-h'));
-    var scale = Math.min(window.innerWidth / slideW, window.innerHeight / slideH) * 0.92;
+    var scale = Math.min(window.innerWidth / slideW, window.innerHeight / slideH);
     slides.forEach(function (s) {
       s.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
     });
@@ -372,7 +368,6 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
     slides.forEach(function (s, idx) {
       s.classList.toggle('is-active', idx === i);
     });
-    hud.textContent = (i + 1) + ' / ' + total;
     history.replaceState(null, '', '?slide=' + (i + 1));
   }
 
