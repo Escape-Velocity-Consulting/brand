@@ -171,7 +171,7 @@ brand/
 │   ├── site/              ← rendered Brand Site + tokens.css + assets + fonts + previews + brand-kit.zip
 │   ├── brand-kit/         ← staged Brand Kit (folder, before zip)
 │   ├── brand-kit.zip      ← Brand Kit artifact (consumed via /brand/brand-kit.zip)
-│   └── brand-engine.skill ← packaged skill
+│   └── escape-velocity-brand.skill ← packaged skill
 └── scripts/
     ├── build-tokens.ts                ← tokens.ts → tokens.css + tokens.json
     ├── build-site.sh                  ← render Brand Site → dist/site/
@@ -195,13 +195,13 @@ brand/
 | `build:site` | `bash scripts/build-site.sh` | Render Brand Site → `dist/site/` (assumes tokens + assets already built) |
 | `build:kit` | `tsx scripts/build-kit.ts` | Assemble `dist/brand-kit/` + `dist/brand-kit.zip` (assumes tokens + assets + site already built) |
 | `build:dist` | `bash scripts/build-dist.sh` | **Meta:** runs `tokens → assets → site → kit` in order; copies kit zip into `dist/site/`. Use this for full publishable build. |
-| `build:skill` | `bash scripts/build-skill.sh` | Package `dist/brand-engine.skill` |
+| `build:skill` | `bash scripts/build-skill.sh` | Package `dist/escape-velocity-brand.skill` |
 | `build:mcp` | `tsc -p tsconfig.mcp.json` | Compile MCP server + core to `dist/` for production use (via `node dist/src/mcp/server.js`). Development uses `tsx` directly via the `mcp` script. |
 | `pdf` | `tsx generators/pdf.ts` | Generate branded PDF from Markdown |
 | `image` | `tsx generators/image.ts` | Generate PNG from HTML/SVG |
 | `carousel` | `tsx generators/carousel.ts` | Generate a LinkedIn carousel from a JSON spec (PDF + per-slide PNGs) |
 | `pres` | `tsx generators/presentation.ts` | Generate slide deck (HTML viewer + PDF + PNGs) from Markdown |
-| `mcp` | `tsx src/mcp/server.ts` | Run the brand-engine MCP server on stdio. Used directly by Claude Code; see [MCP Server](#mcp-server) below. |
+| `mcp` | `tsx src/mcp/server.ts` | Run the escape-velocity-brand MCP server on stdio. Used directly by Claude Code; see [MCP Server](#mcp-server) below. |
 | `test:mcp` | `tsx tests/mcp/run.ts` | Run the JSON-fixture E2E suite against the MCP server. Writes an HTML report to `tests/mcp/report/index.html`. |
 | `export` | alias of `build:assets` | Kept for muscle memory. |
 
@@ -367,12 +367,12 @@ Multi-output tools (`render_slides`) return nested objects of these (`{ viewer, 
 
 ### Registering the MCP server
 
-One-time setup per workstation. **The skill assumes brand-mcp is registered.** Pick the option matching your client.
+One-time setup per workstation. **The skill assumes the escape-velocity-brand MCP server is registered.** Pick the option matching your client.
 
 #### Claude Desktop — OAuth via UI (recommended)
 
 1. Open **Settings → Connectors → Add custom connector**.
-2. Name: `brand-mcp` (or whatever).
+2. Name: `escape-velocity-brand` (or whatever you prefer locally).
 3. Remote MCP server URL: `https://mcp.escapevelocity.consulting/mcp`
 4. Leave OAuth Client ID and Client Secret fields **blank** — Claude Desktop will self-register via Dynamic Client Registration (RFC 7591).
 5. Click **Add**. Claude Desktop will open a browser tab → Google login → consent → redirect back. The connector becomes available.
@@ -382,7 +382,7 @@ Only emails in `MCP_ALLOWED_EMAILS` on the server can log in.
 #### Claude Code — OAuth (preferred)
 
 ```bash
-claude mcp add --transport http brand-mcp \
+claude mcp add --transport http escape-velocity-brand \
   https://mcp.escapevelocity.consulting/mcp
 ```
 
@@ -393,7 +393,7 @@ claude mcp add --transport http brand-mcp \
 While `MCP_BEARER_TOKEN` is still active on the server (for the test runner), you can short-circuit with:
 
 ```bash
-claude mcp add --transport http brand-mcp \
+claude mcp add --transport http escape-velocity-brand \
   https://mcp.escapevelocity.consulting/mcp \
   --header "Authorization: Bearer $MCP_BEARER_TOKEN"
 ```
@@ -407,7 +407,7 @@ For working against unpushed brand-repo changes:
 ```json
 {
   "mcpServers": {
-    "brand-engine": {
+    "escape-velocity-brand": {
       "command": "npx",
       "args": ["tsx", "C:/Users/tommi/business/brand/src/mcp/server.ts"],
       "env": { "BRAND_DIR": "C:/Users/tommi/business/brand" }
@@ -512,7 +512,7 @@ Add a test: drop a JSON file in `tests/mcp/fixtures/` matching the schema in `te
 
 ### Status
 
-The skill bundled at `skill/brand-engine/` is **not** updated yet to call the MCP tools — that's a separate follow-up. Until then the skill (stdio) and the MCP server (stdio + HTTP) are parallel paths into the same core.
+The skill bundled at `skill/escape-velocity-brand/` is **not** updated yet to call the MCP tools — that's a separate follow-up. Until then the skill (stdio) and the MCP server (stdio + HTTP) are parallel paths into the same core.
 
 ### Local Trivy check
 
@@ -530,9 +530,9 @@ CVE scanning runs **client-side** via a `pre-push` hook on the brand repo. CI no
 
 ## Skill Workflow
 
-The brand skill is packaged from `skill/brand-engine/`. **Never edit the deployed copy** at `.claude/skills/brand-engine/` — it gets overwritten on reinstall.
+The brand skill is packaged from `skill/escape-velocity-brand/`. **Never edit the deployed copy** at `.claude/skills/escape-velocity-brand/` — it gets overwritten on reinstall.
 
-**Phase 3 redesign:** the skill is now **thin guidance-only** (~8KB). It no longer ships generators, templates, fonts, tokens, or a `setup.sh` bootstrap. All rendering is delegated to brand-mcp (see [§ Registering the MCP server](#registering-the-mcp-server)). The skill teaches Claude the design system + routing logic; the MCP does the pixel work.
+**Phase 3 redesign:** the skill is now **thin guidance-only** (~8KB). It no longer ships generators, templates, fonts, tokens, or a `setup.sh` bootstrap. All rendering is delegated to the escape-velocity-brand MCP server (see [§ Registering the MCP server](#registering-the-mcp-server)). The skill teaches Claude the design system + routing logic; the MCP does the pixel work.
 
 **Bundle contents:**
 - `SKILL.md` — mental model, tool reference, routing decision tree, HTML authoring rules, examples
@@ -542,10 +542,10 @@ The brand skill is packaged from `skill/brand-engine/`. **Never edit the deploye
 
 | What changed | Edit | Then |
 |--------------|------|------|
-| Skill instructions | `skill/brand-engine/SKILL.md` | `npm run build:skill` → reinstall |
+| Skill instructions | `skill/escape-velocity-brand/SKILL.md` | `npm run build:skill` → reinstall |
 | Brand reference sidecar | `BRAND_SKILL.md` | `npm run build:skill` (copied to `references/brand-reference.md` at staging) |
 
-**Graceful degradation:** the skill explicitly handles the "brand-mcp not registered" case — Claude can still author on-brand HTML using token vars and hand it back to the user, who can register the MCP later for pixel-perfect rendering.
+**Graceful degradation:** the skill explicitly handles the "escape-velocity-brand not registered" case — Claude can still author on-brand HTML using token vars and hand it back to the user, who can register the MCP later for pixel-perfect rendering.
 
 ## Legacy
 

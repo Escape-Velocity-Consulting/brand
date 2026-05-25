@@ -25,10 +25,10 @@ async function main() {
   const transport = new StdioServerTransport()
   await server.connect(transport)
   // stderr is the only safe channel — stdout is the MCP transport
-  console.error(`[brand-engine MCP/stdio] connected, brandDir=${brandDir}`)
+  console.error(`[escape-velocity-brand MCP/stdio] connected, brandDir=${brandDir}`)
 }
 
 main().catch((err) => {
-  console.error('[brand-engine MCP/stdio] fatal:', err)
+  console.error('[escape-velocity-brand MCP/stdio] fatal:', err)
   process.exit(1)
 })

@@ -25,7 +25,7 @@ export interface ServerInfo {
 }
 
 const DEFAULT_INFO: ServerInfo = {
-  name: 'brand-engine',
+  name: 'escape-velocity-brand',
   version: '0.3.0',
 }
 

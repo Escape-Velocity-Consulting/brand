@@ -1,29 +1,29 @@
 ---
-name: brand-engine
+name: escape-velocity-brand
 description: |
   Use when creating or rendering any Escape Velocity branded asset —
   branded documents (letter, offer, invoice, tos, report), social images
   (OG, LinkedIn banner, Twitter banner, quote/stats card), LinkedIn
-  carousels, slide decks, or ad-hoc on-brand HTML. Works with the brand-mcp
-  MCP server registered for pixel-perfect rendering; falls back to
-  HTML-only authoring otherwise.
+  carousels, slide decks, or ad-hoc on-brand HTML. Works with the
+  escape-velocity-brand MCP server registered for pixel-perfect rendering;
+  falls back to HTML-only authoring otherwise.
 ---
 
-# Brand Engine
+# Escape Velocity Brand
 
 ## Mental model
 
 - **This skill = brand design system + HTML authoring + workflow routing.**
   You know the brand tokens (colors, fonts, spacing), the template patterns,
   and which tool fits which request.
-- **brand-mcp = pixel-perfect rendering.** Warm Chromium server, HTML → PNG
+- **escape-velocity-brand = pixel-perfect rendering.** Warm Chromium server, HTML → PNG
   or PDF. Registered separately by the user (one-time workstation setup).
 
-If brand-mcp is **not** registered, the skill still works — author the HTML
+If escape-velocity-brand is **not** registered, the skill still works — author the HTML
 using brand CSS vars and return it to the user. They can paste it into a
 browser or register the MCP later to get rendered artifacts.
 
-## The 6 tools (when brand-mcp is registered)
+## The 6 tools (when escape-velocity-brand is registered)
 
 | Tool | Use when |
 |------|----------|
@@ -154,4 +154,4 @@ render_slides({
 ## See also
 
 - `references/brand-reference.md` — token table, CSS vars, design patterns
-- `brand/CLAUDE.md` § MCP Server — how to register brand-mcp on your workstation (Claude Code or Claude Desktop)
+- `brand/CLAUDE.md` § MCP Server — how to register escape-velocity-brand on your workstation (Claude Code or Claude Desktop)

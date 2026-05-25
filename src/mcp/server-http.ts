@@ -50,7 +50,7 @@ import { resolveBrandDir } from './shared/resolveBrandDir.js'
 function requireEnv(name: string): string {
   const v = process.env[name]
   if (!v) {
-    console.error(`[brand-engine MCP/http] FATAL: ${name} is required`)
+    console.error(`[escape-velocity-brand MCP/http] FATAL: ${name} is required`)
     process.exit(1)
   }
   return v
@@ -61,7 +61,7 @@ function optEnvInt(name: string, fallback: number): number {
   if (!v) return fallback
   const n = parseInt(v, 10)
   if (!Number.isFinite(n) || n <= 0) {
-    console.error(`[brand-engine MCP/http] FATAL: ${name} must be a positive integer, got ${v}`)
+    console.error(`[escape-velocity-brand MCP/http] FATAL: ${name} must be a positive integer, got ${v}`)
     process.exit(1)
   }
   return n
@@ -87,7 +87,7 @@ async function main() {
   const jwtSecret = process.env.MCP_JWT_SECRET ?? ''
   const legacyBearerToken = process.env.MCP_BEARER_TOKEN ?? ''
   if (!jwtSecret && !legacyBearerToken) {
-    console.error('[brand-engine MCP/http] FATAL: set MCP_JWT_SECRET (OAuth) and/or MCP_BEARER_TOKEN (legacy/test)')
+    console.error('[escape-velocity-brand MCP/http] FATAL: set MCP_JWT_SECRET (OAuth) and/or MCP_BEARER_TOKEN (legacy/test)')
     process.exit(1)
   }
   const allowedEmails = new Set(
@@ -163,7 +163,7 @@ async function main() {
     try {
       await route(req, res, transports, createSessionTransport, store, authConfig, oauthConfig, oauthEnabled)
     } catch (err) {
-      console.error('[brand-engine MCP/http] unhandled:', err)
+      console.error('[escape-velocity-brand MCP/http] unhandled:', err)
       if (!res.headersSent) {
         res.writeHead(500, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ error: 'internal_server_error' }))
@@ -172,7 +172,7 @@ async function main() {
   })
 
   const shutdown = async (signal: string) => {
-    console.error(`[brand-engine MCP/http] ${signal} — shutting down`)
+    console.error(`[escape-velocity-brand MCP/http] ${signal} — shutting down`)
     store.stopCleanup()
     stopOAuthCleanup()
     try { httpServer.close() } catch {}
@@ -187,12 +187,12 @@ async function main() {
   process.on('SIGTERM', () => shutdown('SIGTERM'))
 
   httpServer.listen(port, host, () => {
-    console.error(`[brand-engine MCP/http] listening on http://${host}:${port}`)
-    console.error(`[brand-engine MCP/http] brandDir=${brandDir}`)
-    console.error(`[brand-engine MCP/http] artifact store: ${storeDir}`)
-    console.error(`[brand-engine MCP/http] auth: JWT=${jwtSecret ? 'on' : 'off'}, legacy bearer=${legacyBearerToken ? 'on' : 'off'}, OAuth=${oauthEnabled ? 'on' : 'off'}, allowlist=${allowedEmails.size} emails`)
+    console.error(`[escape-velocity-brand MCP/http] listening on http://${host}:${port}`)
+    console.error(`[escape-velocity-brand MCP/http] brandDir=${brandDir}`)
+    console.error(`[escape-velocity-brand MCP/http] artifact store: ${storeDir}`)
+    console.error(`[escape-velocity-brand MCP/http] auth: JWT=${jwtSecret ? 'on' : 'off'}, legacy bearer=${legacyBearerToken ? 'on' : 'off'}, OAuth=${oauthEnabled ? 'on' : 'off'}, allowlist=${allowedEmails.size} emails`)
     const snap = summarizeStore(storeDir)
-    console.error(`[brand-engine MCP/http] existing artifacts on disk: ${snap.fileCount} files, ${snap.bytes} bytes`)
+    console.error(`[escape-velocity-brand MCP/http] existing artifacts on disk: ${snap.fileCount} files, ${snap.bytes} bytes`)
   })
 }
 
@@ -375,6 +375,6 @@ function sanitizeFilename(name: string): string {
 }
 
 main().catch((err) => {
-  console.error('[brand-engine MCP/http] fatal:', err)
+  console.error('[escape-velocity-brand MCP/http] fatal:', err)
   process.exit(1)
 })

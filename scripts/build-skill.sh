@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# build-skill.sh — Package brand-engine into a thin guidance .skill file
+# build-skill.sh — Package escape-velocity-brand into a thin guidance .skill file
 #
 # Usage:
 #   cd brand && npm run build:skill
 #
 # Output:
-#   dist/brand-engine.skill (~20–50KB ZIP — SKILL.md + reference sidecar only)
+#   dist/escape-velocity-brand.skill (~20–50KB ZIP — SKILL.md + reference sidecar only)
 #
 # Phase 3 redesign: the skill no longer ships generators, templates, fonts,
 # tokens, or a setup.sh bootstrap. All rendering is delegated to the brand-mcp
@@ -20,7 +20,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BRAND_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-STAGE_DIR="$BRAND_DIR/dist/.stage/brand-engine"
+STAGE_DIR="$BRAND_DIR/dist/.stage/escape-velocity-brand"
 DIST_DIR="$BRAND_DIR/dist"
 
 # ── 1. Clean staging ─────────────────────────────────────────────────────────
@@ -30,7 +30,7 @@ mkdir -p "$STAGE_DIR"
 
 # ── 2. SKILL.md ──────────────────────────────────────────────────────────────
 
-cp "$BRAND_DIR/skill/brand-engine/SKILL.md" "$STAGE_DIR/"
+cp "$BRAND_DIR/skill/escape-velocity-brand/SKILL.md" "$STAGE_DIR/"
 echo "  Copied SKILL.md"
 
 # ── 3. Reference sidecar ─────────────────────────────────────────────────────
@@ -43,13 +43,13 @@ echo "  Copied brand reference"
 
 mkdir -p "$DIST_DIR"
 cd "$BRAND_DIR/dist/.stage"
-rm -f "$DIST_DIR/brand-engine.skill"
+rm -f "$DIST_DIR/escape-velocity-brand.skill"
 
 # Use Python's zipfile (forward-slash separators per ZIP spec).
-WIN_DEST=$(cygpath -w "$DIST_DIR/brand-engine.skill" 2>/dev/null || echo "$DIST_DIR/brand-engine.skill")
+WIN_DEST=$(cygpath -w "$DIST_DIR/escape-velocity-brand.skill" 2>/dev/null || echo "$DIST_DIR/escape-velocity-brand.skill")
 python -c "
 import os, zipfile
-src = 'brand-engine'
+src = 'escape-velocity-brand'
 dest = r'$WIN_DEST'
 with zipfile.ZipFile(dest, 'w', zipfile.ZIP_DEFLATED) as z:
     for root, dirs, files in os.walk(src):
@@ -63,6 +63,6 @@ with zipfile.ZipFile(dest, 'w', zipfile.ZIP_DEFLATED) as z:
 
 rm -rf "$BRAND_DIR/dist/.stage"
 
-SIZE=$(du -h "$DIST_DIR/brand-engine.skill" | cut -f1)
+SIZE=$(du -h "$DIST_DIR/escape-velocity-brand.skill" | cut -f1)
 echo ""
-echo "Built: dist/brand-engine.skill ($SIZE)"
+echo "Built: dist/escape-velocity-brand.skill ($SIZE)"

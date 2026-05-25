@@ -2,7 +2,7 @@
   "name": "brand",
   "type": "module",
   "bin": {
-    "brand-mcp": "./dist/src/mcp/server.js"
+    "escape-velocity-brand-mcp": "./dist/src/mcp/server.js"
   },
   "scripts": {
     "build:tokens": "tsx scripts/build-tokens.ts",
