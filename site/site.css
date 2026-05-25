@@ -182,3 +182,90 @@ table { width: 100%; border-collapse: collapse; margin-top: 12px; }
 table th { font-family: var(--font-ui); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--color-terracotta); color: var(--color-text); }
 table td { font-size: 14px; padding: 10px 12px; border-bottom: 1px solid rgba(0,0,0,0.06); color: var(--color-body); }
 table td code { font-size: 12px; background: rgba(0,0,0,0.04); padding: 2px 6px; border-radius: 3px; }
+
+/* Demo blocks — live render + collapsible HTML source (see partials/demo.njk).
+   Summary bar reads as a normal light card; only the code region itself
+   flips to dark (terminal style). */
+.demo-block { margin-bottom: 24px; }
+.demo-live { /* live render area — uses component's own styling */ }
+.demo-source { margin-top: 10px; border: 1px solid var(--color-doc-border); border-radius: 6px; background: var(--color-light); overflow: hidden; }
+.demo-source summary { list-style: none; cursor: pointer; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-family: var(--font-ui); font-size: 12px; color: var(--color-subtle); user-select: none; }
+.demo-source summary:hover { color: var(--color-text); }
+.demo-source summary::-webkit-details-marker { display: none; }
+.demo-summary-label::before { content: "▸ "; display: inline-block; transition: transform 0.15s; }
+.demo-source[open] .demo-summary-label::before { content: "▾ "; }
+.demo-source[open] summary { border-bottom: 1px solid var(--color-doc-border); }
+.demo-copy { font-family: var(--font-ui); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 10px; border: 1px solid var(--color-doc-border); border-radius: 4px; background: white; color: var(--color-subtle); cursor: pointer; }
+.demo-copy:hover { color: var(--color-terracotta); border-color: var(--color-terracotta); }
+.demo-copy.copied { color: white; background: var(--color-terracotta); border-color: var(--color-terracotta); }
+/* Code region: dark surface, light text. Override the global `pre` rule. */
+.demo-source pre { margin: 0; padding: 14px 16px; overflow-x: auto; background: var(--color-black); color: var(--color-light); border-radius: 0; }
+.demo-source pre code { font-family: var(--font-mono); font-size: 12px; line-height: 1.55; color: var(--color-light); background: transparent; padding: 0; white-space: pre; }
+
+/* ============================================================
+   /presentations/ — slide-type showcase
+   ============================================================ */
+.lede { font-family: var(--font-body); font-size: 16px; line-height: 1.7; color: var(--color-body); max-width: 760px; margin: 0 0 24px; }
+.lede code { font-family: var(--font-mono); font-size: 14px; background: rgba(0,0,0,0.04); padding: 1px 6px; border-radius: 3px; color: var(--color-doc-text); }
+
+.action-bar { display: flex; gap: 24px; flex-wrap: wrap; margin: 16px 0 24px; font-family: var(--font-ui); font-size: 14px; }
+.action-bar a { color: var(--color-terracotta); text-decoration: none; font-weight: 600; }
+.action-bar a:hover { text-decoration: underline; }
+
+.slidetype-grid { display: grid; grid-template-columns: 1fr; gap: 32px; margin: 40px 0; }
+@media (min-width: 880px) { .slidetype-grid { grid-template-columns: 1fr 1fr; } }
+
+.slidetype-card { background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.06); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.03); transition: border-color 0.15s, box-shadow 0.15s; }
+.slidetype-card:hover { border-color: var(--color-terracotta); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+
+.slidetype-thumb { display: block; aspect-ratio: 16 / 9; background: var(--color-light); overflow: hidden; }
+.slidetype-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.slidetype-thumb-missing { display: flex; align-items: center; justify-content: center; height: 100%; padding: 24px; text-align: center; color: var(--color-subtle); font-family: var(--font-ui); font-size: 13px; }
+
+.slidetype-meta { padding: 20px 24px 24px; }
+.slidetype-meta h3 { font-family: var(--font-headline); font-weight: 600; font-size: 18px; color: var(--color-text); margin: 0 0 8px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.slidetype-type code { font-family: var(--font-mono); font-size: 11px; font-weight: 400; color: var(--color-terracotta); background: rgba(212,120,74,0.08); padding: 2px 6px; border-radius: 3px; }
+.slidetype-meta p { font-family: var(--font-body); font-size: 13px; line-height: 1.55; color: var(--color-body); margin: 0 0 14px; }
+
+.slidetype-syntax { background: var(--color-light); border-left: 3px solid var(--color-terracotta); border-radius: 0 6px 6px 0; padding: 12px 14px; margin: 0 0 14px; overflow-x: auto; }
+.slidetype-syntax code { font-family: var(--font-mono); font-size: 12px; line-height: 1.55; color: var(--color-doc-text); background: transparent; padding: 0; white-space: pre; }
+
+.slidetype-link { font-family: var(--font-ui); font-size: 13px; font-weight: 600; color: var(--color-terracotta); text-decoration: none; }
+.slidetype-link:hover { text-decoration: underline; }
+
+.callout { background: var(--color-light); border-left: 3px solid var(--color-terracotta); padding: 20px 24px; border-radius: 0 8px 8px 0; margin: 40px 0; }
+.callout h3 { font-family: var(--font-headline); font-weight: 600; font-size: 16px; color: var(--color-text); margin: 0 0 8px; }
+.callout p { font-family: var(--font-body); font-size: 14px; line-height: 1.6; color: var(--color-body); margin: 0 0 8px; }
+.callout p:last-child { margin-bottom: 0; }
+.callout code { font-family: var(--font-mono); font-size: 13px; background: rgba(0,0,0,0.04); padding: 1px 6px; border-radius: 3px; color: var(--color-doc-text); }
+
+.footnote { font-family: var(--font-ui); font-size: 12px; color: var(--color-subtle); margin: 40px 0 0; }
+.footnote code { font-family: var(--font-mono); font-size: 11px; background: rgba(0,0,0,0.04); padding: 1px 5px; border-radius: 3px; color: var(--color-doc-text); }
+
+/* ============================================================
+   /decks/ — rendered deck archive
+   ============================================================ */
+.decks-grid { display: grid; grid-template-columns: 1fr; gap: 24px; margin: 32px 0; }
+@media (min-width: 720px) { .decks-grid { grid-template-columns: 1fr 1fr; } }
+
+.deck-card { background: white; border-radius: 12px; border: 1px solid rgba(0,0,0,0.06); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.03); transition: border-color 0.15s, box-shadow 0.15s; }
+.deck-card:hover { border-color: var(--color-terracotta); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+
+.deck-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 12px; background: var(--color-light); aspect-ratio: 4 / 1; }
+.deck-thumb { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; border: 1px solid rgba(0,0,0,0.06); background: white; }
+
+.deck-meta { padding: 18px 22px 22px; }
+.deck-titlerow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+.deck-meta h3 { font-family: var(--font-headline); font-weight: 600; font-size: 18px; color: var(--color-text); margin: 0; }
+.deck-badge { font-family: var(--font-ui); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 8px; background: rgba(212,120,74,0.08); color: var(--color-terracotta); border-radius: 4px; white-space: nowrap; }
+.deck-slug { font-family: var(--font-mono); font-size: 11px; color: var(--color-subtle); background: rgba(0,0,0,0.04); padding: 1px 5px; border-radius: 3px; display: inline-block; margin-bottom: 14px; }
+
+.deck-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.deck-actions .btn-primary { padding: 10px 20px; font-size: 14px; }
+.btn-secondary-light { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: transparent; color: var(--color-terracotta); border: 1px solid var(--color-terracotta); border-radius: 8px; font-family: var(--font-ui); font-weight: 600; font-size: 14px; text-decoration: none; }
+.btn-secondary-light:hover { background: var(--color-terracotta); color: white; }
+
+.deck-empty { background: var(--color-light); border-left: 3px solid var(--color-terracotta); padding: 24px; border-radius: 0 8px 8px 0; font-family: var(--font-body); font-size: 14px; color: var(--color-body); }
+.deck-empty p { margin: 0 0 8px; }
+.deck-empty pre { margin: 0; padding: 12px 16px; background: white; border-radius: 6px; overflow-x: auto; }
+.deck-empty code { font-family: var(--font-mono); font-size: 12px; color: var(--color-doc-text); }

@@ -1,0 +1,16 @@
+{# Wraps a component example so it renders both as a live demo and as
+   collapsible HTML source with a copy button. Single source of truth:
+   the body of the {% call demo() %} block. #}
+{% macro demo(label) %}
+  {% set src = caller() %}
+  <div class="demo-block">
+    <div class="demo-live">{{ src | safe }}</div>
+    <details class="demo-source">
+      <summary>
+        <span class="demo-summary-label">View source</span>
+        <button class="demo-copy" type="button" data-copy>Copy</button>
+      </summary>
+      <pre><code>{{ src | trim | escapeHtml | safe }}</code></pre>
+    </details>
+  </div>
+{% endmacro %}

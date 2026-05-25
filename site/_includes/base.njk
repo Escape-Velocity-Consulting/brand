@@ -36,5 +36,25 @@
   brand@{{ version.sha }} · built {{ version.date }}
 </div>
 
+<script>
+  // Copy button for demo blocks — see partials/demo.njk
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-copy]");
+    if (!btn) return;
+    e.preventDefault();
+    var code = btn.closest("details")?.querySelector("pre code");
+    if (!code || !navigator.clipboard) return;
+    navigator.clipboard.writeText(code.textContent).then(function () {
+      var original = btn.textContent;
+      btn.textContent = "Copied!";
+      btn.classList.add("copied");
+      setTimeout(function () {
+        btn.textContent = original;
+        btn.classList.remove("copied");
+      }, 1200);
+    });
+  });
+</script>
+
 </body>
 </html>
