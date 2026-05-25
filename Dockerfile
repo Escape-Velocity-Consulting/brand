@@ -36,9 +36,10 @@ RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 # own keeps /app ownership clean and decouples from upstream changes.
 RUN groupadd -r appgroup && useradd -r -g appgroup -d /app -s /usr/sbin/nologin appuser
 
-# Production deps only.
+# Production deps only. Lockfile is removed after install so Trivy can't read
+# dev-dep version specs that don't exist in the production image.
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force && rm -f package-lock.json
 
 # Compiled core + MCP server.
 COPY --from=build /app/dist        ./dist

@@ -1,5 +1,27 @@
 # Brand OS
 
+## CI Monitoring Rule
+
+**After any `git push` to the brand repo that could trigger the Deploy MCP workflow, immediately monitor the run until it completes.**
+
+The workflow (`.github/workflows/deploy-mcp.yml`) triggers on pushes to `main` that touch:
+`src/`, `templates/`, `fonts/`, `components/`, `tokens.ts`, `tokens.css`, `package.json`, `package-lock.json`, `tsconfig.mcp.json`, `scripts/build-tokens.ts`, `Dockerfile`, `.dockerignore`, `.github/workflows/deploy-mcp.yml`
+
+After pushing, run:
+```bash
+gh run list --repo Escape-Velocity-Consulting/brand --limit 1
+gh run watch <run-id> --repo Escape-Velocity-Consulting/brand --exit-status
+```
+
+If the run fails, fetch the logs of the failing step and report the error:
+```bash
+gh run view <run-id> --repo Escape-Velocity-Consulting/brand --log-failed
+```
+
+Do not declare a push "done" until the build job passes (or explicitly confirm with the user that they'll watch it themselves).
+
+---
+
 ## Spec-First Rule
 
 **BRAND_SPEC.md is the source of truth.** Before changing any brand code, templates, or tokens:
