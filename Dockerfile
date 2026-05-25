@@ -30,9 +30,11 @@ FROM mcr.microsoft.com/playwright:v1.50.0-jammy
 WORKDIR /app
 
 # Patch OS packages — clears dirmngr/git/related Ubuntu CVEs flagged by Trivy.
-# Also upgrade system npm so its bundled picomatch is patched (v4.0.3 → ≥4.0.4).
-RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/* \
- && npm install -g npm@latest
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+
+# Upgrade system npm so its bundled picomatch is patched (v4.0.3 → ≥4.0.4).
+# Pinned to ^10 for Node 20 LTS compatibility (Playwright image ships Node 20).
+RUN npm install -g npm@^10 --no-audit --no-fund --prefer-online
 
 # Non-root user. Playwright's base image ships with `pwuser`, but creating our
 # own keeps /app ownership clean and decouples from upstream changes.
