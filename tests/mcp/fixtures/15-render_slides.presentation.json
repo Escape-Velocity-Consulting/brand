@@ -1,0 +1,23 @@
+{
+  "name": "presentation-style markdown slides via render_slides (viewer-only)",
+  "tool": "render_slides",
+  "args": {
+    "markdown": "<!-- @type: title -->\n# E2E slides\n> Eyebrow\n\n===\n\n<!-- @type: content -->\n## Slide two\n\nBody text.\n\n===\n\n<!-- @type: content -->\n## Slide three\n\nMore body.",
+    "dimensions": "slide-16-9",
+    "outputs": { "viewer": true, "pdf": false, "pngs": false },
+    "title": "e2e-presentation",
+    "outputPath": "{{TMP}}/mcp-e2e-slides-presentation"
+  },
+  "expect": {
+    "structured": {
+      "slideCount": 3,
+      "width": 1920,
+      "height": 1080,
+      "viewer": { "mime": "text/html", "bytes": { "min": 1000 } },
+      "pdf": null
+    },
+    "files": [
+      { "path": "{{structured.viewer.path}}", "minBytes": 1000 }
+    ]
+  }
+}

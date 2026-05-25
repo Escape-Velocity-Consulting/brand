@@ -1,0 +1,19 @@
+{
+  "name": "raw HTML → A4 PDF",
+  "tool": "render_html_to_pdf",
+  "args": {
+    "html": "<!doctype html><html><head><style>body{font-family:var(--font-body),sans-serif;padding:40mm;color:var(--color-black,#222)}h1{color:var(--color-terracotta,#c0392b);font-family:var(--font-headline),sans-serif}</style></head><body><h1>E2E PDF</h1><p>This is a raw HTML rendered to PDF via render_html_to_pdf. Variable from caller: {{ MSG }}.</p></body></html>",
+    "format": "A4",
+    "vars": { "MSG": "hello" },
+    "outputPath": "{{TMP}}/mcp-e2e-html-to-pdf.pdf"
+  },
+  "expect": {
+    "structured": {
+      "mime": "application/pdf",
+      "bytes": { "min": 3000 }
+    },
+    "files": [
+      { "path": "{{structured.path}}", "minBytes": 3000 }
+    ]
+  }
+}

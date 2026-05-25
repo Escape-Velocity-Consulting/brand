@@ -140,7 +140,7 @@ async function main() {
       console.log(`Debug HTML: ${debugPath}`)
     }
 
-    let pdfBuffer = await htmlToPdf(fullHtml, pool, { lang, docType, subject })
+    let pdfBuffer = await htmlToPdf(fullHtml, pool, { lang, docType, subject }, paths)
 
     if (values.attach) {
       const attachPath = resolve(process.cwd(), values.attach)

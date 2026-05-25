@@ -123,7 +123,7 @@ export function registerRenderDocument(server: McpServer, ctx: ServerContext) {
       customTemplatePath,
     }, ctx.paths)
 
-    let pdfBuffer = await htmlToPdf(fullHtml, ctx.pool, { lang, docType, subject })
+    let pdfBuffer = await htmlToPdf(fullHtml, ctx.pool, { lang, docType, subject }, ctx.paths)
 
     if (args.attachPath) {
       const attachAbs = resolve(process.cwd(), args.attachPath)

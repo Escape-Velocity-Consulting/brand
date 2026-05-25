@@ -1,0 +1,21 @@
+{
+  "name": "social og template via render_template",
+  "tool": "render_template",
+  "args": {
+    "template": "social/og",
+    "vars": { "TITLE": "E2E test", "SUBTITLE": "render_template" },
+    "outputPath": "{{TMP}}/mcp-e2e-template-og.png"
+  },
+  "expect": {
+    "structured": {
+      "mime": "image/png",
+      "template": "social/og",
+      "width": 1200,
+      "height": 630,
+      "bytes": { "min": 5000 }
+    },
+    "files": [
+      { "path": "{{structured.path}}", "minBytes": 5000 }
+    ]
+  }
+}

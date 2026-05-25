@@ -1,11 +1,11 @@
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { tmpdir } from 'node:os'
 import { pathToFileURL } from 'node:url'
 import { PDFDocument } from 'pdf-lib'
 import type { BrowserPool } from './browserPool.js'
 import { GeneratorError } from './errors.js'
 import type { BrandPaths } from './paths.js'
+import { renderHtmlToPdf } from './render.js'
 import { getTemplateEnv } from './templates.js'
 import { loadTokensCss } from './tokens.js'
 
@@ -302,31 +302,28 @@ export function renderDocumentHtml(input: RenderDocumentInput, paths: BrandPaths
 /**
  * Render a fully-composed HTML document to PDF via Playwright. Returns the
  * PDF as a Buffer. Caller writes to disk.
+ *
+ * Thin wrapper around `renderHtmlToPdf` that bakes in the A4 / branded-footer
+ * defaults for the 5 brand document types. The HTML is assumed to be already
+ * fully composed by `renderDocumentHtml` (no further Nunjucks templating).
  */
 export async function htmlToPdf(
   html: string,
   pool: BrowserPool,
   opts: { lang: string; docType: DocumentType; subject?: string },
+  paths: BrandPaths,
 ): Promise<Buffer> {
-  const tmpPath = resolve(tmpdir(), `ev-pdf-${Date.now()}-${Math.random().toString(36).slice(2)}.html`)
-  writeFileSync(tmpPath, html, 'utf-8')
-
-  const { page, context } = await pool.getPage()
-  try {
-    await page.goto(pathToFileURL(tmpPath).href, { waitUntil: 'networkidle' })
-    const pdfBuffer = await page.pdf({
+  return renderHtmlToPdf(
+    { html, skipTemplating: true },
+    {
       format: 'A4',
       margin: { top: '12mm', right: '25mm', bottom: '20mm', left: '25mm' },
       printBackground: true,
-      displayHeaderFooter: true,
-      headerTemplate: '<div></div>',
       footerTemplate: footerTemplate(opts.lang, opts.docType, opts.subject),
-    })
-    return pdfBuffer
-  } finally {
-    await pool.release(context)
-    try { unlinkSync(tmpPath) } catch {}
-  }
+    },
+    paths,
+    pool,
+  )
 }
 
 /**

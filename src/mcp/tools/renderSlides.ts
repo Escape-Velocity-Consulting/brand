@@ -1,0 +1,120 @@
+import { basename, resolve, join } from 'node:path'
+import { z } from 'zod'
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import type { ServerContext } from '../shared/createServer.js'
+import { renderSlides, SLIDE_DIMENSIONS, type DimensionsInput } from '../../core/slides.js'
+import { writeBundleEntry, type WriteResult } from '../shared/outputSinks.js'
+import { runTool, successResult } from '../shared/toolResult.js'
+
+const PageSchema = z.object({
+  template: z.string().optional().describe('Path under brand/ to a full-page template (e.g. "templates/carousel/title.html").'),
+  html: z.string().optional().describe('Raw HTML for this page (alternative to template).'),
+  vars: z.record(z.string(), z.string()).optional(),
+})
+
+const DimensionsSchema = z.union([
+  z.enum(Object.keys(SLIDE_DIMENSIONS) as [string, ...string[]]),
+  z.object({ width: z.number().int().positive(), height: z.number().int().positive() }),
+])
+
+/**
+ * Multi-page render: N pages → toggleable {viewer, pdf, pngs}.
+ *
+ * Two input modes:
+ * - `markdown` (presentation-style, === -separated)  → supports viewer + pdf + pngs
+ * - `pages`    (carousel-style, full-HTML per slide) → supports pdf + pngs (no viewer)
+ */
+export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
+  server.registerTool('render_slides', {
+    title: 'Render multi-page slide deck or carousel',
+    description:
+      'Render N slides → any combination of {viewer HTML, combined PDF, per-slide PNGs}. ' +
+      'Use `markdown` (with === separators + @type/@bg directives) for presentation-style decks (supports viewer). ' +
+      'Use `pages` (array of full-HTML pages or template+vars) for carousel-style multi-output (no viewer support). ' +
+      `Dimension presets: ${Object.keys(SLIDE_DIMENSIONS).join(', ')}, or custom {width,height}.`,
+    inputSchema: {
+      markdown: z.string().optional().describe('Deck markdown with === slide separators. Mutually exclusive with pages.'),
+      pages: z.array(PageSchema).optional().describe('Explicit pages (full-HTML or template+vars). Mutually exclusive with markdown.'),
+      dimensions: DimensionsSchema,
+      outputs: z.object({
+        viewer: z.boolean().optional().default(false).describe('Self-contained HTML viewer (markdown mode only).'),
+        pdf: z.boolean().optional().default(true).describe('Combined PDF.'),
+        pngs: z.boolean().optional().default(false).describe('Per-slide PNGs.'),
+      }),
+      title: z.string().optional().describe('Deck title (used in viewer + as filename stem).'),
+      theme: z.string().optional().default('cream'),
+      outputPath: z.string().optional().describe('Local mode: base filename / directory for outputs. Remote mode: filename hint.'),
+    },
+  }, async (args) => runTool(async () => {
+    const dims = args.dimensions as DimensionsInput
+    const result = await renderSlides({
+      markdown: args.markdown,
+      pages: args.pages,
+      dimensions: dims,
+      outputs: args.outputs,
+      title: args.title,
+      theme: args.theme,
+    }, ctx.paths, ctx.pool)
+
+    const stem = args.title?.toLowerCase().replace(/\s+/g, '-').slice(0, 40) || 'deck'
+
+    // Build a sidecar dir hint for local-mode multi-file output.
+    const isLocal = ctx.outputSink.kind === 'local'
+    let bundleDir: string | undefined
+    if (isLocal && args.outputPath) {
+      // outputPath is treated as the bundle root in local mode
+      bundleDir = resolve(process.cwd(), args.outputPath)
+    } else if (isLocal) {
+      bundleDir = resolve(process.cwd(), stem)
+    }
+
+    let viewer: WriteResult | null = null
+    if (result.viewer) {
+      viewer = await writeBundleEntry(ctx.outputSink, Buffer.from(result.viewer.html, 'utf-8'), {
+        relativeName: 'index.html',
+        mime: 'text/html',
+        bundleDir,
+      })
+    }
+
+    let pdf: WriteResult | null = null
+    if (result.pdf) {
+      const pdfName = `${stem}.pdf`
+      // For a multi-file bundle, route the PDF as a bundle entry. For pdf-only
+      // (no pngs/viewer), treat it as the primary output.
+      const isStandalone = !result.viewer && result.pngs.length === 0
+      if (isStandalone) {
+        pdf = await ctx.outputSink.write(result.pdf, {
+          mime: 'application/pdf',
+          suggestedName: pdfName,
+          requestedPath: args.outputPath,
+        })
+      } else {
+        pdf = await writeBundleEntry(ctx.outputSink, result.pdf, {
+          relativeName: pdfName,
+          mime: 'application/pdf',
+          bundleDir,
+        })
+      }
+    }
+
+    const pngs: WriteResult[] = []
+    for (let i = 0; i < result.pngs.length; i++) {
+      const num = String(i + 1).padStart(2, '0')
+      pngs.push(await writeBundleEntry(ctx.outputSink, result.pngs[i], {
+        relativeName: join('slides', `slide-${num}.png`),
+        mime: 'image/png',
+        bundleDir,
+      }))
+    }
+
+    return successResult({
+      viewer,
+      pdf,
+      pngs,
+      slideCount: result.slideCount,
+      width: result.width,
+      height: result.height,
+    })
+  }))
+}

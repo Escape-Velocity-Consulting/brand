@@ -1,0 +1,27 @@
+{
+  "name": "carousel-style 3-page slides via render_slides",
+  "tool": "render_slides",
+  "args": {
+    "pages": [
+      { "template": "templates/carousel/title.html", "vars": { "EYEBROW": "E2E", "BIGNUMBER": "1" } },
+      { "template": "templates/carousel/numbered-item.html", "vars": { "TITLE": "Step one" } },
+      { "template": "templates/carousel/cta.html", "vars": { "CTA": "Done" } }
+    ],
+    "dimensions": "linkedin-portrait",
+    "outputs": { "pdf": true, "pngs": true },
+    "title": "e2e-slides-carousel",
+    "outputPath": "{{TMP}}/mcp-e2e-slides-carousel"
+  },
+  "expect": {
+    "structured": {
+      "slideCount": 3,
+      "width": 1080,
+      "height": 1350,
+      "pdf": { "mime": "application/pdf", "bytes": { "min": 20000 } },
+      "pngs": { "isArray": true, "minLength": 3 }
+    },
+    "files": [
+      { "path": "{{structured.pdf.path}}", "minBytes": 20000 }
+    ]
+  }
+}

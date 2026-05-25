@@ -1,0 +1,20 @@
+{
+  "name": "letter document via render_template",
+  "tool": "render_template",
+  "args": {
+    "template": "letter",
+    "markdown": "# E2E letter\n\nSehr geehrte Damen und Herren,\n\nthis is a test letter rendered via render_template.\n\nMit freundlichen Grüßen,\nTommi",
+    "lang": "de",
+    "outputPath": "{{TMP}}/mcp-e2e-template-letter.pdf"
+  },
+  "expect": {
+    "structured": {
+      "mime": "application/pdf",
+      "template": "letter",
+      "bytes": { "min": 10000 }
+    },
+    "files": [
+      { "path": "{{structured.path}}", "minBytes": 10000 }
+    ]
+  }
+}
