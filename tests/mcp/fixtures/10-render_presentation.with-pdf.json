@@ -10,12 +10,12 @@
   "expect": {
     "structured": {
       "slideCount": 2,
-      "htmlPath": { "matches": "index\\.html$" },
-      "pdfPath": { "matches": "deck\\.pdf$" }
+      "html": { "mime": "text/html", "bytes": { "min": 1000 } },
+      "pdf": { "mime": "application/pdf", "bytes": { "min": 5000 } }
     },
     "files": [
-      { "path": "{{structured.htmlPath}}", "minBytes": 1000 },
-      { "path": "{{structured.pdfPath}}", "minBytes": 5000 }
+      { "path": "{{structured.html.path}}", "minBytes": 1000 },
+      { "path": "{{structured.pdf.path}}", "minBytes": 5000 }
     ]
   }
 }

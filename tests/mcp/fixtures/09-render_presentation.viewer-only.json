@@ -9,11 +9,11 @@
   "expect": {
     "structured": {
       "slideCount": 3,
-      "htmlPath": { "matches": "index\\.html$" },
-      "pdfPath": null
+      "html": { "mime": "text/html", "bytes": { "min": 1000 } },
+      "pdf": null
     },
     "files": [
-      { "path": "{{structured.htmlPath}}", "minBytes": 1000 }
+      { "path": "{{structured.html.path}}", "minBytes": 1000 }
     ]
   }
 }
