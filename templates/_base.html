@@ -70,6 +70,9 @@
 /* Reset */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* Tokens — injected from brand/tokens.css (built from tokens.ts) */
+{{ TOKENS_CSS | safe }}
+
 {% block styles %}{% endblock %}
 </style>
 </head>

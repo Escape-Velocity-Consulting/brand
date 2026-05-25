@@ -16,6 +16,7 @@ const FONTS_DIR = existsSync(resolve(BRAND_DIR, 'fonts'))
   ? resolve(BRAND_DIR, 'fonts')
   : resolve(BRAND_DIR, '..', 'website', 'fonts')
 const TEMPLATES_DIR = resolve(BRAND_DIR, 'templates')
+const TOKENS_CSS_PATH = resolve(BRAND_DIR, 'tokens.css')
 
 // --- i18n ---
 
@@ -306,6 +307,15 @@ function renderTemplate(
   },
 ): string {
   const fontsUri = pathToFileURL(FONTS_DIR).href
+
+  // Load tokens.css — single source of truth for color/font CSS vars.
+  // Generated from tokens.ts via `npm run build:tokens`. Fail loudly if missing.
+  if (!existsSync(TOKENS_CSS_PATH)) {
+    console.error(`tokens.css not found at ${TOKENS_CSS_PATH}. Run: npm run build:tokens`)
+    process.exit(1)
+  }
+  const tokensCss = readFileSync(TOKENS_CSS_PATH, 'utf-8')
+
   const showMeta = !!(opts.recipient || opts.ref || opts.confidential)
   // Compose legacy RECIPIENT string for any reference to {{ RECIPIENT }}
   const rec = opts.recipient
@@ -318,6 +328,7 @@ function renderTemplate(
     COVER: opts.cover || '',
     EYEBROW: opts.eyebrow || '',
     FONTS_URI: fontsUri,
+    TOKENS_CSS: tokensCss,
     LANG: opts.lang,
     STRINGS: STRINGS[opts.lang],
     RECIPIENT: legacyRecipient,

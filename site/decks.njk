@@ -1,0 +1,55 @@
+---
+layout: base.njk
+title: Decks
+permalink: /decks/
+navSlug: decks
+subtitle: Rendered slide decks. Auto-discovered from previews/decks/.
+---
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Decks</div>
+    <h2>Rendered Decks</h2>
+    <p class="lede">
+      Every deck under <code>brand/previews/decks/*/</code> appears here automatically.
+      Click <strong>Open Viewer</strong> for the interactive HTML deck (arrow keys to navigate, F for fullscreen)
+      or <strong>Download PDF</strong> for an offline copy.
+    </p>
+
+    {% if decks.length == 0 %}
+      <div class="deck-empty">
+        <p>No decks yet. Generate one with:</p>
+        <pre><code>npm run pres -- previews/decks/my-deck.md -o previews/decks/my-deck --pdf --png</code></pre>
+      </div>
+    {% else %}
+      <div class="decks-grid">
+        {% for d in decks %}
+          <div class="deck-card">
+            <a class="deck-thumbs" href="{{ d.viewerUrl | url }}" target="_blank">
+              {% for thumb in d.slideThumbs %}
+                <img class="deck-thumb" src="{{ thumb | url }}" alt="{{ d.title }} slide thumbnail">
+              {% endfor %}
+            </a>
+            <div class="deck-meta">
+              <div class="deck-titlerow">
+                <h3>{{ d.title }}</h3>
+                <span class="deck-badge">{{ d.slidesCount }} Slides</span>
+              </div>
+              <code class="deck-slug">{{ d.slug }}</code>
+              <div class="deck-actions">
+                <a class="btn-primary" href="{{ d.viewerUrl | url }}" target="_blank">Open Viewer →</a>
+                {% if d.pdfUrl %}
+                  <a class="btn-secondary-light" href="{{ d.pdfUrl | url }}" target="_blank">Download PDF</a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <p class="footnote">
+      Auto-discovered via <code>site/_data/decks.cjs</code>. The viewer assets are copied into <code>dist/site/previews/</code> by <code>scripts/build-site.sh</code>.
+    </p>
+  </div>
+</section>

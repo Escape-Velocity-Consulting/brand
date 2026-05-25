@@ -11,6 +11,7 @@
 | `pdf.ts` | Markdown → branded A4 PDF | `npm run pdf -- input.md [flags]` |
 | `image.ts` | HTML or SVG → PNG | `npm run image -- --input file [flags]` |
 | `carousel.ts` | JSON spec → multi-slide PDF (LinkedIn carousel) | `npx tsx generators/carousel.ts --spec spec.json -o out.pdf` |
+| `presentation.ts` | Markdown → HTML viewer + optional PDF + per-slide PNGs | `npm run pres -- deck.md [--pdf] [--png]` |
 | `export-assets.ts` | All raster exports + demo previews | `npm run export` |
 | `generate_qr.py` | URL → branded QR PNG (legacy Python) | `python brand/generate_qr.py` |
 

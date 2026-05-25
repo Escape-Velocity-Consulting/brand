@@ -12,6 +12,10 @@ export const colors = {
   subtle:          '#807A74',
   body:            '#5C5650',
   text:            '#1A1816',
+
+  // Document-specific neutrals (used by letter/offer/invoice/tos/report)
+  docText:         '#3D3A36',   // print body copy — darker than body, lighter than text
+  docBorder:       '#E8E5E0',   // hairline borders on meta strips & tables — darker than light
 } as const
 
 export const secondaryColors = {

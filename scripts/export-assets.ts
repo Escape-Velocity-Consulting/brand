@@ -247,4 +247,19 @@ for (const { type, output } of previewTypes) {
 
 await browser.close()
 
+// --- Slide-type showcase deck ---
+// Regenerates previews/showcase/slide-types/ from the canonical showcase MD.
+// The Brand Site's /presentations/ page reads the resulting per-slide PNGs as
+// thumbnails — so this keeps the showcase in sync with the template whenever
+// `build:assets` runs.
+
+const presGen = resolve(BRAND_DIR, 'generators', 'presentation.ts')
+const showcaseMd = resolve(BRAND_DIR, 'previews', 'showcase', 'slide-types.md')
+const showcaseOut = resolve(BRAND_DIR, 'previews', 'showcase', 'slide-types')
+execSync(
+  `npx tsx "${presGen}" "${showcaseMd}" -o "${showcaseOut}" --png`,
+  { stdio: 'inherit', cwd: BRAND_DIR },
+)
+console.log('Exported: slide-type showcase deck')
+
 console.log('All assets exported.')

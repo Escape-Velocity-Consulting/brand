@@ -1,0 +1,60 @@
+---
+layout: base.njk
+title: Presentations
+permalink: /presentations/
+navSlug: presentations
+subtitle: Slide-deck templates and the HTML viewer / PDF / PNG pipeline.
+---
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Presentations</div>
+    <h2>Slide Deck Templates</h2>
+    <p class="lede">
+      The presentation generator renders Markdown into a self-contained HTML viewer, a PDF, and per-slide PNGs.
+      Each slide picks a layout via an HTML-comment directive (<code>&lt;!-- @type: title --&gt;</code>).
+      Slide thumbnails below are auto-regenerated from the canonical showcase deck whenever you run
+      <code>npm run build:assets</code> — so this page always reflects the current state of the template.
+    </p>
+
+    <div class="action-bar">
+      <a href="{{ '/previews/decks/demo-deck/' | url }}" target="_blank">Open the full demo deck →</a>
+      <a href="{{ '/previews/showcase/slide-types/' | url }}" target="_blank">Open the showcase deck →</a>
+    </div>
+
+    <pre><code>npm run pres -- previews/decks/my-deck.md -o previews/decks/my-deck --pdf --png</code></pre>
+
+    <div class="slidetype-grid">
+      {% for s in slideTypes %}
+        <div class="slidetype-card">
+          <a class="slidetype-thumb" href="{{ ('/previews/showcase/slide-types/?slide=' + s.slideIndex) | url }}" target="_blank">
+            <img src="{{ ('/previews/showcase/slide-types/slides/slide-0' + s.slideIndex + '.png') | url }}" alt="{{ s.label }} thumbnail" onerror="this.outerHTML='<div class=&quot;slidetype-thumb-missing&quot;>Run npm run build:assets to generate thumbnails</div>'">
+          </a>
+          <div class="slidetype-meta">
+            <h3>{{ s.label }} <span class="slidetype-type"><code>@type: {{ s.type }}</code></span></h3>
+            <p>{{ s.description }}</p>
+            <pre class="slidetype-syntax"><code>{{ s.syntax }}</code></pre>
+            <a class="slidetype-link" href="{{ ('/previews/showcase/slide-types/?slide=' + s.slideIndex) | url }}" target="_blank">View in showcase deck →</a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="callout">
+      <h3>HTML passthrough + components</h3>
+      <p>
+        The <code>@type: html</code> slide hands the body to the viewer unchanged, so you can embed components
+        from <code>brand/components/</code>. The canonical example is the radar chart on slide 7 of the showcase —
+        a portable copy of the same chart used on the website quiz.
+      </p>
+      <p>
+        Component files live in <code>brand/components/*.js</code> and are auto-copied into each deck's output directory
+        so the viewer can load them via <code>&lt;script src="components/radar.js"&gt;&lt;/script&gt;</code>.
+      </p>
+    </div>
+
+    <p class="footnote">
+      Source: <code>previews/showcase/slide-types.md</code>. Regenerate thumbnails with <code>npm run build:assets</code>.
+    </p>
+  </div>
+</section>

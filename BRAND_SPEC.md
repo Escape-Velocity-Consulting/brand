@@ -1180,45 +1180,47 @@ Separate concerns: the **Brand Site** is reference documentation (consumed in-br
 
 ### Layout (inside the zip)
 
+This is the contract — what the kit must contain. For the derivation chain (which canonical source produces each entry), see `CLAUDE.md` § "Brand Kit Workflow" — that table is the single source of truth and `scripts/build-kit.ts` is its authoritative implementation.
+
 ```
 escape-velocity-brand-kit/
-├── README.txt                  generated; structure + contact + license summary + git SHA
-├── LICENSE.txt                 copy of press/LICENSE.txt
+├── README.txt
+├── LICENSE.txt
 ├── logos/
-│   ├── svg/                    from assets/logos/*.svg
-│   └── png/                    from assets/raster/*-{300,512,1024,2048}.png
+│   ├── svg/
+│   └── png/
 ├── colors/
-│   ├── palette.pdf             A4 swatch sheet via generate-palette-pdf.ts
-│   ├── palette.ase             Adobe Swatch Exchange via generate-palette-ase.ts
-│   └── tokens.json             raw token data
+│   ├── palette.pdf
+│   ├── palette.ase
+│   └── tokens.json
 ├── fonts/
-│   ├── LICENSES/               from fonts/LICENSES/
-│   ├── README.txt              generated; install pointers
-│   └── *.woff2                 from fonts/
+│   ├── LICENSES/
+│   ├── README.txt
+│   └── *.woff2
 ├── guidelines/
-│   └── brand-guide.pdf         multi-page print of dist/site/
-├── social/                     curated subset of assets/raster/
-├── documents/                  from previews/*.pdf
+│   └── brand-guide.pdf
+├── social/
+├── documents/
 ├── press/
-│   ├── boilerplate.md          from press/boilerplate.md
-│   ├── boilerplate.pdf         rendered via generators/pdf.ts
-│   └── photos/                 from press/photos/
+│   ├── boilerplate.md
+│   ├── boilerplate.pdf
+│   └── photos/
 └── web/
-    ├── README.md               from web/README.md
-    ├── starter.html            from web/starter.html
+    ├── README.md
+    ├── starter.html
     ├── css/
-    │   ├── tokens.css          from tokens.css
-    │   ├── site.css            from site/site.css
-    │   ├── print.css           from site/print.css
-    │   └── fonts/              from fonts/*.woff2 (colocated so site.css resolves)
+    │   ├── tokens.css
+    │   ├── site.css
+    │   ├── print.css
+    │   └── fonts/
     └── templates/
-        ├── documents/          from templates/{letter,offer,invoice,tos,report,_base,_recipient}.html
-        └── social/             from templates/social/*.html
+        ├── documents/
+        └── social/
 ```
 
 ### Source-of-truth contract
 
-Every asset in the kit derives from an existing canonical source — never duplicated, never hardcoded. See the table in `CLAUDE.md` § "Brand Kit Workflow". Adding a new asset class to the kit means: (1) add or identify the canonical source, (2) reference it from `build-kit.ts`. Never paste copy or values into the kit pipeline.
+Every asset in the kit derives from an existing canonical source — never duplicated, never hardcoded. Adding a new asset class means: (1) add or identify the canonical source, (2) wire it in `scripts/build-kit.ts`, (3) update the table in `CLAUDE.md` § "Brand Kit Workflow". Never paste copy or values into the kit pipeline.
 
 ### Build pipeline
 
