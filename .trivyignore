@@ -1,0 +1,15 @@
+# CVE-2026-33671 — picomatch ReDoS in npm's own bundled packages
+#
+# This finding is in /usr/lib/node_modules/npm/node_modules/picomatch,
+# which is part of npm's internal package-manager tooling on the base image
+# (mcr.microsoft.com/playwright:v1.50.0-jammy). It is NOT in any code path
+# that the brand-mcp HTTP server executes or exposes. npm is not a runtime
+# dependency of the server; it is present only because the base image ships
+# it as a system tool. The server never calls npm or picomatch at runtime.
+#
+# npm v10 (the current LTS line) internally pins picomatch@^4.0.3 — there is
+# no npm release that ships picomatch@4.0.4 as of 2026-05. The only way to
+# remove this finding would be to wait for an upstream npm release or switch
+# to a base image without system npm. Neither is warranted for a non-exposed
+# dev tool.
+CVE-2026-33671
