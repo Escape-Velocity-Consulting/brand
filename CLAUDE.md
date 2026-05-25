@@ -10,6 +10,34 @@
 
 Never silently deviate from the spec. If a conflict arises, flag it.
 
+## Token-Sourcing Rule
+
+**`tokens.ts` is the single source of truth for color, type, and spacing values. Never duplicate them in templates.**
+
+### The rule
+
+**Every new template you create — document, deck, social, anything that ships brand styling — MUST source its tokens by injecting `tokens.css` at render time. No exceptions.** This is not "preferred"; it is mandatory. A template that hardcodes brand values is broken on arrival, even if it looks correct, because it silently forks the design system.
+
+Concretely, when you create a new template:
+
+1. **Template file:** put `{{ TOKENS_CSS | safe }}` near the top of the `<style>` block. Use the `var(--color-terracotta)` / `var(--font-headline)` syntax everywhere downstream. Never write a raw hex value or font name.
+2. **Generator file:** read `brand/tokens.css` into a string and pass it as the `TOKENS_CSS` Nunjucks variable. If `tokens.css` doesn't exist, fail with an error message telling the user to run `npm run build:tokens` — don't fall back to defaults.
+3. **Verify before declaring done:** flip one value in `tokens.ts` (e.g. `terracotta` → `#3B82F6`), run `build:tokens` + your generator, confirm the new color appears in the output, then revert. If the output didn't change, your template is hardcoded somewhere — find it.
+
+Reference implementation: `templates/presentation.html` + `generators/presentation.ts`. Copy that pattern.
+
+### Anti-patterns to refuse
+
+- ❌ Pasting hex values or font names directly into a template's CSS — not even "just this once for inline-friendliness."
+- ❌ Writing your own `:root { --color-… }` block in the template. That silently forks the tokens.
+- ❌ Hardcoding tokens "for now" with a TODO to refactor later. Do it right the first time; the cost is one extra import.
+
+### Coverage
+
+All current top-level templates (`presentation.html`, `letter.html`, `offer.html`, `invoice.html`, `tos.html`, `report.html`) source tokens via `_base.html`'s `{{ TOKENS_CSS | safe }}` injection. New templates must do the same.
+
+Subdirectories `templates/carousel/*.html` and `templates/social/*.html` still inline hex values — those generators (`carousel.ts`, `image.ts`) do not yet pass `TOKENS_CSS`. Migrate when next touched; do not use them as reference for new templates.
+
 ## Terminology
 
 Use these terms consistently — they have specific meanings in this repo:
@@ -20,6 +48,7 @@ Use these terms consistently — they have specific meanings in this repo:
 | **Brand Site** | The multi-page reference at `/brand/` (overview, identity, components, documents, social, workflow). Built from `site/`. Viewable standalone at `localhost:3000/brand/` and embedded on the live website at the same URL. |
 | **Brand Assets** | Logos, fonts, generated PNGs, QR codes — anything that ships as a file. |
 | **Brand Distribution** | `dist/site/` — the build output. Self-contained, ready to serve at `/brand/`. The website consumes this via git submodule. |
+| **Brand Kit** | `dist/brand-kit.zip` — downloadable bundle for designers, partners, press. Linked from `/brand/download/`. Assembled by `build:kit` from existing canonical sources. |
 | **Brand Templates** | `templates/*.html` — document/social templates rendered by generators. Not the same as Brand Site templates. |
 | **Brand Generators** | `generators/` — `pdf.ts`, `image.ts`, `carousel.ts`. Render Brand Templates into PDFs/PNGs. |
 | **Brand Tokens** | `tokens.ts` → `tokens.css` + `tokens.json`. Single source of truth for color, type, spacing. |
@@ -41,43 +70,63 @@ brand/
 ├── generate_qr.py         ← legacy Python QR generator
 ├── SpaceGrotesk.ttf       ← font for generate_qr.py only
 ├── fonts/                 ← woff2 fonts (canonical home)
+│   └── LICENSES/          ← OFL + per-family copyrights (shipped in kit)
+├── press/                 ← canonical press copy (boilerplate, photos, license)
+│   ├── boilerplate.md     ← single source of truth for press copy (DE + EN + contact)
+│   ├── LICENSE.txt        ← brand-kit usage terms
+│   └── photos/            ← founder photos
 ├── assets/
 │   ├── logos/             ← SVG sources
-│   ├── raster/            ← generated PNGs
+│   ├── raster/            ← generated PNGs (multi-size: 300/512/1024/2048)
 │   └── qr/                ← generated QR codes
 ├── previews/              ← generated document PDFs + preview PNGs (by export-assets.ts)
-├── generators/            ← pdf.ts, image.ts, carousel.ts
+├── components/            ← portable JS components for HTML slides (e.g. radar.js)
+├── generators/            ← pdf.ts, image.ts, carousel.ts, presentation.ts
 ├── templates/             ← document/social templates (consumed by generators)
+│   ├── presentation.html  ← slide-deck viewer template (16:9, viewer JS inlined)
+│   └── palette-sheet.html ← swatch sheet for the brand-kit palette.pdf
 ├── site/                  ← Brand Site source (11ty)
 │   ├── _includes/         ← base.njk + partial templates
-│   ├── _data/             ← palette, typography, nav (read tokens.json)
+│   ├── _data/             ← palette, typography, nav, version, press (read tokens.json + press/)
 │   ├── .eleventy.cjs      ← 11ty config
 │   ├── site.css           ← Brand Site shared CSS
 │   ├── print.css          ← print overrides
 │   ├── index.njk          ← Overview page
 │   ├── identity.njk, components.njk, documents.njk, social.njk, workflow.njk
+│   └── download.njk, press.njk  ← Brand Kit download + press boilerplate
 ├── dist/                  ← Brand Distribution (gitignored)
-│   ├── site/              ← rendered Brand Site + tokens.css + assets + fonts + previews
+│   ├── site/              ← rendered Brand Site + tokens.css + assets + fonts + previews + brand-kit.zip
+│   ├── brand-kit/         ← staged Brand Kit (folder, before zip)
+│   ├── brand-kit.zip      ← Brand Kit artifact (consumed via /brand/brand-kit.zip)
 │   └── brand-engine.skill ← packaged skill
 └── scripts/
-    ├── build-tokens.ts    ← tokens.ts → tokens.css + tokens.json
-    ├── build-dist.sh      ← full Brand Distribution build
-    ├── build-skill.sh     ← package skill
-    ├── export-assets.ts   ← regenerate all rasters + document previews
-    └── export-logo-pngs.ts
+    ├── build-tokens.ts                ← tokens.ts → tokens.css + tokens.json
+    ├── build-site.sh                  ← render Brand Site → dist/site/
+    ├── build-dist.sh                  ← meta: tokens → assets → site → kit
+    ├── build-kit.ts                   ← assemble dist/brand-kit/ + zip it
+    ├── build-skill.sh                 ← package skill
+    ├── export-assets.ts               ← regenerate rasters + document previews
+    ├── export-logo-pngs.ts            ← website-specific logo PNG export (separate flow)
+    ├── generate-palette-pdf.ts        ← A4 swatch sheet → palette.pdf
+    ├── generate-palette-ase.ts        ← Adobe .ase swatch file
+    └── generate-brand-guide-pdf.ts    ← print dist/site/ → single multi-page PDF
 ```
 
 ## npm Scripts
 
 | Script | Command | What it does |
 |--------|---------|--------------|
-| `dev` | `build:dist && eleventy --serve` | Build dist, then serve Brand Site at `localhost:3000/brand/` with live reload. **Primary brand-iteration command.** |
+| `dev` | `build:tokens && build:site && eleventy --serve` | Regenerate tokens, render Brand Site, then serve at `localhost:3000/brand/` with live reload. **Primary iteration command.** Skips the slow asset/kit builds. |
 | `build:tokens` | `tsx scripts/build-tokens.ts` | Regenerate `tokens.css` + `tokens.json` from `tokens.ts` |
-| `build:dist` | `bash scripts/build-dist.sh` | Build the full Brand Distribution to `dist/site/` |
+| `build:assets` | `tsx scripts/export-assets.ts` | Regenerate all rasters + document previews into `assets/raster/` and `previews/`. Slow (Playwright). |
+| `build:site` | `bash scripts/build-site.sh` | Render Brand Site → `dist/site/` (assumes tokens + assets already built) |
+| `build:kit` | `tsx scripts/build-kit.ts` | Assemble `dist/brand-kit/` + `dist/brand-kit.zip` (assumes tokens + assets + site already built) |
+| `build:dist` | `bash scripts/build-dist.sh` | **Meta:** runs `tokens → assets → site → kit` in order; copies kit zip into `dist/site/`. Use this for full publishable build. |
 | `build:skill` | `bash scripts/build-skill.sh` | Package `dist/brand-engine.skill` |
 | `pdf` | `tsx generators/pdf.ts` | Generate branded PDF from Markdown |
 | `image` | `tsx generators/image.ts` | Generate PNG from HTML/SVG |
-| `export` | `tsx scripts/export-assets.ts` | Regenerate all rasters + document previews into `assets/raster/` and `previews/` |
+| `pres` | `tsx generators/presentation.ts` | Generate slide deck (HTML viewer + PDF + PNGs) from Markdown |
+| `export` | alias of `build:assets` | Kept for muscle memory. |
 
 ## Brand Site Workflow (Token Iteration)
 
@@ -89,6 +138,38 @@ When you want to tweak the brand (colors, type, swatches, components, etc.):
 4. **Bump the submodule in `website/`** — see `website/CLAUDE.md` for commands. CI then rebuilds dist and deploys the live `/brand/` page.
 
 The website does **not** copy from `brand/` directly anymore. It pulls via git submodule pinned to a commit. There is no "sync" step — pushing the brand repo and bumping the submodule pointer is the entire publication flow.
+
+## Brand Kit Workflow
+
+The Brand Kit (`dist/brand-kit.zip`) bundles logos, colors, fonts, sample documents and social graphics, the brand guide as PDF, and the press boilerplate for external distribution. It's the **fourth output** of the brand system (alongside Brand Site, Brand Skill, and the website-facing Brand Distribution).
+
+**Source-of-truth chain.** Every asset in the kit derives from existing canonical sources — never duplicated:
+
+| Kit path | Canonical source |
+|----------|------------------|
+| `logos/svg/` | `assets/logos/*.svg` |
+| `logos/png/` | `assets/raster/*-{300,512,1024,2048}.png` (emitted by `build:assets`) |
+| `colors/tokens.json` | `tokens.ts` (via `build:tokens`) |
+| `colors/palette.pdf` | `templates/palette-sheet.html` + `tokens.css` (via `generate-palette-pdf.ts`) |
+| `colors/palette.ase` | `tokens.json` (via `generate-palette-ase.ts`) |
+| `fonts/*.woff2` | `fonts/` |
+| `fonts/LICENSES/` | `fonts/LICENSES/` |
+| `guidelines/brand-guide.pdf` | `dist/site/` printed via Playwright |
+| `social/*` | curated subset of `assets/raster/` |
+| `documents/*.pdf` | `previews/` |
+| `press/boilerplate.{md,pdf}` | `press/boilerplate.md` |
+| `press/photos/` | `press/photos/` |
+| `LICENSE.txt` | `press/LICENSE.txt` |
+
+**Update flow:**
+
+1. Edit a canonical source (tokens, logos, boilerplate, license, etc.).
+2. `npm run build:dist` — full chain: tokens → assets → site → kit.
+3. Verify locally: unzip `dist/brand-kit.zip` and inspect; run `npm run dev` and open `/brand/download/`.
+4. Commit + push the brand repo.
+5. Bump the submodule in `website/`. Website CI rebuilds everything and `escapevelocity.consulting/brand/brand-kit.zip` updates.
+
+**Anti-patterns to refuse.** Do not hardcode press copy, license text, or color values in the kit generators. If a value isn't in tokens/press/fonts already, add it there first.
 
 ## Brand Site Architecture
 
@@ -130,6 +211,24 @@ npx tsx generators/image.ts --input <file> --type <html|svg> -o <output.png>
 ```
 
 Presets: og=1200x630, linkedin-banner=1584x396, linkedin-post=1200x1200, square=1000x1000
+
+### presentation.ts — Slide Deck Generator
+```bash
+npx tsx generators/presentation.ts <input.md> [options]
+  -o, --output <path>      Output directory (default: ./<input-stem>)
+  --pdf                    Also produce <stem>.pdf
+  --png                    Also produce slides/slide-NN.png per slide
+  --ratio <16-9|4-3>       Aspect ratio (default: 16-9 → 1920×1080)
+  --theme <cream|black>    Default background (default: cream)
+  --title <string>         Deck title (default: first H1)
+  --debug                  Write debug.html (all slides vertical)
+```
+
+**Input format:** Markdown with `===` slide separators. Per-slide directives via HTML comment: `<!-- @type: title|section|content|two-col|quote|image|html -->`, `<!-- @bg: cream|black|terracotta -->`. Defaults to `content`. The `html` type passes raw HTML through (use for embedding components like `radar.js`). Two-col splits left/right on `:::`.
+
+**Outputs:** `<out>/index.html` (self-contained viewer with `components/` and `fonts/` copied alongside), optional `<stem>.pdf` and `slides/slide-NN.png`.
+
+**Viewer keys:** `← → / Space / PgUp / PgDn` navigate, `Home/End` jump, `F` fullscreen, `P` switch to print mode. Query params: `?slide=N` deep-link, `?print=1` flatten for PDF.
 
 ## Skill Workflow
 

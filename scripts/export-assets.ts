@@ -15,23 +15,34 @@ mkdirSync(RASTER_DIR, { recursive: true })
 mkdirSync(PREVIEWS_DIR, { recursive: true })
 
 // --- SVG → PNG exports ---
+// Emit each logo at multiple sizes so the Brand Kit can ship a range.
+// File pattern: <stem>-<size>.png (e.g. logo-dark-300.png, logo-dark-1024.png).
 
-const logoExports = [
-  { input: 'ev-wordmark.svg', output: 'ev-wordmark-300.png', width: 300 },
-  { input: 'logo-dark.svg', output: 'logo-dark-300.png', width: 300 },
-  { input: 'logo-dark-square.svg', output: 'logo-dark-square-300.png', width: 300 },
-  { input: 'ev-wordmark-light.svg', output: 'ev-wordmark-light-300.png', width: 300 },
-  { input: 'logo-light.svg', output: 'logo-light-300.png', width: 300 },
-  { input: 'logo-light-square.svg', output: 'logo-light-square-300.png', width: 300 },
-  { input: 'ev-wordmark-transparent.svg', output: 'ev-wordmark-transparent-300.png', width: 300 },
-  { input: 'logo-transparent.svg', output: 'logo-transparent-300.png', width: 300 },
+const LOGO_SVGS = [
+  'ev-wordmark.svg',
+  'ev-wordmark-light.svg',
+  'ev-wordmark-transparent.svg',
+  'logo-dark.svg',
+  'logo-dark-square.svg',
+  'logo-light.svg',
+  'logo-light-square.svg',
+  'logo-transparent.svg',
 ]
+const LOGO_SIZES = [300, 512, 1024, 2048] as const
 
-for (const { input, output, width } of logoExports) {
-  const inputPath = resolve(LOGOS_DIR, input)
-  const outputPath = resolve(RASTER_DIR, output)
-  await sharp(inputPath).resize(width).png().toFile(outputPath)
-  console.log(`Exported: ${output}`)
+for (const svg of LOGO_SVGS) {
+  const stem = svg.replace(/\.svg$/, '')
+  const inputPath = resolve(LOGOS_DIR, svg)
+  for (const width of LOGO_SIZES) {
+    const output = `${stem}-${width}.png`
+    const outputPath = resolve(RASTER_DIR, output)
+    // density scales with target width so SVG rasterises crisp at large sizes
+    await sharp(inputPath, { density: Math.max(72, Math.round(width / 4)) })
+      .resize(width)
+      .png()
+      .toFile(outputPath)
+    console.log(`Exported: ${output}`)
+  }
 }
 
 // --- LinkedIn banner ---
@@ -210,9 +221,13 @@ for (const { type, output } of previewTypes) {
   const sampleMdPath = resolve(PREVIEWS_DIR, `${type}-sample.md`)
   writeFileSync(sampleMdPath, sampleContent[type])
 
-  // Generate PDF + debug HTML
+  // Generate PDF + debug HTML.
+  // Invoice requires structured recipient flags; other types use the simple --to.
+  const recipientFlags = type === 'invoice'
+    ? `--to-name "Erika Musterfrau" --to-company "Muster GmbH" --to-address "Musterstraße 1\\n1010 Wien" --to-uid "ATU12345678"`
+    : `--to "Muster GmbH"`
   execSync(
-    `npx tsx "${pdfGen}" "${sampleMdPath}" --type ${type} --to "Muster GmbH" --ref "EV-2026-001" --subject "Beispieldokument" --lang de --debug -o "${pdfPath}"`,
+    `npx tsx "${pdfGen}" "${sampleMdPath}" --type ${type} ${recipientFlags} --ref "EV-2026-001" --subject "Beispieldokument" --lang de --debug -o "${pdfPath}"`,
     { stdio: 'inherit', cwd: BRAND_DIR },
   )
 

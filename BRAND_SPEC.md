@@ -722,6 +722,61 @@ npx tsx brand/generators/carousel.ts --spec <spec.json> -o <output.pdf> [--debug
 
 ---
 
+### 11.7 `presentation.ts` — Slide Deck Generator
+
+Generates a self-contained HTML slide-deck viewer (16:9 or 4:3) from a Markdown source, with optional PDF and per-slide PNG export. Single source → three outputs (viewer / PDF / images).
+
+**Input:** Markdown file. Slides separated by `===` on its own line. Per-slide options via HTML-comment directives.
+
+**Directives:**
+
+| Directive | Values | Default | Notes |
+|-----------|--------|---------|-------|
+| `<!-- @type: X -->` | `title`, `section`, `content`, `two-col`, `quote`, `image`, `html` | `content` | Slide layout |
+| `<!-- @bg: X -->` | `cream`, `black`, `terracotta`, `light` | `cream` | Background color |
+| `<!-- @notes: ... -->` | free text | — | Speaker notes (reserved; ignored in v1) |
+
+**Slide-type conventions:**
+
+| Type | Markdown contract |
+|------|-------------------|
+| `title` | `# H1` = headline. `> eyebrow` = above-headline eyebrow. Remaining lines = subtitle. |
+| `section` | `# H1` = section name. `> Teil 1` = section number/label. |
+| `content` | `## H2` = slide heading (+ accent rule). Body = markdown (lists, paragraphs, tables, `### H3`). |
+| `two-col` | `## H2` heading, then markdown for left column, `:::` separator, markdown for right column. |
+| `quote` | Markdown blockquote (`> ...`) plus an attribution line starting with `—`. |
+| `image` | `![caption](path)` — relative paths resolved against the source MD's directory. |
+| `html` | Raw HTML passthrough — use for embedding components (e.g. `<script>` calls into `components/radar.js`). No markdown rendering. |
+
+**CLI:**
+```bash
+npx tsx generators/presentation.ts <input.md> [options]
+  -o, --output <dir>       Output directory (default: ./<input-stem>)
+  --pdf                    Also produce <stem>.pdf
+  --png                    Also produce slides/slide-NN.png per slide
+  --ratio <16-9|4-3>       Default: 16-9 (1920×1080)
+  --theme <cream|black>    Default slide bg if no @bg directive
+  --title <string>         Deck title (default: first H1)
+  --debug                  Also write debug.html (all slides stacked vertically)
+```
+
+**Outputs in `<out>/`:**
+- `index.html` — self-contained viewer (inlined CSS + viewer JS, references `./fonts/*` and `./components/*`)
+- `fonts/` — copied from `brand/fonts/` (or `website/fonts/` fallback)
+- `components/` — copied from `brand/components/` (loads before slides, so inline `<script>` blocks in `html` slides can call e.g. `renderRadarChart()`)
+- `<stem>.pdf` (if `--pdf`) — Playwright print at slide dimensions, one slide per page, `?print=1` mode
+- `slides/slide-NN.png` (if `--png`) — one PNG per slide at full resolution
+
+**Viewer behavior:**
+- Keys: `← → / Space / PgUp / PgDn` navigate, `Home/End` jump to first/last, `F` fullscreen, `P` switch to print mode (`?print=1`)
+- Query params: `?slide=N` deep-link, `?print=1` flatten for PDF/screenshot
+- Click left/right half of screen to navigate
+- Slide auto-scales to viewport while preserving aspect ratio
+
+**Component embedding:** Place portable JS in `brand/components/*.js` (no module syntax — UMD-style attach to `window`). They are auto-copied next to the viewer and loaded before any slide markup, so HTML slides can use them directly. Canonical example: `components/radar.js` exposes `window.renderRadarChart(scores, weakDims, opts)`.
+
+---
+
 ## 12. Template Conventions
 
 ### `_base.html` — Base Template
@@ -1114,3 +1169,61 @@ User installs `brand-engine.skill` via Cowork's plugin/skill install flow. Once 
 ### Maintenance rule
 
 `SKILL.md` is edited by hand when the system's capabilities change meaningfully. `references/` files are overwritten on every `build:skill` run — never edit them directly in the skill folder, always edit the source (`BRAND_SKILL.md`, `AGENT_GUIDE.md`) and rebuild.
+
+## 21. Brand Kit
+
+The Brand Kit is the system's external-distribution output: a single `dist/brand-kit.zip` that designers, partners, and journalists can download.
+
+### Purpose
+
+Separate concerns: the **Brand Site** is reference documentation (consumed in-browser), the **Brand Skill** is for Claude (generates documents), and the **Brand Kit** is for humans to take away and use externally.
+
+### Layout (inside the zip)
+
+```
+escape-velocity-brand-kit/
+├── README.txt                  generated; structure + contact + license summary + git SHA
+├── LICENSE.txt                 copy of press/LICENSE.txt
+├── logos/
+│   ├── svg/                    from assets/logos/*.svg
+│   └── png/                    from assets/raster/*-{300,512,1024,2048}.png
+├── colors/
+│   ├── palette.pdf             A4 swatch sheet via generate-palette-pdf.ts
+│   ├── palette.ase             Adobe Swatch Exchange via generate-palette-ase.ts
+│   └── tokens.json             raw token data
+├── fonts/
+│   ├── LICENSES/               from fonts/LICENSES/
+│   ├── README.txt              generated; install pointers
+│   └── *.woff2                 from fonts/
+├── guidelines/
+│   └── brand-guide.pdf         multi-page print of dist/site/
+├── social/                     curated subset of assets/raster/
+├── documents/                  from previews/*.pdf
+└── press/
+    ├── boilerplate.md          from press/boilerplate.md
+    ├── boilerplate.pdf         rendered via generators/pdf.ts
+    └── photos/                 from press/photos/
+```
+
+### Source-of-truth contract
+
+Every asset in the kit derives from an existing canonical source — never duplicated, never hardcoded. See the table in `CLAUDE.md` § "Brand Kit Workflow". Adding a new asset class to the kit means: (1) add or identify the canonical source, (2) reference it from `build-kit.ts`. Never paste copy or values into the kit pipeline.
+
+### Build pipeline
+
+| Step | Script |
+|------|--------|
+| Tokens | `build:tokens` → `tokens.css` + `tokens.json` |
+| Assets | `build:assets` → `assets/raster/` (multi-size PNGs) + `previews/` (document PDFs) |
+| Site   | `build:site` → `dist/site/` |
+| Kit    | `build:kit` → `dist/brand-kit/` + `dist/brand-kit.zip`; `build-dist.sh` also copies the zip into `dist/site/brand-kit.zip` |
+
+`build:dist` chains all four in order. CI on the website runs `build:dist` from the submodule.
+
+### Distribution
+
+Public URL: `https://escapevelocity.consulting/brand/brand-kit.zip`. Linked from the Brand Site `/brand/download/` page. The site's footer shows the brand-system git SHA so a viewer can match the live site against their downloaded kit.
+
+### License
+
+`press/LICENSE.txt` defines usage terms. The kit will not be linked publicly until that file is reviewed and signed off. Updates to the license bump the kit version and require a republish.

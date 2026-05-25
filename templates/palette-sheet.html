@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+/* Fonts — only the ones used on this sheet */
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('{{ FONTS_URI }}/space-grotesk.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('{{ FONTS_URI }}/inter.woff2') format('woff2');
+  font-weight: 400 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('{{ FONTS_URI }}/jetbrains-mono.woff2') format('woff2');
+  font-weight: 400 500;
+  font-display: swap;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* Tokens — injected from brand/tokens.css */
+{{ TOKENS_CSS | safe }}
+
+@page {
+  size: A4 portrait;
+  margin: 18mm 18mm 16mm;
+}
+
+html, body {
+  font-family: 'Inter', sans-serif;
+  color: var(--color-text);
+  background: var(--color-cream);
+  font-size: 10pt;
+  line-height: 1.45;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-bottom: 8mm;
+  border-bottom: 0.5pt solid var(--color-doc-border);
+  margin-bottom: 8mm;
+}
+.header h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 22pt;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+.header .meta {
+  text-align: right;
+  font-size: 8.5pt;
+  color: var(--color-subtle);
+}
+.header .meta .eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7pt;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-terracotta);
+  margin-bottom: 2mm;
+}
+
+.category {
+  margin-bottom: 8mm;
+}
+.category h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8pt;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-subtle);
+  margin-bottom: 4mm;
+  font-weight: 500;
+}
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4mm;
+}
+.swatch {
+  border: 0.5pt solid var(--color-doc-border);
+  border-radius: 2mm;
+  overflow: hidden;
+  background: white;
+}
+.swatch .chip {
+  height: 24mm;
+}
+.swatch .body {
+  padding: 3mm 4mm 4mm;
+}
+.swatch .name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 11pt;
+  color: var(--color-text);
+  margin-bottom: 0.5mm;
+}
+.swatch .role {
+  font-size: 7.5pt;
+  color: var(--color-subtle);
+  margin-bottom: 2mm;
+  line-height: 1.3;
+}
+.swatch .values {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7.5pt;
+  color: var(--color-doc-text);
+  line-height: 1.5;
+}
+.swatch .values .label {
+  display: inline-block;
+  width: 9mm;
+  color: var(--color-subtle);
+}
+
+.footer {
+  margin-top: 10mm;
+  padding-top: 4mm;
+  border-top: 0.5pt solid var(--color-doc-border);
+  display: flex;
+  justify-content: space-between;
+  font-size: 7.5pt;
+  color: var(--color-subtle);
+}
+.footer .right {
+  font-family: 'JetBrains Mono', monospace;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Color Palette</h1>
+  <div class="meta">
+    <div class="eyebrow">Escape Velocity · Brand Kit</div>
+    <div>Generated {{ DATE }} · v{{ VERSION }}</div>
+  </div>
+</div>
+
+{% for cat in CATEGORIES %}
+<section class="category">
+  <h2>{{ cat.label }}</h2>
+  <div class="swatches">
+    {% for c in cat.colors %}
+    <div class="swatch">
+      <div class="chip" style="background: {{ c.hex }};"></div>
+      <div class="body">
+        <div class="name">{{ c.name }}</div>
+        <div class="role">{{ c.role }}</div>
+        <div class="values">
+          <div><span class="label">HEX</span> {{ c.hex | upper }}</div>
+          <div><span class="label">RGB</span> {{ c.rgb }}</div>
+          <div><span class="label">CMYK</span> {{ c.cmyk }}</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+
+<div class="footer">
+  <span>Tokens are the source of truth — generated from <code>brand/tokens.ts</code>.</span>
+  <span class="right">escapevelocity.consulting/brand</span>
+</div>
+
+</body>
+</html>

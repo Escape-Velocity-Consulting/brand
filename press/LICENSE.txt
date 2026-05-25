@@ -1,0 +1,95 @@
+Escape Velocity — Brand Asset Usage Terms
+===========================================
+
+Version 1.0 — Draft (pending review by Escape Velocity Consulting)
+
+These terms govern the use of the assets contained in this Brand Kit:
+logos, color palette, typography, document templates, sample social
+graphics, founder photographs, and the boilerplate copy.
+
+By downloading or using these assets, you agree to the terms below.
+
+
+1. PERMITTED USES
+-----------------
+
+You MAY use the Escape Velocity logos, name, photos, and boilerplate
+copy for the following purposes without prior written permission:
+
+  a) Editorial and journalistic coverage of Escape Velocity Consulting,
+     Tommi Enenkel, or projects on which Escape Velocity has worked.
+
+  b) Reference in case studies, references, or partner pages
+     identifying an existing or past commercial relationship with
+     Escape Velocity.
+
+  c) Internal documentation (intranets, slide decks, supplier lists)
+     where Escape Velocity is mentioned in a factual context.
+
+
+2. RESTRICTIONS
+---------------
+
+You MAY NOT:
+
+  a) Modify, redraw, recolor, or otherwise alter the logo marks.
+     Use them only in the forms provided in /logos/.
+
+  b) Use the logos, name, or photos in any way that implies a
+     partnership, endorsement, sponsorship, or affiliation that does
+     not exist.
+
+  c) Use the logos, name, or photos as part of your own product,
+     service, or company branding.
+
+  d) Use the founder photographs for advertising, merchandise, or
+     any commercial purpose unrelated to coverage of, or a
+     relationship with, Escape Velocity.
+
+  e) Sublicense, sell, or redistribute the kit itself.
+
+
+3. TYPOGRAPHY
+-------------
+
+The fonts shipped in /fonts/ (Inter, Manrope, Space Grotesk,
+JetBrains Mono) are licensed under the SIL Open Font License (OFL).
+The full OFL text is included in /fonts/LICENSES/. You may use,
+embed, and redistribute the fonts under the terms of the OFL,
+independently of this Brand Kit license.
+
+
+4. COLORS AND TOKENS
+--------------------
+
+Color values (in /colors/tokens.json, /colors/palette.pdf,
+/colors/palette.ase) are factual data and not subject to copyright.
+You may reference and reproduce them freely.
+
+
+5. NO WARRANTY
+--------------
+
+The assets are provided "as is", without warranty of any kind. Escape
+Velocity Consulting is not liable for any damages arising from their
+use.
+
+
+6. PERMISSION REQUESTS
+----------------------
+
+For any use not covered above, or to request the latest version of
+an asset, contact:
+
+  Tommi Enenkel
+  tommi.enenkel@escapevelocity.consulting
+
+We typically respond within two business days.
+
+
+7. UPDATES
+----------
+
+These terms may be updated. The version in force is the one
+distributed with the Brand Kit you downloaded. The latest kit is
+always at https://escapevelocity.consulting/brand/brand-kit.zip

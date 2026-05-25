@@ -1,34 +1,32 @@
 #!/usr/bin/env bash
-# Build the Brand Distribution.
-# Output: brand/dist/site/ — fully self-contained, serve at /brand/ with any static server.
+# Full Brand Distribution build: tokens → assets → site → kit.
+# Produces dist/site/ (Brand Site) and dist/brand-kit.zip (Brand Kit),
+# and copies the kit zip into dist/site/ so it ships with the site.
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BRAND_DIR="$(dirname "$SCRIPT_DIR")"
 DIST_SITE="$BRAND_DIR/dist/site"
+KIT_ZIP="$BRAND_DIR/dist/brand-kit.zip"
 
 cd "$BRAND_DIR"
 
-# 1. Regenerate tokens (tokens.css + tokens.json)
+# 1. Tokens (cheap, always run)
 npm run build:tokens
 
-# 2. Render the Brand Site
-rm -rf "$DIST_SITE"
-./node_modules/.bin/eleventy --config=site/.eleventy.cjs --input=site
+# 2. Assets (rasters + document previews). Slow — Playwright renders.
+npm run build:assets
 
-# 3. Copy CSS + non-site assets into dist/site/
-#    (11ty passthrough is finicky; doing it here keeps the dist build deterministic.)
-cp "$BRAND_DIR/site/site.css"  "$DIST_SITE/site.css"
-cp "$BRAND_DIR/site/print.css" "$DIST_SITE/print.css"
-cp "$BRAND_DIR/tokens.css"     "$DIST_SITE/tokens.css"
-cp -r "$BRAND_DIR/assets"      "$DIST_SITE/assets"
+# 3. Brand Site
+npm run build:site
 
-if   [ -d "$BRAND_DIR/fonts" ];          then cp -r "$BRAND_DIR/fonts" "$DIST_SITE/fonts"
-elif [ -d "$BRAND_DIR/../website/fonts" ]; then cp -r "$BRAND_DIR/../website/fonts" "$DIST_SITE/fonts"
-else echo "Warning: no fonts/ at brand/fonts/ or website/fonts/" >&2
+# 4. Brand Kit (depends on tokens, assets, previews, dist/site/)
+npm run build:kit
+
+# 5. Ship the kit alongside the site
+if [ -f "$KIT_ZIP" ]; then
+  cp "$KIT_ZIP" "$DIST_SITE/brand-kit.zip"
+  echo "Copied kit zip into dist/site/brand-kit.zip"
 fi
 
-# Document previews
-[ -d "$BRAND_DIR/previews" ] && cp -r "$BRAND_DIR/previews" "$DIST_SITE/previews"
-
-echo "Built: $DIST_SITE/"
+echo "Brand Distribution built: $DIST_SITE/ (+ $KIT_ZIP)"

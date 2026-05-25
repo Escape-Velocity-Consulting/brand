@@ -5,5 +5,7 @@ module.exports = [
   { slug: "components", label: "Components", description: "Buttons, cards, tags, dividers, newsletter blocks" },
   { slug: "documents", label: "Documents",  description: "Letter, offer, invoice, ToS templates with previews" },
   { slug: "social",    label: "Social",     description: "LinkedIn banner, logo variants, QR codes" },
-  { slug: "workflow",  label: "Workflow",   description: "Pipeline overview, generators, token workflow" }
+  { slug: "workflow",  label: "Workflow",   description: "Pipeline overview, generators, token workflow" },
+  { slug: "download",  label: "Download",   description: "Brand assets kit — logos, colors, fonts, templates" },
+  { slug: "press",     label: "Press",      description: "Boilerplate, founder bio, photos, contact" }
 ];
