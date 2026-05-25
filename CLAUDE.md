@@ -118,7 +118,7 @@ Use these terms consistently — they have specific meanings in this repo:
 | **Brand Templates** | `templates/*.html` — document/social templates rendered by generators. Not the same as Brand Site templates. |
 | **Brand Generators** | `generators/` — `pdf.ts`, `image.ts`, `carousel.ts`, `presentation.ts`. Thin CLI shims over the rendering core. |
 | **Rendering Core** | `src/core/` — pure-function library (no `process.exit`, no CWD assumptions, shared `BrowserPool`). The single source of truth for render logic, used by both CLI shims and the MCP server. |
-| **Brand MCP** | `src/mcp/` — stdio MCP server wrapping the rendering core. Exposes 7 tools (`render_document`, `render_image`, `render_image_html`, `render_carousel`, `render_presentation`, `list_templates`, `get_tokens`) to Claude Code with a warm Chromium across calls. |
+| **Brand MCP** | `src/mcp/` — stdio + HTTP MCP server wrapping the rendering core. Exposes 6 tools (`render_template`, `render_html_to_png`, `render_html_to_pdf`, `render_slides`, `list_templates`, `get_tokens`) with a warm Chromium across calls. Public endpoint: `https://mcp.escapevelocity.consulting/mcp` (Google-OAuth gated). |
 | **Brand Tokens** | `tokens.ts` → `tokens.css` + `tokens.json`. Single source of truth for color, type, spacing. |
 
 ## Repository Layout

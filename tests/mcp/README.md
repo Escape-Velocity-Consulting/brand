@@ -1,6 +1,6 @@
 # MCP end-to-end tests
 
-Data-driven test harness for the brand-engine MCP server. Each fixture in
+Data-driven test harness for the escape-velocity-brand MCP server. Each fixture in
 `fixtures/` is a JSON file describing one tool call + the expected response.
 The runner spawns the server over stdio, calls every fixture, and reports
 PASS/FAIL.
@@ -25,7 +25,7 @@ is self-contained and openable from `file://` without cross-origin issues.
 To run a subset, pass a glob:
 
 ```bash
-npm run test:mcp -- 'render_image*'
+npm run test:mcp -- 'render_template*'
 ```
 
 Other flags:
@@ -37,10 +37,10 @@ Other flags:
 ```jsonc
 {
   "name": "human-readable label",          // shown in output
-  "tool": "render_image",                  // MCP tool name
+  "tool": "render_template",               // MCP tool name
   "args": {                                // forwarded as tool arguments
-    "template": "templates/social/og.html",
-    "preset": "og",
+    "template": "social/og",
+    "vars": { "TITLE": "Hello" },
     "outputPath": "{{TMP}}/og.png"         // {{TMP}} → os.tmpdir()
   },
   "expect": {
@@ -90,7 +90,7 @@ For each key in `expect.structured`:
 ## Adding a test
 
 1. Drop a new `.json` file into `fixtures/`. Name it after the tool + scenario,
-   e.g. `render_carousel.linkedin-portrait.json`.
+   e.g. `render_slides.linkedin-portrait.json`.
 2. Run `npm run test:mcp`.
 3. Iterate.
 

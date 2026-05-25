@@ -1001,7 +1001,7 @@ The agent-facing surface has two layers (see `brand/CLAUDE.md` for the current o
 
 | Layer | File | Audience |
 |-------|------|----------|
-| **Skill** | `skill/brand-engine/SKILL.md` | Claude: workflow routing + tool reference. Thin guidance, ~8KB. |
+| **Skill** | `skill/escape-velocity-brand/SKILL.md` | Claude: workflow routing + tool reference. Thin guidance, ~8KB. |
 | **Brand reference** | `BRAND_SKILL.md` (shipped in the .skill as `references/brand-reference.md`) | Claude: token table, CSS vars, layout patterns, voice rules. Authoring reference only — no workflow. |
 | **Spec** | `BRAND_SPEC.md` (this file) | Designers + maintainers: normative design rules, history, rationale. |
 | **Operational** | `CLAUDE.md` | Repo maintainers: where things live, npm scripts, MCP tool surface, CI/CD, registration. |
@@ -1128,13 +1128,13 @@ When a new asset type or component is added to the spec, add a corresponding sec
 
 ## 20. Skill Compilation Pipeline
 
-The brand skill is packaged as a thin `.skill` ZIP (~8KB). Source lives in `brand/skill/brand-engine/`, compiled by `brand/scripts/build-skill.sh`.
+The brand skill is packaged as a thin `.skill` ZIP (~8KB). Source lives in `brand/skill/escape-velocity-brand/`, compiled by `brand/scripts/build-skill.sh`.
 
 ### Skill folder structure
 
 ```
 brand/skill/
-└── brand-engine/
+└── escape-velocity-brand/
     └── SKILL.md                         ← YAML frontmatter + workflow guidance
 ```
 
@@ -1145,12 +1145,12 @@ The `references/brand-reference.md` sidecar is **generated at build time** from 
 Follows the standard Claude Code skill format:
 ```yaml
 ---
-name: brand-engine
+name: escape-velocity-brand
 description: [triggering description — see SKILL.md for current wording]
 ---
 ```
 
-Body: mental model, 6-tool reference, routing decision tree, HTML authoring rules, examples. The skill assumes brand-mcp is registered; if not, the skill still works for HTML authoring (graceful degradation).
+Body: mental model, 6-tool reference, routing decision tree, HTML authoring rules, examples. The skill assumes the escape-velocity-brand MCP server is registered; if not, the skill still works for HTML authoring (graceful degradation).
 
 ### Compilation
 
@@ -1159,21 +1159,21 @@ npm run build:skill
 ```
 
 This runs `scripts/build-skill.sh` which:
-1. Stages `skill/brand-engine/SKILL.md` into a temp dir
+1. Stages `skill/escape-velocity-brand/SKILL.md` into a temp dir
 2. Copies `BRAND_SKILL.md` → `references/brand-reference.md` in the staging dir
-3. ZIPs to `dist/brand-engine.skill`
+3. ZIPs to `dist/escape-velocity-brand.skill`
 
 ### Phase 3 redesign (current)
 
-The skill **does not** ship generators, templates, fonts, tokens, or a `setup.sh` bootstrap. All rendering is delegated to the brand-mcp MCP server (see §11 for the tool surface and `CLAUDE.md` for registration). The skill teaches the design system + routing; the MCP renders.
+The skill **does not** ship generators, templates, fonts, tokens, or a `setup.sh` bootstrap. All rendering is delegated to the escape-velocity-brand MCP server (see §11 for the tool surface and `CLAUDE.md` for registration). The skill teaches the design system + routing; the MCP renders.
 
 ### Installation
 
-User installs `brand-engine.skill` via the skill install flow in Claude Code / Claude Desktop. Once installed, Claude knows the design system and routes render requests through the MCP.
+User installs `escape-velocity-brand.skill` via the skill install flow in Claude Code / Claude Desktop. Once installed, Claude knows the design system and routes render requests through the MCP.
 
 ### Maintenance rule
 
-Edit `skill/brand-engine/SKILL.md` (workflow) and `BRAND_SKILL.md` (brand reference) at the repo root. Run `npm run build:skill` to repackage. The contents of `skill/brand-engine/references/` are not version-controlled (regenerated each build).
+Edit `skill/escape-velocity-brand/SKILL.md` (workflow) and `BRAND_SKILL.md` (brand reference) at the repo root. Run `npm run build:skill` to repackage. The contents of `skill/escape-velocity-brand/references/` are not version-controlled (regenerated each build).
 
 ## 21. Brand Kit
 

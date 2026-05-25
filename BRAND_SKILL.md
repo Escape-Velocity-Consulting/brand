@@ -1,8 +1,8 @@
 # Escape Velocity — Brand Reference
 
 > Token table + CSS vars + layout patterns. Authoring reference only — no
-> workflow guidance (that lives in `SKILL.md`). Shipped in the brand-engine
-> skill as `references/brand-reference.md`.
+> workflow guidance (that lives in `SKILL.md`). Shipped in the
+> escape-velocity-brand skill as `references/brand-reference.md`.
 
 ---
 
