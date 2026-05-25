@@ -3,7 +3,7 @@
 # ─── Stage 1: build TypeScript + tokens.json ───────────────────────────────
 # Use the Playwright image even at build so Chromium system deps are
 # consistent across stages — no native-binary surprises between build & run.
-FROM mcr.microsoft.com/playwright:v1.50.0-jammy AS build
+FROM mcr.microsoft.com/playwright:v1.60.0-jammy AS build
 WORKDIR /app
 
 # Patch OS packages before building so CVE scanners don't flag unfixed vulns
@@ -26,7 +26,7 @@ RUN npx tsx scripts/build-tokens.ts \
 
 
 # ─── Stage 2: runtime ──────────────────────────────────────────────────────
-FROM mcr.microsoft.com/playwright:v1.50.0-jammy
+FROM mcr.microsoft.com/playwright:v1.60.0-jammy
 WORKDIR /app
 
 # Patch OS packages — clears dirmngr/git/related Ubuntu CVEs flagged by Trivy.
