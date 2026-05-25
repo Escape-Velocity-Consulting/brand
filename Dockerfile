@@ -6,6 +6,10 @@
 FROM mcr.microsoft.com/playwright:v1.50.0-jammy AS build
 WORKDIR /app
 
+# Patch OS packages before building so CVE scanners don't flag unfixed vulns
+# carried in from the base image (dirmngr, git, etc.).
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+
 # Install all deps (incl. devDeps for tsc / tsx / build-tokens script).
 COPY package.json package-lock.json ./
 RUN npm ci --include=dev
@@ -24,6 +28,9 @@ RUN npx tsx scripts/build-tokens.ts \
 # ─── Stage 2: runtime ──────────────────────────────────────────────────────
 FROM mcr.microsoft.com/playwright:v1.50.0-jammy
 WORKDIR /app
+
+# Patch OS packages — clears dirmngr/git/related Ubuntu CVEs flagged by Trivy.
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 
 # Non-root user. Playwright's base image ships with `pwuser`, but creating our
 # own keeps /app ownership clean and decouples from upstream changes.
