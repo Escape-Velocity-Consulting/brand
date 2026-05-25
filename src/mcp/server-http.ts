@@ -11,7 +11,16 @@ import { resolveBrandPaths } from '../core/paths.js'
 import { createServer, type ServerContext } from './shared/createServer.js'
 import { RemoteOutputSink } from './shared/outputSinks.js'
 import { ArtifactStore, summarizeStore } from './shared/artifactStore.js'
-import { checkBearer } from './shared/bearerAuth.js'
+import { authenticate, type AuthConfig } from './shared/jwtAuth.js'
+import {
+  handleAsMetadata,
+  handleAuthorize,
+  handleGoogleCallback,
+  handleRegister,
+  handleToken,
+  stopOAuthCleanup,
+  type OAuthConfig,
+} from './shared/oauthServer.js'
 import { resolveBrandDir } from './shared/resolveBrandDir.js'
 
 /**
@@ -71,9 +80,39 @@ async function main() {
   const brandDir = resolveBrandDir(import.meta.url)
   const paths = resolveBrandPaths(brandDir)
 
-  const bearerToken = requireEnv('MCP_BEARER_TOKEN')
   const signingSecret = requireEnv('MCP_SIGNING_SECRET')
   const publicBaseUrl = requireEnv('MCP_PUBLIC_BASE_URL')
+  // JWT secret is required once the OAuth flow is in use. During transition we
+  // also accept the legacy static MCP_BEARER_TOKEN. One of the two must be set.
+  const jwtSecret = process.env.MCP_JWT_SECRET ?? ''
+  const legacyBearerToken = process.env.MCP_BEARER_TOKEN ?? ''
+  if (!jwtSecret && !legacyBearerToken) {
+    console.error('[brand-engine MCP/http] FATAL: set MCP_JWT_SECRET (OAuth) and/or MCP_BEARER_TOKEN (legacy/test)')
+    process.exit(1)
+  }
+  const allowedEmails = new Set(
+    (process.env.MCP_ALLOWED_EMAILS ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
+  )
+  const authConfig: AuthConfig = {
+    jwtSecret: jwtSecret || 'no-jwt-configured-only-legacy-bearer',
+    publicBaseUrl,
+    allowedEmails,
+    legacyBearerToken,
+  }
+
+  // OAuth (Google-delegated). Optional — only enabled if Google client creds
+  // are present. If not configured, /authorize etc. return 503; the static
+  // bearer fallback keeps the test suite working.
+  const googleClientId = process.env.MCP_OAUTH_GOOGLE_CLIENT_ID ?? ''
+  const googleClientSecret = process.env.MCP_OAUTH_GOOGLE_CLIENT_SECRET ?? ''
+  const oauthEnabled = !!(googleClientId && googleClientSecret && jwtSecret && allowedEmails.size > 0)
+  const oauthConfig: OAuthConfig = {
+    publicBaseUrl,
+    googleClientId,
+    googleClientSecret,
+    allowedEmails,
+    authConfig,
+  }
   const port = optEnvInt('MCP_PORT', 8080)
   const host = process.env.MCP_BIND_HOST ?? '0.0.0.0'
   const storeDir = process.env.MCP_TMP_DIR ?? resolve(tmpdir(), 'brand-mcp')
@@ -122,7 +161,7 @@ async function main() {
 
   const httpServer = createHttpServer(async (req, res) => {
     try {
-      await route(req, res, transports, createSessionTransport, store, bearerToken)
+      await route(req, res, transports, createSessionTransport, store, authConfig, oauthConfig, oauthEnabled)
     } catch (err) {
       console.error('[brand-engine MCP/http] unhandled:', err)
       if (!res.headersSent) {
@@ -135,6 +174,7 @@ async function main() {
   const shutdown = async (signal: string) => {
     console.error(`[brand-engine MCP/http] ${signal} — shutting down`)
     store.stopCleanup()
+    stopOAuthCleanup()
     try { httpServer.close() } catch {}
     for (const t of transports.values()) {
       try { await t.close() } catch {}
@@ -150,6 +190,7 @@ async function main() {
     console.error(`[brand-engine MCP/http] listening on http://${host}:${port}`)
     console.error(`[brand-engine MCP/http] brandDir=${brandDir}`)
     console.error(`[brand-engine MCP/http] artifact store: ${storeDir}`)
+    console.error(`[brand-engine MCP/http] auth: JWT=${jwtSecret ? 'on' : 'off'}, legacy bearer=${legacyBearerToken ? 'on' : 'off'}, OAuth=${oauthEnabled ? 'on' : 'off'}, allowlist=${allowedEmails.size} emails`)
     const snap = summarizeStore(storeDir)
     console.error(`[brand-engine MCP/http] existing artifacts on disk: ${snap.fileCount} files, ${snap.bytes} bytes`)
   })
@@ -161,19 +202,88 @@ async function route(
   transports: Map<string, StreamableHTTPServerTransport>,
   createSessionTransport: () => Promise<StreamableHTTPServerTransport>,
   store: ArtifactStore,
-  bearerToken: string,
+  authConfig: AuthConfig,
+  oauthConfig: OAuthConfig,
+  oauthEnabled: boolean,
 ): Promise<void> {
   const url = req.url ?? '/'
+  const path = url.split('?')[0]
   const method = req.method ?? 'GET'
 
-  if (url === '/health' && method === 'GET') {
+  if (path === '/health' && method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ status: 'ok' }))
     return
   }
 
-  if (url.startsWith('/artifacts/') && method === 'GET') {
-    const token = url.slice('/artifacts/'.length).split('?')[0]
+  // RFC 9728 — Protected Resource Metadata. Public; tells clients where to
+  // find the OAuth authorization server. We're our own AS, so it points at
+  // ourselves.
+  if (path === '/.well-known/oauth-protected-resource' && method === 'GET') {
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, max-age=3600',
+    })
+    res.end(JSON.stringify({
+      resource: `${authConfig.publicBaseUrl}/mcp`,
+      authorization_servers: [authConfig.publicBaseUrl],
+      bearer_methods_supported: ['header'],
+      scopes_supported: ['mcp'],
+    }))
+    return
+  }
+
+  // RFC 8414 — Authorization Server Metadata. Public.
+  if (path === '/.well-known/oauth-authorization-server' && method === 'GET') {
+    if (!oauthEnabled) {
+      res.writeHead(503, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: 'oauth_not_configured' }))
+      return
+    }
+    handleAsMetadata(res, oauthConfig)
+    return
+  }
+
+  // OAuth endpoints
+  if (path === '/authorize' && method === 'GET') {
+    if (!oauthEnabled) {
+      res.writeHead(503, { 'Content-Type': 'text/plain' })
+      res.end('OAuth is not configured on this server (missing MCP_OAUTH_GOOGLE_CLIENT_ID, MCP_JWT_SECRET, or MCP_ALLOWED_EMAILS).')
+      return
+    }
+    handleAuthorize(req, res, oauthConfig)
+    return
+  }
+  if (path === '/oauth/google/callback' && method === 'GET') {
+    if (!oauthEnabled) {
+      res.writeHead(503, { 'Content-Type': 'text/plain' })
+      res.end('OAuth is not configured on this server.')
+      return
+    }
+    await handleGoogleCallback(req, res, oauthConfig)
+    return
+  }
+  if (path === '/token' && method === 'POST') {
+    if (!oauthEnabled) {
+      res.writeHead(503, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: 'oauth_not_configured' }))
+      return
+    }
+    await handleToken(req, res, oauthConfig)
+    return
+  }
+  if (path === '/register' && method === 'POST') {
+    if (!oauthEnabled) {
+      res.writeHead(503, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: 'oauth_not_configured' }))
+      return
+    }
+    await handleRegister(req, res, oauthConfig)
+    return
+  }
+
+  if (path.startsWith('/artifacts/') && method === 'GET') {
+    const token = path.slice('/artifacts/'.length)
     if (!token) {
       res.writeHead(404, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify({ error: 'not_found' }))
@@ -194,8 +304,9 @@ async function route(
     return
   }
 
-  if (url === '/mcp' || url.startsWith('/mcp?')) {
-    if (!checkBearer(req, res, bearerToken)) return
+  if (path === '/mcp') {
+    const authed = await authenticate(req, res, authConfig)
+    if (!authed) return
 
     const sessionId = req.headers['mcp-session-id'] as string | undefined
 

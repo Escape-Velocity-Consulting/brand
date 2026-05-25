@@ -31,11 +31,12 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "picomatch": "^4.0.4",
     "archiver": "^7",
+    "jose": "^6.2.3",
     "markdown-it": "^14",
     "nunjucks": "^3.2",
     "pdf-lib": "^1.17.1",
+    "picomatch": "^4.0.4",
     "playwright": "1.60.0",
     "sharp": "^0.34.5",
     "zod": "^4.4.3"

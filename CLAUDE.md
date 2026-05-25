@@ -367,11 +367,30 @@ Multi-output tools (`render_slides`) return nested objects of these (`{ viewer, 
 
 ### Registering the MCP server
 
-One-time setup per workstation. **The skill assumes brand-mcp is registered** — pick the option matching your client.
+One-time setup per workstation. **The skill assumes brand-mcp is registered.** Pick the option matching your client.
 
-#### Claude Code — remote HTTP (recommended)
+#### Claude Desktop — OAuth via UI (recommended)
 
-Points at the deployed server at `https://mcp.escapevelocity.consulting/mcp`. No local checkout / Node / Playwright needed:
+1. Open **Settings → Connectors → Add custom connector**.
+2. Name: `brand-mcp` (or whatever).
+3. Remote MCP server URL: `https://mcp.escapevelocity.consulting/mcp`
+4. Leave OAuth Client ID and Client Secret fields **blank** — Claude Desktop will self-register via Dynamic Client Registration (RFC 7591).
+5. Click **Add**. Claude Desktop will open a browser tab → Google login → consent → redirect back. The connector becomes available.
+
+Only emails in `MCP_ALLOWED_EMAILS` on the server can log in.
+
+#### Claude Code — OAuth (preferred)
+
+```bash
+claude mcp add --transport http brand-mcp \
+  https://mcp.escapevelocity.consulting/mcp
+```
+
+(No bearer header needed — Claude Code's OAuth helper will discover the AS via the `WWW-Authenticate` response and walk the flow.)
+
+#### Claude Code — legacy static bearer (during OAuth transition)
+
+While `MCP_BEARER_TOKEN` is still active on the server (for the test runner), you can short-circuit with:
 
 ```bash
 claude mcp add --transport http brand-mcp \
@@ -379,25 +398,7 @@ claude mcp add --transport http brand-mcp \
   --header "Authorization: Bearer $MCP_BEARER_TOKEN"
 ```
 
-#### Claude Desktop — remote HTTP
-
-Edit `claude_desktop_config.json` and restart Claude Desktop (quit fully via system tray, not just close window).
-
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-- **macOS**:   `~/Library/Application Support/Claude/claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "brand-mcp": {
-      "url": "https://mcp.escapevelocity.consulting/mcp",
-      "headers": { "Authorization": "Bearer <token>" }
-    }
-  }
-}
-```
-
-Verify by opening the tool picker — `brand-mcp` should appear with 6 tools.
+This will stop working once O5 removes the legacy bearer.
 
 #### Claude Code — local stdio (dev)
 
@@ -423,24 +424,56 @@ For packaged use: `npm run build:mcp` → point at `node dist/src/mcp/server.js`
 
 | Route | Auth | Purpose |
 |-------|------|---------|
-| `POST /mcp`   | `Authorization: Bearer <MCP_BEARER_TOKEN>` | Streamable HTTP transport (stateful: server generates session IDs per connect). |
+| `POST /mcp` | `Authorization: Bearer <JWT-or-legacy-token>` | Streamable HTTP transport (stateful, per-session). |
 | `GET /artifacts/<token>` | signed URL only (HMAC + expiry encoded in token) | Download a rendered artifact. |
 | `GET /health` | none | Liveness probe (`{ "status": "ok" }`). |
+| `GET /.well-known/oauth-protected-resource` | none | RFC 9728 — points clients at the AS. |
+| `GET /.well-known/oauth-authorization-server` | none | RFC 8414 — AS metadata. |
+| `GET /authorize` | none | OAuth code-flow entrypoint. Redirects to Google for user login. |
+| `GET /oauth/google/callback` | none | Google calls back here; we mint our own auth code. |
+| `POST /token` | none (PKCE) | Exchange auth code for JWT access token. |
+| `POST /register` | none | RFC 7591 Dynamic Client Registration. |
+
+#### OAuth (Google-delegated, embedded AS)
+
+The MCP server is **both** the OAuth 2.1 resource server AND the authorization server, but it **delegates the actual user-login step to Google**. Flow:
+
+1. Claude Desktop hits `GET /authorize` with PKCE challenge + Claude's `redirect_uri`.
+2. We redirect the browser to Google's OAuth (`accounts.google.com`).
+3. User signs into Google + consents.
+4. Google redirects to `GET /oauth/google/callback`.
+5. We exchange Google's code for an OIDC ID token, verify the signature against Google's JWKS, extract `email`, and check it against `MCP_ALLOWED_EMAILS`.
+6. If the email is allowed, we issue **our own** auth code and redirect the browser back to Claude's `redirect_uri`.
+7. Claude `POST /token`s with the code + PKCE verifier; we issue a **JWT** access token (HS256, signed with `MCP_JWT_SECRET`).
+8. Claude calls `POST /mcp` with that JWT. We verify the signature, audience, expiry, and re-check the `sub` email against the allowlist on every request.
+
+Allowlist changes take effect on the next request — no token revocation list needed.
 
 #### Env vars (set on the deployment platform)
 
 | Variable | Required | Default | Purpose |
 |----------|----------|---------|---------|
 | `BRAND_DIR` | yes | — | Absolute path to the brand repo root inside the container. |
-| `MCP_BEARER_TOKEN` | yes | — | Gates `POST /mcp`. Long random secret. |
-| `MCP_SIGNING_SECRET` | yes | — | HMAC secret for artifact URLs. Separate from bearer. |
-| `MCP_PUBLIC_BASE_URL` | yes | — | e.g. `https://mcp.escapevelocity.consulting`. Used to build signed URLs. |
+| `MCP_SIGNING_SECRET` | yes | — | HMAC secret for artifact URLs. |
+| `MCP_PUBLIC_BASE_URL` | yes | — | e.g. `https://mcp.escapevelocity.consulting`. Used as JWT iss/aud and for signed-URL building. |
+| `MCP_JWT_SECRET` | yes (for OAuth) | — | HS256 secret for `/mcp` access tokens. Distinct from signing secret. |
+| `MCP_OAUTH_GOOGLE_CLIENT_ID` | yes (for OAuth) | — | Google Cloud OAuth 2.0 Web Application client ID. |
+| `MCP_OAUTH_GOOGLE_CLIENT_SECRET` | yes (for OAuth) | — | Matching client secret from Google Cloud. |
+| `MCP_ALLOWED_EMAILS` | yes (for OAuth) | — | Comma-separated lowercase emails permitted to authenticate. Re-checked on every request. |
+| `MCP_BEARER_TOKEN` | no (legacy / tests) | — | Legacy static bearer for the E2E test runner. Will be removed once OAuth E2E is in place. One of `MCP_JWT_SECRET` or `MCP_BEARER_TOKEN` must be set. |
 | `MCP_PORT` | no | `8080` | Listen port. |
 | `MCP_BIND_HOST` | no | `0.0.0.0` | Listen host. |
 | `MCP_TMP_DIR` | no | `<os.tmpdir>/brand-mcp` | Artifact store directory. |
 | `MCP_ARTIFACT_TTL_SECONDS` | no | `3600` | Signed-URL TTL. |
 | `MCP_CLEANUP_INTERVAL_SECONDS` | no | `300` | Cleanup-loop cadence. |
 | `MCP_ALLOWED_ORIGINS` | no | (empty) | Optional comma-separated browser-Origin allowlist (DNS-rebinding defense). |
+
+#### Google Cloud setup
+
+1. Console → APIs & Services → Credentials → **Create OAuth 2.0 Client ID** (type: Web application).
+2. Authorized redirect URI: `https://mcp.escapevelocity.consulting/oauth/google/callback`
+3. Copy the **Client ID** and **Client Secret** → admin sets them as `MCP_OAUTH_GOOGLE_CLIENT_ID` and `MCP_OAUTH_GOOGLE_CLIENT_SECRET` on the container.
+4. Add the owner's email to `MCP_ALLOWED_EMAILS` (comma-separated, lowercase).
 
 #### Container
 
