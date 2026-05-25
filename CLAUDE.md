@@ -323,17 +323,16 @@ Both call `src/mcp/shared/createServer.ts` to register the same 7 tools. They di
 
 A single Chromium instance stays warm across calls (~600ms per render vs ~2–3s cold).
 
-### Tools
+### Tools (6 — Phase 3 consolidated surface)
 
 | Tool | What it does |
 |------|--------------|
-| `render_document` | Branded PDF (letter, offer, invoice, tos, report) from markdown + structured args. |
-| `render_image` | PNG from a brand template (`templates/social/*.html`, etc.) with preset or custom dims. |
-| `render_image_html` | PNG from a raw HTML string. Used for the ideation flow (prototype HTML → screenshot → iterate). |
-| `render_carousel` | LinkedIn carousel (PDF + per-slide PNG sidecar) from a JSON spec. |
-| `render_presentation` | Slide-deck HTML viewer (optionally + PDF + per-slide PNGs) from markdown. |
-| `list_templates` | Filesystem scan: documents, social, carousel. |
-| `get_tokens` | Parsed `tokens.json`. |
+| `render_template`     | Named template + Nunjucks vars (+ optional markdown body) → PNG or PDF. Output format driven by the template registry (`templates.meta.ts`). Replaces the old `render_image` + `render_document`. |
+| `render_html_to_png`  | Raw HTML string → 1 PNG. Generic primitive for ad-hoc designs / mutated templates. Was `render_image_html`. |
+| `render_html_to_pdf`  | Raw HTML string → 1 PDF. Playwright auto-paginates long HTML; supports A4/A3/Letter or custom `{width,height}` pixel dims. |
+| `render_slides`       | N pages → toggleable `{viewer, pdf, pngs}`. Two input modes: `markdown` (presentation-style with `===` separators) or `pages` (carousel-style explicit HTML/template per slide). Replaces the old `render_carousel` + `render_presentation`. |
+| `list_templates`      | Returns the full template registry (output format, dims, required vars, tags) sourced from `templates.meta.ts`. Optional `tag` filter. |
+| `get_tokens`          | Parsed `tokens.json`. |
 
 ### Tool response shape
 
@@ -351,21 +350,58 @@ All render tools return a `WriteResult`-shaped output that's transport-aware:
   "bytes": 138779, "mime": "application/pdf" }
 ```
 
-Multi-output tools (`render_carousel`, `render_presentation`) return arrays/nested objects of these (one per file). `outputPath` is optional in both modes — local mode honors it, remote mode treats it as a filename hint for `Content-Disposition`.
+Multi-output tools (`render_slides`) return nested objects of these (`{ viewer, pdf, pngs: [...] }`). `outputPath` is optional in both modes — local mode honors it (treated as the bundle root for multi-output), remote mode treats it as a filename hint for `Content-Disposition`.
 
 ### Architecture
 
 - **`src/core/`** — pure-function rendering library. No `process.exit`, no CWD reads, no `console.log`. All FS lookups take an explicit `BrandPaths`. `BrowserPool` is the singleton chromium holder.
-- **`src/mcp/shared/createServer.ts`** — registers all 7 tools onto an `McpServer` given a `ServerContext` (paths + pool + outputSink).
+- **`src/mcp/shared/createServer.ts`** — registers all 6 tools onto an `McpServer` given a `ServerContext` (paths + pool + outputSink).
+- **`src/core/render.ts`** — generic `renderHtmlToPng` + `renderHtmlToPdf` primitives. Both auto-inject `FONTS_URI` + `TOKENS_CSS` and use the shared `BrowserPool`. All higher-level render paths delegate here.
+- **`src/core/slides.ts`** — `renderSlides` multi-page orchestrator (markdown-deck mode + carousel-pages mode + output toggles).
+- **`templates.meta.ts`** (brand root) — template registry: each entry declares output format, dims, body slot, required vars, and tags. Single source of truth for `list_templates` + `render_template` dispatching.
 - **`src/mcp/shared/outputSinks.ts`** — `LocalOutputSink` (writeFileSync → path) and `RemoteOutputSink` (artifactStore.write → signed URL).
 - **`src/mcp/shared/artifactStore.ts`** — on-disk store + HMAC-signed token issuer (`signedToken.ts`) + periodic cleanup.
 - **`src/mcp/shared/bearerAuth.ts`** — constant-time bearer check for `POST /mcp`.
 - **`src/mcp/tools/*.ts`** — one file per tool. Each tool: Zod input schema → call core → `ctx.outputSink.write(buffer, opts)` → return result via `runTool` / `successResult`.
 - **`generators/*.ts`** — unchanged CLI behavior; thin shims importing from `src/core/`. Each constructs a local `BrowserPool`, runs once, closes.
 
-### Registering with Claude Code (stdio, local dev)
+### Registering the MCP server
 
-Add to your MCP config (e.g. `~/.claude.json`):
+One-time setup per workstation. **The skill assumes brand-mcp is registered** — pick the option matching your client.
+
+#### Claude Code — remote HTTP (recommended)
+
+Points at the deployed server at `https://mcp.escapevelocity.consulting/mcp`. No local checkout / Node / Playwright needed:
+
+```bash
+claude mcp add --transport http brand-mcp \
+  https://mcp.escapevelocity.consulting/mcp \
+  --header "Authorization: Bearer $MCP_BEARER_TOKEN"
+```
+
+#### Claude Desktop — remote HTTP
+
+Edit `claude_desktop_config.json` and restart Claude Desktop (quit fully via system tray, not just close window).
+
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **macOS**:   `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "brand-mcp": {
+      "url": "https://mcp.escapevelocity.consulting/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
+    }
+  }
+}
+```
+
+Verify by opening the tool picker — `brand-mcp` should appear with 6 tools.
+
+#### Claude Code — local stdio (dev)
+
+For working against unpushed brand-repo changes:
 
 ```json
 {
@@ -379,7 +415,7 @@ Add to your MCP config (e.g. `~/.claude.json`):
 }
 ```
 
-For production / packaged use: `npm run build:mcp` → point at `node dist/src/mcp/server.js`.
+For packaged use: `npm run build:mcp` → point at `node dist/src/mcp/server.js`.
 
 ### Remote HTTP deployment
 
@@ -421,13 +457,7 @@ CVE scanning is **client-side only** (pre-push hook — see [Local Trivy check](
 
 To enable deploy: set repo variable `MCP_DEPLOY_ENABLED` = `true` (Settings → Variables → Actions) once the admin has provisioned the service.
 
-#### Registering remote server with Claude Code
-
-```bash
-claude mcp add --transport http brand-mcp \
-  https://mcp.escapevelocity.consulting/mcp \
-  --header "Authorization: Bearer $MCP_BEARER_TOKEN"
-```
+(For client-side registration commands, see [§ Registering the MCP server](#registering-the-mcp-server) above.)
 
 ### Tests
 
@@ -469,13 +499,20 @@ CVE scanning runs **client-side** via a `pre-push` hook on the brand repo. CI no
 
 The brand skill is packaged from `skill/brand-engine/`. **Never edit the deployed copy** at `.claude/skills/brand-engine/` — it gets overwritten on reinstall.
 
-**Edit flow:** Always edit source files in `brand/` → rebuild → redeploy.
+**Phase 3 redesign:** the skill is now **thin guidance-only** (~8KB). It no longer ships generators, templates, fonts, tokens, or a `setup.sh` bootstrap. All rendering is delegated to brand-mcp (see [§ Registering the MCP server](#registering-the-mcp-server)). The skill teaches Claude the design system + routing logic; the MCP does the pixel work.
+
+**Bundle contents:**
+- `SKILL.md` — mental model, tool reference, routing decision tree, HTML authoring rules, examples
+- `references/brand-reference.md` — token table + design patterns (sourced from `BRAND_SKILL.md`)
+
+**Edit flow:** Edit source in `brand/` → `npm run build:skill` → reinstall the `.skill` file.
 
 | What changed | Edit | Then |
-|-------------|------|------|
-| `SKILL.md` (instructions) | `skill/brand-engine/SKILL.md` | `npm run build:skill` → reinstall |
-| Reference content | `BRAND_SKILL.md` or `AGENT_GUIDE.md` | `npm run build:skill` → reinstall |
-| Skill references (in-repo copies) | `skill/brand-engine/references/` | Keep in sync with sources above; overwritten by `build:skill` staging but not auto-updated in repo |
+|--------------|------|------|
+| Skill instructions | `skill/brand-engine/SKILL.md` | `npm run build:skill` → reinstall |
+| Brand reference sidecar | `BRAND_SKILL.md` | `npm run build:skill` (copied to `references/brand-reference.md` at staging) |
+
+**Graceful degradation:** the skill explicitly handles the "brand-mcp not registered" case — Claude can still author on-brand HTML using token vars and hand it back to the user, who can register the MCP later for pixel-perfect rendering.
 
 ## Legacy
 
