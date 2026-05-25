@@ -1,0 +1,11 @@
+{
+  "name": "invoice template without required fields returns structured error",
+  "tool": "render_template",
+  "args": {
+    "template": "invoice",
+    "markdown": "# Test invoice\n\nLine items here."
+  },
+  "expect": {
+    "isError": true
+  }
+}

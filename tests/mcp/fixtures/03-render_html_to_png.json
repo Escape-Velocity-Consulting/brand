@@ -1,0 +1,22 @@
+{
+  "name": "raw HTML → PNG with Nunjucks variable",
+  "tool": "render_html_to_png",
+  "args": {
+    "html": "<!doctype html><html><head><style>body{margin:0;width:800px;height:400px;display:flex;align-items:center;justify-content:center;font-family:var(--font-headline),sans-serif;background:var(--color-cream,#f5f0e6);color:var(--color-terracotta,#c0392b);font-size:64px}</style></head><body>{{ MSG }}</body></html>",
+    "width": 800,
+    "height": 400,
+    "vars": { "MSG": "E2E hello" },
+    "outputPath": "{{TMP}}/mcp-e2e-html-to-png.png"
+  },
+  "expect": {
+    "structured": {
+      "mime": "image/png",
+      "width": 800,
+      "height": 400,
+      "bytes": { "min": 2000 }
+    },
+    "files": [
+      { "path": "{{structured.path}}", "minBytes": 2000 }
+    ]
+  }
+}

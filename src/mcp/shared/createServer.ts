@@ -1,12 +1,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { BrowserPool } from '../../core/browserPool.js'
 import { resolveBrandPaths, type BrandPaths } from '../../core/paths.js'
-import { registerRenderDocument } from '../tools/renderDocument.js'
-import { registerRenderImage } from '../tools/renderImage.js'
-import { registerRenderImageHtml } from '../tools/renderImageHtml.js'
-import { registerRenderCarousel } from '../tools/renderCarousel.js'
-import { registerRenderPresentation } from '../tools/renderPresentation.js'
 import { registerRenderTemplate } from '../tools/renderTemplate.js'
+import { registerRenderHtmlToPng } from '../tools/renderHtmlToPng.js'
 import { registerRenderHtmlToPdf } from '../tools/renderHtmlToPdf.js'
 import { registerRenderSlides } from '../tools/renderSlides.js'
 import { registerListTemplates } from '../tools/listTemplates.js'
@@ -30,32 +26,27 @@ export interface ServerInfo {
 
 const DEFAULT_INFO: ServerInfo = {
   name: 'brand-engine',
-  version: '0.2.0',
+  version: '0.3.0',
 }
 
 /**
- * Build a configured McpServer with all brand tools registered. Transport is
- * the caller's responsibility (connect via stdio, HTTP, or in-memory).
+ * Build a configured McpServer with the brand tool surface registered.
+ * Transport is the caller's responsibility (stdio, HTTP, or in-memory).
  *
- * Tool surface in transition (Phase 3): the new consolidated surface
- * (render_template / render_html_to_png / render_html_to_pdf / render_slides)
- * runs alongside the legacy tools (render_image / render_document /
- * render_carousel / render_presentation / render_image_html). F5 will delete
- * the legacy tools once fixtures are migrated.
+ * Tool surface (6 tools):
+ * - render_template     — named template + vars/markdown → PNG or PDF (driven by templates.meta)
+ * - render_html_to_png  — raw HTML → 1 PNG
+ * - render_html_to_pdf  — raw HTML → 1 PDF (Playwright auto-paginates)
+ * - render_slides       — N pages (markdown or full HTML) → toggleable {viewer, pdf, pngs}
+ * - list_templates      — registry inventory (output, dims, required vars, tags)
+ * - get_tokens          — parsed tokens.json
  */
 export function createServer(ctx: ServerContext, info: ServerInfo = DEFAULT_INFO): McpServer {
   const server = new McpServer(info)
-  // Legacy surface (kept for the duration of F4 transition):
-  registerRenderDocument(server, ctx)
-  registerRenderImage(server, ctx)
-  registerRenderImageHtml(server, ctx)
-  registerRenderCarousel(server, ctx)
-  registerRenderPresentation(server, ctx)
-  // New consolidated surface:
   registerRenderTemplate(server, ctx)
+  registerRenderHtmlToPng(server, ctx)
   registerRenderHtmlToPdf(server, ctx)
   registerRenderSlides(server, ctx)
-  // Shared:
   registerListTemplates(server, ctx)
   registerGetTokens(server, ctx)
   return server
