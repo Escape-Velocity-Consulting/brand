@@ -1,0 +1,20 @@
+{# Swatch grid. Variables:
+   - colors: list of {name, hex, varName, role?}
+   - columns: optional grid column count override (default 5)
+   - showRole: optional bool, default true if any swatch has a role
+#}
+{%- set cols = columns or 5 -%}
+{%- set styleAttr = ('style="grid-template-columns: repeat(' + cols + ', 1fr);"') if columns else '' -%}
+<div class="swatches" {{ styleAttr | safe }}>
+  {% for c in colors %}
+    <div class="swatch">
+      <div class="swatch-color" style="background: {{ c.hex }};"></div>
+      <div class="swatch-info">
+        <div class="swatch-name">{{ c.name }}</div>
+        <div class="swatch-hex">{{ c.hex }}</div>
+        <div class="swatch-token">{{ c.varName }}</div>
+        {% if c.role %}<div class="swatch-role">{{ c.role }}</div>{% endif %}
+      </div>
+    </div>
+  {% endfor %}
+</div>

@@ -1,3 +1,5 @@
 node_modules/
 scratch/
 dist/
+# build artifact of build:tokens (tokens.ts is source of truth)
+tokens.json

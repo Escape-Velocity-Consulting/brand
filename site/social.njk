@@ -1,0 +1,100 @@
+---
+layout: base.njk
+title: Social
+permalink: /social/
+navSlug: social
+---
+
+{%- set socials = [
+  { slug: "linkedin-banner", title: "LinkedIn Banner", size: "1584×396",  raster: "linkedin-banner",        cmd: "npx tsx generators/image.ts --input templates/social/linkedin-banner.html --type html --preset linkedin-banner -o linkedin-banner.png" },
+  { slug: "quote-card",      title: "Quote Card",      size: "1200×1200", raster: "quote-card-sample",      cmd: 'npm run image -- --input templates/social/quote-card.html --type html --preset linkedin-post --var "QUOTE=Your text" --var "AUTHOR=Name" -o quote.png' },
+  { slug: "stats-card",      title: "Stats Card",      size: "1200×1200", raster: "stats-card-sample",      cmd: 'npm run image -- --input templates/social/stats-card.html --type html --preset linkedin-post --var "STAT=17+" --var "UNIT=Jahre" --var "LABEL=Description" -o stats.png' },
+  { slug: "announcement",    title: "Announcement",    size: "1200×630",  raster: "announcement-sample",    cmd: 'npm run image -- --input templates/social/announcement.html --type html --preset og --var "HEADLINE=Title" --var "EYEBROW=LABEL" -o announce.png' },
+  { slug: "og",              title: "OG Image",        size: "1200×630",  raster: "og-sample",              cmd: 'npm run image -- --input templates/social/og.html --type html --preset og --var "TITLE=Page Title" -o og.png' },
+  { slug: "twitter-banner",  title: "Twitter/X Banner",size: "1500×500",  raster: "twitter-banner-sample",  cmd: "npm run image -- --input templates/social/twitter-banner.html --type html --preset twitter-banner -o twitter-banner.png" },
+  { slug: "youtube-banner",  title: "YouTube Banner",  size: "2560×1440", raster: "youtube-banner-sample",  cmd: "npm run image -- --input templates/social/youtube-banner.html --type html --preset youtube-banner -o youtube-banner.png" }
+] -%}
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Social</div>
+    <h2>Social Assets</h2>
+    {% for s in socials %}
+      <div style="margin-top: 32px;">
+        <h3 style="margin-top: 0;">{{ s.title }}</h3>
+        <img class="preview-img" src="{{ ('/assets/raster/' + s.raster + '.png') | url }}" alt="{{ s.title }} — {{ s.size }}" style="max-width: 100%;">
+        <div class="preview-caption">{{ s.title }} — {{ s.size }} — brand/templates/social/{{ s.slug }}.html</div>
+        <div class="action-bar">
+          <a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/templates/social/{{ s.slug }}.html" target="_blank">View template →</a>
+          <a href="{{ ('/assets/raster/' + s.raster + '.png') | url }}">Download PNG →</a>
+        </div>
+        <pre><code>{{ s.cmd }}</code></pre>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+{%- set logoGroups = [
+  { heading: "Dark Background", bg: "dark", items: [
+    { svg: "ev-wordmark.svg",       png: "ev-wordmark-300.png",       width: 150, height: 150, caption: "EV Wordmark — Square monogram, dark bg" },
+    { svg: "logo-dark.svg",         png: "logo-dark-300.png",         width: 250, height: 125, caption: "Full Wordmark — Wide, dark bg" },
+    { svg: "logo-dark-square.svg",  png: "logo-dark-square-300.png",  width: 150, height: 150, caption: "Full Wordmark — Square, dark bg" }
+  ]},
+  { heading: "Light Background", bg: "", items: [
+    { svg: "ev-wordmark-light.svg",       png: "ev-wordmark-light-300.png",       width: 150, height: 150, caption: "EV Wordmark — Square monogram, light bg" },
+    { svg: "logo-light.svg",              png: "logo-light-300.png",              width: 250, height: 125, caption: "Full Wordmark — Wide, light bg" },
+    { svg: "logo-light-square.svg",       png: "logo-light-square-300.png",       width: 150, height: 150, caption: "Full Wordmark — Square, light bg" }
+  ]},
+  { heading: "Transparent", bg: "transparent", items: [
+    { svg: "ev-wordmark-transparent.svg",  png: "ev-wordmark-transparent-300.png",  width: 150, height: 150, caption: "EV Wordmark — Square monogram, transparent" },
+    { svg: "logo-transparent.svg",         png: "logo-transparent-300.png",         width: 250, height: 125, caption: "Full Wordmark — Wide, transparent" }
+  ]}
+] -%}
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Logos</div>
+    <h2>Logo Variants</h2>
+
+    {% for group in logoGroups %}
+      <h3>{{ group.heading }}</h3>
+      <div class="previews-grid">
+        {% for item in group.items %}
+          <div>
+            <div class="logo-preview-box{% if group.bg %} {{ group.bg }}{% endif %}">
+              <img src="{{ ('/assets/logos/' + item.svg) | url }}" alt="{{ item.caption }}" width="{{ item.width }}" height="{{ item.height }}">
+            </div>
+            <div class="preview-caption">{{ item.caption }}</div>
+            <div class="action-bar">
+              <a href="{{ ('/assets/logos/' + item.svg) | url }}">SVG →</a>
+              <a href="{{ ('/assets/raster/' + item.png) | url }}">PNG →</a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">QR</div>
+    <h2>QR Codes</h2>
+
+    <img src="{{ '/assets/qr/qr-hi.png' | url }}" alt="QR Code → /hi/" style="max-width: 200px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06);">
+    <div class="preview-caption" style="margin-top: 8px;">QR → /hi/ (digital business card)</div>
+    <div class="action-bar"><a href="{{ '/assets/qr/qr-hi.png' | url }}">Download PNG →</a></div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Business Card</div>
+    <h2>Digital Business Card</h2>
+
+    <p style="font-size: 14px; color: var(--color-body); margin-top: 8px;">
+      Live at <a href="https://escapevelocity.consulting/hi/" target="_blank">escapevelocity.consulting/hi/</a>.
+      Source lives in the website repo (<code>website/hi/index.njk</code>) — not part of the brand system.
+    </p>
+  </div>
+</section>

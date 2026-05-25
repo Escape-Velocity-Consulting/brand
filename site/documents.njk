@@ -1,0 +1,40 @@
+---
+layout: base.njk
+title: Documents
+permalink: /documents/
+navSlug: documents
+---
+
+{%- set docs = [
+  { slug: "letter",  title: "Letter — Correspondence",     blurb: "Business correspondence, briefings, status updates. Optional meta strip (recipient, date, reference).", cmd: 'npx tsx generators/pdf.ts content.md --type letter --to "Muster GmbH" --ref "EV-2026-001" -o letter.pdf' },
+  { slug: "offer",   title: "Offer — Service Proposals",   blurb: "Structured service offers with scope, timeline, and pricing table.", cmd: 'npx tsx generators/pdf.ts proposal.md --type offer --to "Muster GmbH" --ref "EV-2026-042" -o offer.pdf' },
+  { slug: "invoice", title: "Invoice — Client Billing",    blurb: "Client invoices with line items, totals, and payment terms. Required meta strip.", cmd: 'npx tsx generators/pdf.ts items.md --type invoice --to "Muster GmbH" --ref "RE-2026-001" -o invoice.pdf' },
+  { slug: "tos",     title: "Terms of Service — Legal",    blurb: "Contracts, AGBs, legal documents. No meta strip — clean document layout.", cmd: 'npx tsx generators/pdf.ts terms.md --type tos -o agb.pdf' }
+] -%}
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Documents</div>
+    <h2>Document Templates</h2>
+
+    <div class="previews-grid">
+      {% for d in docs %}
+        <div>
+          <img class="preview-img" src="{{ ('/previews/' + d.slug + '-preview.png') | url }}" alt="{{ d.title }} preview" onerror="this.outerHTML='<div style=&quot;background:#eee;border-radius:8px;padding:40px;text-align:center;color:#999;font-size:14px;&quot;>Run npm run export to generate previews</div>'">
+        </div>
+      {% endfor %}
+    </div>
+
+    {% for d in docs %}
+      <div class="doc-card">
+        <h3>{{ d.title }}</h3>
+        <p>{{ d.blurb }}</p>
+        <div class="action-bar">
+          <a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/templates/{{ d.slug }}.html" target="_blank">View template →</a>
+          <a href="{{ ('/previews/' + d.slug + '-sample.pdf') | url }}" target="_blank">Download PDF →</a>
+        </div>
+        <pre><code>{{ d.cmd }}</code></pre>
+      </div>
+    {% endfor %}
+  </div>
+</section>

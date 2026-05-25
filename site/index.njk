@@ -1,0 +1,52 @@
+---
+layout: base.njk
+title: Overview
+permalink: /
+navSlug: ""
+---
+
+<!-- Logo Strip -->
+<div class="logo-strip">
+  <div class="container">
+    <img src="{{ '/assets/logos/ev-wordmark.svg' | url }}" alt="EV Wordmark" width="150" height="150">
+    <img src="{{ '/assets/logos/logo-dark.svg' | url }}" alt="Logo Dark" width="250" height="125">
+  </div>
+</div>
+
+<!-- Color Snapshot -->
+<section>
+  <div class="container">
+    <div class="eyebrow">Colors</div>
+    <h2>Color Snapshot</h2>
+    {% set colors = palette.snapshot %}
+    {% include "partials/swatches.njk" %}
+  </div>
+</section>
+
+<!-- Font Samples -->
+<section>
+  <div class="container">
+    <div class="eyebrow">Typography</div>
+    <h2>Font Samples</h2>
+    {% set fonts = typography %}
+    {% include "partials/font-samples.njk" %}
+  </div>
+</section>
+
+<!-- Navigation Cards -->
+<section>
+  <div class="container">
+    <div class="eyebrow">Pages</div>
+    <h2>Brand Site Pages</h2>
+    <div class="nav-cards">
+      {% for item in nav %}
+        {% if item.slug %}
+          <a href="{{ ('/' + item.slug + '/') | url }}" class="nav-card">
+            <h4>{{ item.label }}</h4>
+            <p>{{ item.description }}</p>
+          </a>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</section>

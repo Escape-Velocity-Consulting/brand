@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ title }} — Escape Velocity Brand Site</title>
+<link rel="stylesheet" href="{{ '/tokens.css' | url }}">
+<link rel="stylesheet" href="{{ '/site.css' | url }}">
+<link rel="stylesheet" href="{{ '/print.css' | url }}" media="print">
+{% block head %}{% endblock %}
+</head>
+<body>
+
+<div class="demo-header">
+  <div class="container">
+    <h1>Escape <span>Velocity</span> — Brand Site</h1>
+    <p>{{ subtitle or "Visual reference for all brand tokens, components, and generated assets." }}</p>
+  </div>
+</div>
+
+<nav class="demo-nav">
+  <div class="container">
+    {% for item in nav %}
+      {%- set href = ('/' + item.slug + (('/') if item.slug else '')) | url -%}
+      {%- set isActive = (item.slug == navSlug) -%}
+      <a href="{{ href }}"{% if isActive %} class="active"{% endif %}>{{ item.label }}</a>
+    {% endfor %}
+  </div>
+</nav>
+
+{{ content | safe }}
+
+<div class="tagline">Digitalisierung &amp; Prozessoptimierung</div>
+
+</body>
+</html>

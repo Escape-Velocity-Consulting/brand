@@ -2,12 +2,12 @@
   "type": "module",
   "scripts": {
     "build:tokens": "tsx scripts/build-tokens.ts",
-    "sync:website": "bash scripts/sync-website.sh",
-    "pdf": "tsx generators/pdf.ts",
-    "image": "tsx generators/image.ts",
-    "export": "tsx scripts/export-assets.ts",
-    "sync:demo": "bash scripts/sync-demo.sh",
-    "build:skill": "bash scripts/build-skill.sh"
+    "build:dist":   "bash scripts/build-dist.sh",
+    "dev":          "npm run build:dist && eleventy --config=site/.eleventy.cjs --input=site --serve --port=3000",
+    "pdf":          "tsx generators/pdf.ts",
+    "image":        "tsx generators/image.ts",
+    "export":       "tsx scripts/export-assets.ts",
+    "build:skill":  "bash scripts/build-skill.sh"
   },
   "dependencies": {
     "markdown-it": "^14",
@@ -17,6 +17,7 @@
     "sharp": "^0.34.5"
   },
   "devDependencies": {
+    "@11ty/eleventy": "^3.1.5",
     "@types/node": "^22",
     "@types/nunjucks": "^3.2",
     "tsx": "^4.21",

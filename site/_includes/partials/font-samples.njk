@@ -1,0 +1,7 @@
+{# Renders font sample cards from a list of typography entries. #}
+{% for f in fonts %}
+  <div class="font-card">
+    <div class="label">{{ f.label }}</div>
+    <div style="font-family: var({{ f.cssVar }}); {{ f.style }}">{{ f.sample }}</div>
+  </div>
+{% endfor %}

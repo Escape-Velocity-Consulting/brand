@@ -1,0 +1,163 @@
+---
+layout: base.njk
+title: Components
+permalink: /components/
+navSlug: components
+---
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Buttons</div>
+    <h2>Button Variants</h2>
+
+    <h3>Primary CTA</h3>
+    <div class="button-row">
+      <a href="#" class="btn-primary">Erstgespräch buchen →</a>
+    </div>
+
+    <h3>Primary + Secondary (on dark)</h3>
+    <div class="dark-strip">
+      <a href="#" class="btn-primary">Erstgespräch buchen →</a>
+      <a href="#" class="btn-secondary">Mehr erfahren</a>
+    </div>
+
+    <h3>Newsletter CTA</h3>
+    <div class="button-row" style="margin-top: 16px;">
+      <a href="#" class="btn-email">Weiterlesen →</a>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Cards</div>
+    <h2>Card Variants</h2>
+
+    <div class="cards-row">
+      <div class="card-dark">
+        <div class="badge">FLAGSHIP</div>
+        <div class="card-title">Tech Upgrade</div>
+        <div class="card-body">Engpass gefunden? Wir lösen ihn. Prozesse digitalisieren, Systeme verbinden, Automatisierung aufsetzen.</div>
+      </div>
+      <div class="card-light">
+        <div class="card-title">Aha! Moment Workshop</div>
+        <div class="card-body">Der Einstieg. Halber Tag, voller Durchblick: wo Ihre größten Hebel liegen.</div>
+      </div>
+      <div class="card-light">
+        <div class="card-title">Laufende Begleitung</div>
+        <div class="card-body">Zu früh für einen IT-Lead, aber zu viele Tech-Entscheidungen für nebenbei?</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Tags</div>
+    <h2>Tags &amp; Badges</h2>
+
+    <h3>Status Tags</h3>
+    <div class="tags-row">
+      <span class="tag tag-geht">geht</span>
+      <span class="tag tag-kommt">kommt</span>
+      <span class="tag tag-tun">tun</span>
+    </div>
+
+    <h3>Badge</h3>
+    <div style="margin-top: 8px;">
+      <span class="badge">FLAGSHIP</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Dividers</div>
+    <h2>Divider Variants</h2>
+
+    <div class="divider-demo">
+      <div class="divider-label">Document Header Rule</div>
+      <div class="divider-header-rule"></div>
+    </div>
+    <div class="divider-demo">
+      <div class="divider-label">Accent Bar</div>
+      <div class="divider-accent-bar"></div>
+    </div>
+    <div class="divider-demo">
+      <div class="divider-label">Subject Line Border</div>
+      <div class="divider-subject">Betreff: Testbrief</div>
+    </div>
+    <div class="divider-demo">
+      <div class="divider-label">Table Header Bottom</div>
+      <div class="divider-table-header">Column Header</div>
+    </div>
+    <div class="divider-demo">
+      <div class="divider-label">Section Divider</div>
+      <div class="divider-section"></div>
+    </div>
+    <div class="divider-demo">
+      <div class="divider-label">Newsletter Divider</div>
+      <div class="divider-newsletter">Newsletter section separator</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Newsletter</div>
+    <h2>Newsletter Blocks</h2>
+
+    <h3>TLDR Box</h3>
+    <div class="tldr-box">
+      <div class="tldr-label">TLDR</div>
+      <div class="tldr-body">Die meisten Unternehmen brauchen keinen Rundumschlag. Sie brauchen einen Aha! Moment.</div>
+    </div>
+
+    <h3>Callout / Quote Block</h3>
+    <div class="callout-block">
+      <div class="callout-quote">Wer den Engpass findet, findet den Hebel.</div>
+      <div class="callout-source">— Tommi Enenkel</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Logos</div>
+    <h2>Logo Lockups</h2>
+
+    <h3>SVG Sources</h3>
+    <div class="previews-grid">
+      <div>
+        <div class="logo-preview-box">
+          <img src="{{ '/assets/logos/ev-wordmark.svg' | url }}" alt="EV Wordmark" width="150" height="150">
+        </div>
+        <div class="preview-caption">ev-wordmark.svg — Square EV monogram</div>
+      </div>
+      <div>
+        <div class="logo-preview-box">
+          <img src="{{ '/assets/logos/logo-dark.svg' | url }}" alt="Logo Dark" width="250" height="125">
+        </div>
+        <div class="preview-caption">logo-dark.svg — Full wordmark, dark bg, wide</div>
+      </div>
+      <div>
+        <div class="logo-preview-box">
+          <img src="{{ '/assets/logos/logo-dark-square.svg' | url }}" alt="Logo Dark Square" width="150" height="150">
+        </div>
+        <div class="preview-caption">logo-dark-square.svg — Full wordmark, dark bg, square</div>
+      </div>
+    </div>
+
+    <h3>PNG Exports</h3>
+    <div class="previews-grid">
+      <div>
+        <img src="{{ '/assets/raster/ev-wordmark-300.png' | url }}" alt="EV Wordmark PNG" class="preview-img" style="max-width: 150px;">
+        <div class="preview-caption">ev-wordmark-300.png</div>
+      </div>
+      <div>
+        <img src="{{ '/assets/raster/logo-dark-300.png' | url }}" alt="Logo Dark PNG" class="preview-img" style="max-width: 150px;">
+        <div class="preview-caption">logo-dark-300.png</div>
+      </div>
+    </div>
+  </div>
+</section>

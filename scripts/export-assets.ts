@@ -9,10 +9,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const BRAND_DIR = resolve(__dirname, '..')
 const LOGOS_DIR = resolve(BRAND_DIR, 'assets', 'logos')
 const RASTER_DIR = resolve(BRAND_DIR, 'assets', 'raster')
-const DEMO_DIR = resolve(BRAND_DIR, 'demo', 'previews')
+const PREVIEWS_DIR = resolve(BRAND_DIR, 'previews')
 
 mkdirSync(RASTER_DIR, { recursive: true })
-mkdirSync(DEMO_DIR, { recursive: true })
+mkdirSync(PREVIEWS_DIR, { recursive: true })
 
 // --- SVG → PNG exports ---
 
@@ -202,12 +202,12 @@ const previewTypes = [
 const browser = await chromium.launch()
 
 for (const { type, output } of previewTypes) {
-  const pdfPath = resolve(DEMO_DIR, `${type}-sample.pdf`)
+  const pdfPath = resolve(PREVIEWS_DIR, `${type}-sample.pdf`)
   const debugHtmlPath = pdfPath.replace(/\.pdf$/, '.debug.html')
-  const previewPath = resolve(DEMO_DIR, output)
+  const previewPath = resolve(PREVIEWS_DIR, output)
 
   // Write sample markdown to temp file
-  const sampleMdPath = resolve(DEMO_DIR, `${type}-sample.md`)
+  const sampleMdPath = resolve(PREVIEWS_DIR, `${type}-sample.md`)
   writeFileSync(sampleMdPath, sampleContent[type])
 
   // Generate PDF + debug HTML
