@@ -453,6 +453,17 @@ SVGs are the source of truth. Raster exports are generated artifacts — never e
 
 ## 11. Generator Interfaces
 
+### 11.0 Architecture (core lib + CLI shims + MCP server)
+
+All render logic lives in `src/core/` as pure async functions (`renderDocumentHtml`, `htmlToPdf`, `renderHtmlToPng`, `renderSvgToPng`, `renderCarousel`, `renderPresentation`, plus shared utilities for tokens/templates/markdown/fonts and a `BrowserPool` for warm Chromium). The functions never call `process.exit`, never read CWD, never `console.log` — they take explicit `BrandPaths` and `BrowserPool` arguments, return `Buffer`s or structured results, and throw `GeneratorError` on failure.
+
+Two consumers wrap the core:
+
+1. **CLI shims** in `generators/{pdf,image,carousel,presentation}.ts` — parse argv, construct a local `BrowserPool`, call the core, write the buffer to disk, close. Behavior on the CLI is byte-identical to the pre-refactor version; the sections below remain the canonical CLI reference.
+2. **MCP server** in `src/mcp/server.ts` — stdio MCP server exposing 7 tools (`render_document`, `render_image`, `render_image_html`, `render_carousel`, `render_presentation`, `list_templates`, `get_tokens`) with a single long-lived `BrowserPool`. See `brand/CLAUDE.md` § MCP Server for tool surface, registration, and the JSON-fixture E2E suite at `tests/mcp/`.
+
+When you add a new generator, do it in `src/core/` first, then add both wrappers. Don't put render logic in `generators/*.ts` or in MCP tool files.
+
 ### 11.1 `pdf.ts` — Document Generator
 
 Converts Markdown to a branded A4 PDF using Playwright (Chromium). Replaces `md2pdf.py`.

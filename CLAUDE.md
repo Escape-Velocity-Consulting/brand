@@ -94,7 +94,9 @@ Use these terms consistently — they have specific meanings in this repo:
 | **Brand Distribution** | `dist/site/` — the build output. Self-contained, ready to serve at `/brand/`. The website consumes this via git submodule. |
 | **Brand Kit** | `dist/brand-kit.zip` — downloadable bundle for designers, partners, press. Linked from `/brand/download/`. Assembled by `build:kit` from existing canonical sources. |
 | **Brand Templates** | `templates/*.html` — document/social templates rendered by generators. Not the same as Brand Site templates. |
-| **Brand Generators** | `generators/` — `pdf.ts`, `image.ts`, `carousel.ts`. Render Brand Templates into PDFs/PNGs. |
+| **Brand Generators** | `generators/` — `pdf.ts`, `image.ts`, `carousel.ts`, `presentation.ts`. Thin CLI shims over the rendering core. |
+| **Rendering Core** | `src/core/` — pure-function library (no `process.exit`, no CWD assumptions, shared `BrowserPool`). The single source of truth for render logic, used by both CLI shims and the MCP server. |
+| **Brand MCP** | `src/mcp/` — stdio MCP server wrapping the rendering core. Exposes 7 tools (`render_document`, `render_image`, `render_image_html`, `render_carousel`, `render_presentation`, `list_templates`, `get_tokens`) to Claude Code with a warm Chromium across calls. |
 | **Brand Tokens** | `tokens.ts` → `tokens.css` + `tokens.json`. Single source of truth for color, type, spacing. |
 
 ## Repository Layout
@@ -125,7 +127,12 @@ brand/
 │   └── qr/                ← generated QR codes
 ├── previews/              ← generated document PDFs + preview PNGs (by export-assets.ts)
 ├── components/            ← portable JS components for HTML slides (e.g. radar.js)
-├── generators/            ← pdf.ts, image.ts, carousel.ts, presentation.ts
+├── generators/            ← pdf.ts, image.ts, carousel.ts, presentation.ts (CLI shims over src/core/)
+├── src/
+│   ├── core/              ← pure-function rendering library (BrowserPool, document.ts, image.ts, carousel.ts, presentation.ts, markdown.ts, templates.ts, tokens.ts, paths.ts, errors.ts)
+│   └── mcp/               ← stdio MCP server (server.ts + tools/* + shared/*)
+├── tests/
+│   └── mcp/               ← JSON-fixture E2E suite for the MCP server. Run via `npm run test:mcp`; report at tests/mcp/report/index.html
 ├── templates/             ← document/social templates (consumed by generators)
 │   ├── presentation.html  ← slide-deck viewer template (16:9, viewer JS inlined)
 │   └── palette-sheet.html ← swatch sheet for the brand-kit palette.pdf
@@ -167,9 +174,13 @@ brand/
 | `build:kit` | `tsx scripts/build-kit.ts` | Assemble `dist/brand-kit/` + `dist/brand-kit.zip` (assumes tokens + assets + site already built) |
 | `build:dist` | `bash scripts/build-dist.sh` | **Meta:** runs `tokens → assets → site → kit` in order; copies kit zip into `dist/site/`. Use this for full publishable build. |
 | `build:skill` | `bash scripts/build-skill.sh` | Package `dist/brand-engine.skill` |
+| `build:mcp` | `tsc -p tsconfig.mcp.json` | Compile MCP server + core to `dist/` for production use (via `node dist/src/mcp/server.js`). Development uses `tsx` directly via the `mcp` script. |
 | `pdf` | `tsx generators/pdf.ts` | Generate branded PDF from Markdown |
 | `image` | `tsx generators/image.ts` | Generate PNG from HTML/SVG |
+| `carousel` | `tsx generators/carousel.ts` | Generate a LinkedIn carousel from a JSON spec (PDF + per-slide PNGs) |
 | `pres` | `tsx generators/presentation.ts` | Generate slide deck (HTML viewer + PDF + PNGs) from Markdown |
+| `mcp` | `tsx src/mcp/server.ts` | Run the brand-engine MCP server on stdio. Used directly by Claude Code; see [MCP Server](#mcp-server) below. |
+| `test:mcp` | `tsx tests/mcp/run.ts` | Run the JSON-fixture E2E suite against the MCP server. Writes an HTML report to `tests/mcp/report/index.html`. |
 | `export` | alias of `build:assets` | Kept for muscle memory. |
 
 ## Brand Site Workflow (Token Iteration)
@@ -278,6 +289,57 @@ npx tsx generators/presentation.ts <input.md> [options]
 **Outputs:** `<out>/index.html` (self-contained viewer with `components/` and `fonts/` copied alongside), optional `<stem>.pdf` and `slides/slide-NN.png`.
 
 **Viewer keys:** `← → / Space / PgUp / PgDn` navigate, `Home/End` jump, `F` fullscreen, `P` switch to print mode. Query params: `?slide=N` deep-link, `?print=1` flatten for PDF.
+
+## MCP Server
+
+`src/mcp/server.ts` wraps the rendering core as a stdio MCP server, giving Claude Code direct tool access to the brand system without going through `npx tsx` for every render. One Chromium instance stays warm across calls (typically ~600ms per render vs ~2–3s cold).
+
+### Tools
+
+| Tool | What it does |
+|------|--------------|
+| `render_document` | Branded PDF (letter, offer, invoice, tos, report) from markdown + structured args. |
+| `render_image` | PNG from a brand template (`templates/social/*.html`, etc.) with preset or custom dims. |
+| `render_image_html` | PNG from a raw HTML string. Used for the ideation flow (prototype HTML → screenshot → iterate). |
+| `render_carousel` | LinkedIn carousel (PDF + per-slide PNG sidecar) from a JSON spec. |
+| `render_presentation` | Slide-deck HTML viewer (optionally + PDF + per-slide PNGs) from markdown. |
+| `list_templates` | Filesystem scan: documents, social, carousel. |
+| `get_tokens` | Parsed `tokens.json`. |
+
+### Architecture
+
+- **`src/core/`** — pure-function rendering library. No `process.exit`, no CWD reads, no `console.log`. All FS lookups take an explicit `BrandPaths`. `BrowserPool` is the singleton chromium holder.
+- **`src/mcp/server.ts`** — registers all 7 tools, instantiates the pool, resolves `brandDir` from `$BRAND_DIR` (or auto-detects by walking up to a `package.json` with `name: "brand"`).
+- **`src/mcp/tools/*.ts`** — one file per tool. Each tool: Zod input schema → call core → write file → return `{ path, bytes, mime, ... }` as `structuredContent`.
+- **`generators/*.ts`** — unchanged CLI behavior; now thin shims that import from `src/core/`. Each constructs a local `BrowserPool`, runs once, closes.
+
+### Registering with Claude Code
+
+Add to your MCP config (e.g. `~/.claude.json`):
+
+```json
+{
+  "mcpServers": {
+    "brand-engine": {
+      "command": "npx",
+      "args": ["tsx", "C:/Users/tommi/business/brand/src/mcp/server.ts"],
+      "env": { "BRAND_DIR": "C:/Users/tommi/business/brand" }
+    }
+  }
+}
+```
+
+For production / packaged use: `npm run build:mcp` → point at `node dist/src/mcp/server.js`.
+
+### Tests
+
+`tests/mcp/` is a JSON-fixture-driven E2E suite that spawns the server, calls every tool, validates structured responses + file outputs, and writes a self-contained HTML report with inline artifact previews.
+
+- **Run:** `npm run test:mcp` (≈6s; report at `tests/mcp/report/index.html`)
+- **Subset:** `npm run test:mcp -- 'render_image*'`
+- **Add a test:** drop a JSON file in `tests/mcp/fixtures/` matching the schema in `tests/mcp/README.md`
+
+The report dir is gitignored. The skill bundled at `skill/brand-engine/` is **not** updated yet to call the MCP tools — that's a separate follow-up. Until then the skill and the MCP server are parallel paths into the same core.
 
 ## Skill Workflow
 
