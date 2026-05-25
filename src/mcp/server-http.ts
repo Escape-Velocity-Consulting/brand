@@ -297,7 +297,7 @@ async function route(
     }
     res.writeHead(200, {
       'Content-Type': resolved.meta.mime,
-      'Content-Disposition': `attachment; filename="${sanitizeFilename(resolved.meta.filename)}"`,
+      'Content-Disposition': `inline; filename="${sanitizeFilename(resolved.meta.filename)}"`,
       'Cache-Control': 'private, max-age=60',
     })
     createReadStream(resolved.filePath).pipe(res)
