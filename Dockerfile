@@ -11,8 +11,10 @@ WORKDIR /app
 RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 
 # Install all deps (incl. devDeps for tsc / tsx / build-tokens script).
+# --ignore-scripts: simple-git-hooks' prepare script needs a .git dir we
+# don't ship into Docker.
 COPY package.json package-lock.json ./
-RUN npm ci --include=dev
+RUN npm ci --include=dev --ignore-scripts
 
 # Bring in sources needed to compile + regenerate tokens.
 COPY tsconfig.mcp.json ./
@@ -38,8 +40,10 @@ RUN groupadd -r appgroup && useradd -r -g appgroup -d /app -s /usr/sbin/nologin 
 
 # Production deps only. Lockfile is removed after install so Trivy can't read
 # dev-dep version specs that don't exist in the production image.
+# --ignore-scripts: the brand repo's `prepare` script runs simple-git-hooks
+# (a devDep) for the local pre-push Trivy hook. Not needed at runtime.
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force && rm -f package-lock.json
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force && rm -f package-lock.json
 
 # Compiled core + MCP server.
 COPY --from=build /app/dist        ./dist
