@@ -1,68 +1,14 @@
-import { readFileSync, writeFileSync, unlinkSync, existsSync } from 'node:fs'
+import { writeFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
-import { tmpdir } from 'node:os'
-import sharp from 'sharp'
+import { BrowserPool } from '../src/core/browserPool.js'
+import { resolveBrandPaths } from '../src/core/paths.js'
+import { IMAGE_PRESETS, renderHtmlToPng, renderSvgToPng } from '../src/core/image.js'
+import { GeneratorError } from '../src/core/errors.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const BRAND_DIR = resolve(__dirname, '..')
-const FONTS_DIR = existsSync(resolve(BRAND_DIR, 'fonts'))
-  ? resolve(BRAND_DIR, 'fonts')
-  : resolve(BRAND_DIR, '..', 'website', 'fonts')
-
-const PRESETS: Record<string, { width: number; height: number }> = {
-  'og':              { width: 1200, height: 630 },
-  'linkedin-banner': { width: 1584, height: 396 },
-  'linkedin-post':   { width: 1200, height: 1200 },
-  'linkedin-landscape': { width: 1200, height: 627 },
-  'linkedin-portrait':  { width: 1080, height: 1350 },
-  'square':          { width: 1000, height: 1000 },
-  'twitter-banner':  { width: 1500, height: 500 },
-  'youtube-banner':  { width: 2560, height: 1440 },
-  'instagram-post':  { width: 1080, height: 1080 },
-  'instagram-story': { width: 1080, height: 1920 },
-  'a4':              { width: 794, height: 1123 },
-}
-
-// --- SVG → PNG ---
-
-async function svgToPng(input: string, output: string, width: number, height: number): Promise<void> {
-  await sharp(input)
-    .resize(width, height, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-    .png()
-    .toFile(output)
-}
-
-// --- HTML → PNG ---
-
-async function htmlToPng(input: string, output: string, width: number, height: number, vars: Record<string, string> = {}): Promise<void> {
-  const fontsUri = pathToFileURL(FONTS_DIR).href
-
-  // Always run Nunjucks rendering — no-op if template has no variables
-  const nunjucks = await import('nunjucks')
-  const env = nunjucks.default.configure(dirname(input), { autoescape: false })
-  const raw = readFileSync(input, 'utf-8')
-  const html = env.renderString(raw, { FONTS_URI: fontsUri, ...vars })
-
-  const tmpPath = resolve(tmpdir(), `ev-img-${Date.now()}.html`)
-  writeFileSync(tmpPath, html, 'utf-8')
-
-  try {
-    const { chromium } = await import('playwright')
-    const browser = await chromium.launch()
-    const page = await browser.newPage()
-    await page.setViewportSize({ width, height })
-    await page.goto(pathToFileURL(tmpPath).href, { waitUntil: 'networkidle' })
-    await page.screenshot({ path: output, type: 'png' })
-    await browser.close()
-  } finally {
-    try { unlinkSync(tmpPath) } catch {}
-  }
-}
-
-// --- CLI ---
 
 async function main() {
   const { values } = parseArgs({
@@ -86,14 +32,12 @@ async function main() {
   const inputPath = resolve(process.cwd(), values.input)
   const outputPath = resolve(process.cwd(), values.output)
 
-  // Resolve dimensions
   let width: number
   let height: number
-
   if (values.preset) {
-    const preset = PRESETS[values.preset]
+    const preset = IMAGE_PRESETS[values.preset]
     if (!preset) {
-      console.error(`Unknown preset: ${values.preset}. Available: ${Object.keys(PRESETS).join(', ')}`)
+      console.error(`Unknown preset: ${values.preset}. Available: ${Object.keys(IMAGE_PRESETS).join(', ')}`)
       process.exit(1)
     }
     width = preset.width
@@ -106,7 +50,6 @@ async function main() {
     process.exit(1)
   }
 
-  // Parse --var KEY=VALUE flags
   const vars: Record<string, string> = {}
   for (const v of (values.var ?? [])) {
     const eq = v.indexOf('=')
@@ -114,19 +57,31 @@ async function main() {
     vars[v.slice(0, eq)] = v.slice(eq + 1)
   }
 
-  if (values.type === 'svg') {
-    await svgToPng(inputPath, outputPath, width, height)
-  } else if (values.type === 'html') {
-    await htmlToPng(inputPath, outputPath, width, height, vars)
-  } else {
-    console.error(`Unknown type: ${values.type}. Use "html" or "svg".`)
-    process.exit(1)
-  }
+  const paths = resolveBrandPaths(BRAND_DIR)
+  const pool = new BrowserPool()
 
-  console.log(`Done: ${outputPath}`)
+  try {
+    let buffer: Buffer
+    if (values.type === 'svg') {
+      buffer = await renderSvgToPng({ svgPath: inputPath }, { width, height })
+    } else if (values.type === 'html') {
+      buffer = await renderHtmlToPng({ htmlPath: inputPath, vars }, { width, height }, paths, pool)
+    } else {
+      console.error(`Unknown type: ${values.type}. Use "html" or "svg".`)
+      process.exit(1)
+    }
+    writeFileSync(outputPath, buffer)
+    console.log(`Done: ${outputPath}`)
+  } catch (err) {
+    if (err instanceof GeneratorError) {
+      console.error(`error [${err.code}]: ${err.message}`)
+    } else {
+      console.error(err)
+    }
+    process.exit(1)
+  } finally {
+    await pool.close()
+  }
 }
 
-main().catch((err) => {
-  console.error(err)
-  process.exit(1)
-})
+main()

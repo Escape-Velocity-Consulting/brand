@@ -1,0 +1,21 @@
+{
+  "name": "inline markdown viewer + PDF",
+  "tool": "render_presentation",
+  "args": {
+    "markdown": "<!-- @type: title -->\n# PDF deck\n> Eyebrow\n\n===\n\n<!-- @type: content -->\n## Content\n\nBody.",
+    "outputDir": "{{TMP}}/mcp-e2e-deck-pdf",
+    "stem": "deck",
+    "pdf": true
+  },
+  "expect": {
+    "structured": {
+      "slideCount": 2,
+      "htmlPath": { "matches": "index\\.html$" },
+      "pdfPath": { "matches": "deck\\.pdf$" }
+    },
+    "files": [
+      { "path": "{{structured.htmlPath}}", "minBytes": 1000 },
+      { "path": "{{structured.pdfPath}}", "minBytes": 5000 }
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "raw HTML with Nunjucks variable",
+  "tool": "render_image_html",
+  "args": {
+    "html": "<!DOCTYPE html><html><body style=\"background:#E8865A;color:white;display:flex;align-items:center;justify-content:center;font-size:48px;margin:0;height:100vh\"><div>{{ LABEL }}</div></body></html>",
+    "vars": { "LABEL": "From E2E" },
+    "width": 800,
+    "height": 400,
+    "outputPath": "{{TMP}}/mcp-e2e-raw-html.png"
+  },
+  "expect": {
+    "structured": {
+      "mime": "image/png",
+      "width": 800,
+      "height": 400,
+      "bytes": { "min": 1000 }
+    },
+    "files": [
+      { "path": "{{structured.path}}", "minBytes": 1000 }
+    ]
+  }
+}

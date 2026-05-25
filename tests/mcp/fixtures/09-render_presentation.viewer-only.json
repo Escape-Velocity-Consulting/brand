@@ -1,0 +1,19 @@
+{
+  "name": "inline markdown viewer (no PDF/PNG)",
+  "tool": "render_presentation",
+  "args": {
+    "markdown": "<!-- @type: title -->\n# E2E deck\n> Eyebrow\n\n===\n\n<!-- @type: content -->\n## Slide two\n\nBody text.\n\n===\n\n<!-- @type: content -->\n## Slide three\n\nMore body.",
+    "outputDir": "{{TMP}}/mcp-e2e-deck",
+    "stem": "deck"
+  },
+  "expect": {
+    "structured": {
+      "slideCount": 3,
+      "htmlPath": { "matches": "index\\.html$" },
+      "pdfPath": null
+    },
+    "files": [
+      { "path": "{{structured.htmlPath}}", "minBytes": 1000 }
+    ]
+  }
+}

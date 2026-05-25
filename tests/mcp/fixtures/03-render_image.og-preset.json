@@ -1,0 +1,22 @@
+{
+  "name": "og preset from social template",
+  "tool": "render_image",
+  "args": {
+    "template": "templates/social/og.html",
+    "type": "html",
+    "preset": "og",
+    "outputPath": "{{TMP}}/mcp-e2e-og.png"
+  },
+  "expect": {
+    "structured": {
+      "mime": "image/png",
+      "width": 1200,
+      "height": 630,
+      "bytes": { "min": 5000 },
+      "path": { "matches": "mcp-e2e-og\\.png$" }
+    },
+    "files": [
+      { "path": "{{structured.path}}", "exists": true, "minBytes": 5000 }
+    ]
+  }
+}

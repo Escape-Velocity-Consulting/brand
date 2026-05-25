@@ -1,0 +1,15 @@
+{
+  "name": "invoice without required fields returns structured error",
+  "tool": "render_document",
+  "args": {
+    "type": "invoice",
+    "markdown": "# Rechnung 001\n\nLeistungen…",
+    "outputPath": "{{TMP}}/mcp-e2e-invoice-should-fail.pdf"
+  },
+  "expect": {
+    "isError": true,
+    "files": [
+      { "path": "{{TMP}}/mcp-e2e-invoice-should-fail.pdf", "exists": false }
+    ]
+  }
+}

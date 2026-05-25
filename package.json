@@ -1,25 +1,35 @@
 {
+  "name": "brand",
   "type": "module",
+  "bin": {
+    "brand-mcp": "./dist/src/mcp/server.js"
+  },
   "scripts": {
     "build:tokens": "tsx scripts/build-tokens.ts",
     "build:assets": "tsx scripts/export-assets.ts",
-    "build:site":   "bash scripts/build-site.sh",
-    "build:kit":    "tsx scripts/build-kit.ts",
-    "build:dist":   "bash scripts/build-dist.sh",
-    "build:skill":  "bash scripts/build-skill.sh",
-    "dev":          "npm run build:tokens && npm run build:site && eleventy --config=site/.eleventy.cjs --input=site --serve --port=3000",
-    "pdf":          "tsx generators/pdf.ts",
-    "image":        "tsx generators/image.ts",
-    "pres":         "tsx generators/presentation.ts",
-    "export":       "npm run build:assets"
+    "build:site": "bash scripts/build-site.sh",
+    "build:kit": "tsx scripts/build-kit.ts",
+    "build:dist": "bash scripts/build-dist.sh",
+    "build:skill": "bash scripts/build-skill.sh",
+    "build:mcp": "tsc -p tsconfig.mcp.json",
+    "dev": "npm run build:tokens && npm run build:site && eleventy --config=site/.eleventy.cjs --input=site --serve --port=3000",
+    "pdf": "tsx generators/pdf.ts",
+    "image": "tsx generators/image.ts",
+    "carousel": "tsx generators/carousel.ts",
+    "pres": "tsx generators/presentation.ts",
+    "mcp": "tsx src/mcp/server.ts",
+    "test:mcp": "tsx tests/mcp/run.ts",
+    "export": "npm run build:assets"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "archiver": "^7",
     "markdown-it": "^14",
     "nunjucks": "^3.2",
     "pdf-lib": "^1.17.1",
     "playwright": "^1.50",
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@11ty/eleventy": "^3.1.5",

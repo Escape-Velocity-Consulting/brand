@@ -1,0 +1,13 @@
+{
+  "name": "lists all template categories",
+  "tool": "list_templates",
+  "args": {},
+  "expect": {
+    "structured": {
+      "documents": { "isArray": true, "minLength": 5 },
+      "social": { "isArray": true, "minLength": 5 },
+      "carousel": { "isArray": true, "minLength": 3 },
+      "brandDir": { "isString": true }
+    }
+  }
+}

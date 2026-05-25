@@ -1,0 +1,26 @@
+{
+  "name": "3-slide LinkedIn portrait carousel",
+  "tool": "render_carousel",
+  "args": {
+    "spec": {
+      "format": "linkedin-portrait",
+      "slides": [
+        { "template": "templates/carousel/title.html", "vars": { "EYEBROW": "E2E", "BIGNUMBER": "1" } },
+        { "template": "templates/carousel/numbered-item.html", "vars": { "TITLE": "Step one" } },
+        { "template": "templates/carousel/cta.html", "vars": { "CTA": "Done" } }
+      ]
+    },
+    "outputPath": "{{TMP}}/mcp-e2e-carousel.pdf"
+  },
+  "expect": {
+    "structured": {
+      "slideCount": 3,
+      "width": 1080,
+      "height": 1350,
+      "slidePaths": { "isArray": true, "minLength": 3 }
+    },
+    "files": [
+      { "path": "{{structured.pdfPath}}", "minBytes": 20000 }
+    ]
+  }
+}

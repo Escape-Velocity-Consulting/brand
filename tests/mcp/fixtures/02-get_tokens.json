@@ -1,0 +1,14 @@
+{
+  "name": "returns parsed tokens.json",
+  "tool": "get_tokens",
+  "args": {},
+  "expect": {
+    "structured": {
+      "tokens": {
+        "colors": {},
+        "fonts": {},
+        "spacing": {}
+      }
+    }
+  }
+}
