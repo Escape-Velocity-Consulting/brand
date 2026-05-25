@@ -5,30 +5,24 @@ permalink: /social/
 navSlug: social
 ---
 
-{%- set socials = [
-  { slug: "linkedin-banner", title: "LinkedIn Banner", size: "1584×396",  raster: "linkedin-banner",        cmd: "npx tsx generators/image.ts --input templates/social/linkedin-banner.html --type html --preset linkedin-banner -o linkedin-banner.png" },
-  { slug: "quote-card",      title: "Quote Card",      size: "1200×1200", raster: "quote-card-sample",      cmd: 'npm run image -- --input templates/social/quote-card.html --type html --preset linkedin-post --var "QUOTE=Your text" --var "AUTHOR=Name" -o quote.png' },
-  { slug: "stats-card",      title: "Stats Card",      size: "1200×1200", raster: "stats-card-sample",      cmd: 'npm run image -- --input templates/social/stats-card.html --type html --preset linkedin-post --var "STAT=17+" --var "UNIT=Jahre" --var "LABEL=Description" -o stats.png' },
-  { slug: "announcement",    title: "Announcement",    size: "1200×630",  raster: "announcement-sample",    cmd: 'npm run image -- --input templates/social/announcement.html --type html --preset og --var "HEADLINE=Title" --var "EYEBROW=LABEL" -o announce.png' },
-  { slug: "og",              title: "OG Image",        size: "1200×630",  raster: "og-sample",              cmd: 'npm run image -- --input templates/social/og.html --type html --preset og --var "TITLE=Page Title" -o og.png' },
-  { slug: "twitter-banner",  title: "Twitter/X Banner",size: "1500×500",  raster: "twitter-banner-sample",  cmd: "npm run image -- --input templates/social/twitter-banner.html --type html --preset twitter-banner -o twitter-banner.png" },
-  { slug: "youtube-banner",  title: "YouTube Banner",  size: "2560×1440", raster: "youtube-banner-sample",  cmd: "npm run image -- --input templates/social/youtube-banner.html --type html --preset youtube-banner -o youtube-banner.png" }
-] -%}
-
 <section>
   <div class="container">
     <div class="eyebrow">Social</div>
     <h2>Social Assets</h2>
-    {% for s in socials %}
+    {% for s in social %}
       <div style="margin-top: 32px;">
         <h3 style="margin-top: 0;">{{ s.title }}</h3>
-        <img class="preview-img" src="{{ ('/assets/raster/' + s.raster + '.png') | url }}" alt="{{ s.title }} — {{ s.size }}" style="max-width: 100%;">
-        <div class="preview-caption">{{ s.title }} — {{ s.size }} — brand/templates/social/{{ s.slug }}.html</div>
+        {% if s.rasterUrl %}
+          <img class="preview-img" src="{{ s.rasterUrl | url }}" alt="{{ s.title }} — {{ s.size }}" style="max-width: 100%;">
+        {% else %}
+          <div style="background:#eee;border-radius:8px;padding:40px;text-align:center;color:#999;font-size:14px;">Run npm run build:assets to generate {{ s.slug }}.png</div>
+        {% endif %}
+        <div class="preview-caption">{{ s.title }}{% if s.size %} — {{ s.size }}{% endif %} — brand/templates/social/{{ s.slug }}.html</div>
         <div class="action-bar">
-          <a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/templates/social/{{ s.slug }}.html" target="_blank">View template →</a>
-          <a href="{{ ('/assets/raster/' + s.raster + '.png') | url }}">Download PNG →</a>
+          <a href="{{ s.templateUrl }}" target="_blank">View template →</a>
+          {% if s.rasterUrl %}<a href="{{ s.rasterUrl | url }}">Download PNG →</a>{% endif %}
         </div>
-        <pre><code>{{ s.cmd }}</code></pre>
+        {% if s.cmd %}<pre><code>{{ s.cmd }}</code></pre>{% endif %}
       </div>
     {% endfor %}
   </div>
