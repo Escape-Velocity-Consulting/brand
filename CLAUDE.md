@@ -36,7 +36,7 @@ Reference implementation: `templates/presentation.html` + `generators/presentati
 
 All current top-level templates (`presentation.html`, `letter.html`, `offer.html`, `invoice.html`, `tos.html`, `report.html`) source tokens via `_base.html`'s `{{ TOKENS_CSS | safe }}` injection. New templates must do the same.
 
-Subdirectories `templates/carousel/*.html` and `templates/social/*.html` still inline hex values — those generators (`carousel.ts`, `image.ts`) do not yet pass `TOKENS_CSS`. Migrate when next touched; do not use them as reference for new templates.
+Subdirectory templates (`templates/social/*.html`, `templates/carousel/*.html`) also source tokens — `src/core/image.ts` and `src/core/carousel.ts` pass `TOKENS_CSS` into `renderStringTemplate`, and each template injects it inside its own `<style>` block (these templates are standalone, not based on `_base.html`).
 
 ## Brand-Site Coverage Rule
 
@@ -76,9 +76,9 @@ Reference implementation: `site/decks.njk` + `site/_data/decks.cjs`.
 
 | Template type | Showcase | Archive |
 |---|---|---|
-| **Documents** (letter/offer/invoice/tos/report) | ✅ `documents.njk` — hardcoded data array, predates the auto-regen pattern. Migrate when next touched. | ❌ Correct — client docs are sensitive. |
+| **Documents** (letter/offer/invoice/tos/report) | ✅ `documents.njk` — auto-discovered from `previews/*-preview.png` via `site/_data/documents.cjs` (with colocated `DOCS_META` for title/blurb/cmd copy). | ❌ Correct — client docs are sensitive. |
 | **Components** (UI patterns) | ✅ `components.njk` | N/A |
-| **Social** (LinkedIn banner / cards / OG) | ✅ `social.njk` — hardcoded. | ❌ Consider adding when next touched. |
+| **Social** (LinkedIn banner / cards / OG) | ✅ `social.njk` — auto-discovered from `templates/social/*.html` via `site/_data/social.cjs` (with colocated `SOCIAL_META` for title/size/cmd copy). | ❌ Consider adding when next touched. |
 | **Presentations / decks** | ✅ `presentations.njk` — auto-regenerated showcase. **Reference implementation.** | ✅ `decks.njk` — auto-discovered. **Reference implementation.** |
 | **Carousel** (LinkedIn carousels) | ❌ — known gap, add when carousel templates next touched. | ❌ |
 
@@ -292,7 +292,14 @@ npx tsx generators/presentation.ts <input.md> [options]
 
 ## MCP Server
 
-`src/mcp/server.ts` wraps the rendering core as a stdio MCP server, giving Claude Code direct tool access to the brand system without going through `npx tsx` for every render. One Chromium instance stays warm across calls (typically ~600ms per render vs ~2–3s cold).
+The rendering core is exposed as an MCP server with two transports sharing the same tool surface:
+
+- **`src/mcp/server.ts`** — stdio entrypoint. Used for local dev (Claude Code spawns it as a subprocess).
+- **`src/mcp/server-http.ts`** — Streamable HTTP entrypoint. Used for remote deployment (containerized, behind a reverse proxy).
+
+Both call `src/mcp/shared/createServer.ts` to register the same 7 tools. They differ only in their `OutputSink`: stdio writes files to the caller's CWD; HTTP writes to an artifact store and returns signed download URLs.
+
+A single Chromium instance stays warm across calls (~600ms per render vs ~2–3s cold).
 
 ### Tools
 
@@ -306,14 +313,35 @@ npx tsx generators/presentation.ts <input.md> [options]
 | `list_templates` | Filesystem scan: documents, social, carousel. |
 | `get_tokens` | Parsed `tokens.json`. |
 
+### Tool response shape
+
+All render tools return a `WriteResult`-shaped output that's transport-aware:
+
+```jsonc
+// stdio (LocalOutputSink)
+{ "kind": "path", "path": "C:/.../letter.pdf", "filename": "letter.pdf", "bytes": 138779, "mime": "application/pdf" }
+
+// HTTP (RemoteOutputSink)
+{ "kind": "url",
+  "url": "https://mcp.escapevelocity.consulting/artifacts/<token>",
+  "filename": "letter.pdf",
+  "expiresAt": "2026-05-25T15:30:00Z",
+  "bytes": 138779, "mime": "application/pdf" }
+```
+
+Multi-output tools (`render_carousel`, `render_presentation`) return arrays/nested objects of these (one per file). `outputPath` is optional in both modes — local mode honors it, remote mode treats it as a filename hint for `Content-Disposition`.
+
 ### Architecture
 
 - **`src/core/`** — pure-function rendering library. No `process.exit`, no CWD reads, no `console.log`. All FS lookups take an explicit `BrandPaths`. `BrowserPool` is the singleton chromium holder.
-- **`src/mcp/server.ts`** — registers all 7 tools, instantiates the pool, resolves `brandDir` from `$BRAND_DIR` (or auto-detects by walking up to a `package.json` with `name: "brand"`).
-- **`src/mcp/tools/*.ts`** — one file per tool. Each tool: Zod input schema → call core → write file → return `{ path, bytes, mime, ... }` as `structuredContent`.
-- **`generators/*.ts`** — unchanged CLI behavior; now thin shims that import from `src/core/`. Each constructs a local `BrowserPool`, runs once, closes.
+- **`src/mcp/shared/createServer.ts`** — registers all 7 tools onto an `McpServer` given a `ServerContext` (paths + pool + outputSink).
+- **`src/mcp/shared/outputSinks.ts`** — `LocalOutputSink` (writeFileSync → path) and `RemoteOutputSink` (artifactStore.write → signed URL).
+- **`src/mcp/shared/artifactStore.ts`** — on-disk store + HMAC-signed token issuer (`signedToken.ts`) + periodic cleanup.
+- **`src/mcp/shared/bearerAuth.ts`** — constant-time bearer check for `POST /mcp`.
+- **`src/mcp/tools/*.ts`** — one file per tool. Each tool: Zod input schema → call core → `ctx.outputSink.write(buffer, opts)` → return result via `runTool` / `successResult`.
+- **`generators/*.ts`** — unchanged CLI behavior; thin shims importing from `src/core/`. Each constructs a local `BrowserPool`, runs once, closes.
 
-### Registering with Claude Code
+### Registering with Claude Code (stdio, local dev)
 
 Add to your MCP config (e.g. `~/.claude.json`):
 
@@ -331,15 +359,75 @@ Add to your MCP config (e.g. `~/.claude.json`):
 
 For production / packaged use: `npm run build:mcp` → point at `node dist/src/mcp/server.js`.
 
+### Remote HTTP deployment
+
+`src/mcp/server-http.ts` is a native-Node HTTP server. Routes:
+
+| Route | Auth | Purpose |
+|-------|------|---------|
+| `POST /mcp`   | `Authorization: Bearer <MCP_BEARER_TOKEN>` | Streamable HTTP transport (stateful: server generates session IDs per connect). |
+| `GET /artifacts/<token>` | signed URL only (HMAC + expiry encoded in token) | Download a rendered artifact. |
+| `GET /health` | none | Liveness probe (`{ "status": "ok" }`). |
+
+#### Env vars (set on the deployment platform)
+
+| Variable | Required | Default | Purpose |
+|----------|----------|---------|---------|
+| `BRAND_DIR` | yes | — | Absolute path to the brand repo root inside the container. |
+| `MCP_BEARER_TOKEN` | yes | — | Gates `POST /mcp`. Long random secret. |
+| `MCP_SIGNING_SECRET` | yes | — | HMAC secret for artifact URLs. Separate from bearer. |
+| `MCP_PUBLIC_BASE_URL` | yes | — | e.g. `https://mcp.escapevelocity.consulting`. Used to build signed URLs. |
+| `MCP_PORT` | no | `8080` | Listen port. |
+| `MCP_BIND_HOST` | no | `0.0.0.0` | Listen host. |
+| `MCP_TMP_DIR` | no | `<os.tmpdir>/brand-mcp` | Artifact store directory. |
+| `MCP_ARTIFACT_TTL_SECONDS` | no | `3600` | Signed-URL TTL. |
+| `MCP_CLEANUP_INTERVAL_SECONDS` | no | `300` | Cleanup-loop cadence. |
+| `MCP_ALLOWED_ORIGINS` | no | (empty) | Optional comma-separated browser-Origin allowlist (DNS-rebinding defense). |
+
+#### Container
+
+`Dockerfile` is multi-stage on `mcr.microsoft.com/playwright:v1.50.0-jammy`. Build context excludes everything in `.dockerignore` (tests, site, kit sources, etc.). Image runs as non-root user `appuser`, exposes 8080, includes a HEALTHCHECK on `/health`. `CMD ["node", "dist/src/mcp/server-http.js"]`.
+
+#### Deploy
+
+`.github/workflows/deploy-mcp.yml` triggers on `push` to main when MCP-relevant paths change. Pipeline:
+
+1. **build** — Docker build (loaded into local daemon).
+2. **Trivy scan** — fails on HIGH/CRITICAL CVEs.
+3. **push** — to `ghcr.io/escape-velocity-consulting/brand-mcp` with tags `:main`, `:prod`, `:sha-<short>`.
+4. **deploy** — gated by repo variable `MCP_DEPLOY_ENABLED == "true"`. SSHes via IAP to the GCP VM and runs `sudo /usr/local/bin/deploy-service brand-mcp` (admin's script). Needs `GCP_SA_KEY` secret.
+
+To enable deploy: set repo variable `MCP_DEPLOY_ENABLED` = `true` (Settings → Variables → Actions) once the admin has provisioned the service.
+
+#### Registering remote server with Claude Code
+
+```bash
+claude mcp add --transport http brand-mcp \
+  https://mcp.escapevelocity.consulting/mcp \
+  --header "Authorization: Bearer $MCP_BEARER_TOKEN"
+```
+
 ### Tests
 
-`tests/mcp/` is a JSON-fixture-driven E2E suite that spawns the server, calls every tool, validates structured responses + file outputs, and writes a self-contained HTML report with inline artifact previews.
+Two suites — same JSON fixtures, two transports:
 
-- **Run:** `npm run test:mcp` (≈6s; report at `tests/mcp/report/index.html`)
-- **Subset:** `npm run test:mcp -- 'render_image*'`
-- **Add a test:** drop a JSON file in `tests/mcp/fixtures/` matching the schema in `tests/mcp/README.md`
+- **`npm run test:mcp`** — spawns `src/mcp/server.ts` via stdio. ~6s. Report at `tests/mcp/report/index.html`.
+- **`npm run test:mcp:http`** — spawns `src/mcp/server-http.ts` on a free port with test secrets, connects via `StreamableHTTPClientTransport`, downloads every signed URL into `tests/mcp/report-http/artifacts/`. ~6s. Report at `tests/mcp/report-http/index.html`.
+- **`npm run test:unit`** — unit tests for `signedToken`, `artifactStore`, `bearerAuth`.
 
-The report dir is gitignored. The skill bundled at `skill/brand-engine/` is **not** updated yet to call the MCP tools — that's a separate follow-up. Until then the skill and the MCP server are parallel paths into the same core.
+Run the HTTP suite against an already-running server (e.g. production):
+
+```bash
+MCP_HTTP_URL=https://mcp.escapevelocity.consulting/mcp \
+MCP_HTTP_BEARER_TOKEN=<prod token> \
+  npm run test:mcp:http
+```
+
+Add a test: drop a JSON file in `tests/mcp/fixtures/` matching the schema in `tests/mcp/README.md`.
+
+### Status
+
+The skill bundled at `skill/brand-engine/` is **not** updated yet to call the MCP tools — that's a separate follow-up. Until then the skill (stdio) and the MCP server (stdio + HTTP) are parallel paths into the same core.
 
 ## Skill Workflow
 

@@ -18,7 +18,10 @@
     "carousel": "tsx generators/carousel.ts",
     "pres": "tsx generators/presentation.ts",
     "mcp": "tsx src/mcp/server.ts",
+    "mcp:http": "tsx src/mcp/server-http.ts",
+    "test:unit": "tsx tests/unit/run.ts",
     "test:mcp": "tsx tests/mcp/run.ts",
+    "test:mcp:http": "tsx tests/mcp/run-http.ts",
     "export": "npm run build:assets"
   },
   "dependencies": {
@@ -34,6 +37,7 @@
   "devDependencies": {
     "@11ty/eleventy": "^3.1.5",
     "@types/archiver": "^6",
+    "@types/markdown-it": "^14.1.2",
     "@types/node": "^22",
     "@types/nunjucks": "^3.2",
     "tsx": "^4.21",

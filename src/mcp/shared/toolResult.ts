@@ -5,12 +5,14 @@
 import { GeneratorError } from '../../core/errors.js'
 
 export interface ToolSuccess {
+  [k: string]: unknown
   content: { type: 'text'; text: string }[]
   structuredContent?: Record<string, unknown>
   isError?: false
 }
 
 export interface ToolError {
+  [k: string]: unknown
   content: { type: 'text'; text: string }[]
   isError: true
 }

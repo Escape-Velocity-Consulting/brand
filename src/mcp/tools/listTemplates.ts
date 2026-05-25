@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { ServerContext } from '../server.js'
+import type { ServerContext } from '../shared/createServer.js'
 import { runTool, successResult } from '../shared/toolResult.js'
 
 function listHtmlIn(dir: string): string[] {

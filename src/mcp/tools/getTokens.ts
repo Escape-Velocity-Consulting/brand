@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { ServerContext } from '../server.js'
+import type { ServerContext } from '../shared/createServer.js'
 import { loadTokensJson } from '../../core/tokens.js'
 import { runTool, successResult } from '../shared/toolResult.js'
 

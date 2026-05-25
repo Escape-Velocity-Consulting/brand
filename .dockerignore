@@ -1,0 +1,48 @@
+# Keep the build context lean. Everything not explicitly needed for the MCP
+# server is excluded.
+
+# Node + build artifacts
+node_modules
+dist
+
+# Tests + their generated artifacts (not needed at runtime)
+tests
+
+# Brand Site + Brand Kit sources (not used by the MCP server)
+site
+press
+previews
+assets
+web
+
+# Docs
+*.md
+LICENSE*
+
+# Generated images / palettes (regenerated separately)
+*.png
+*.pdf
+
+# Git / IDE / OS noise
+.git
+.github
+.gitignore
+.gitattributes
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Misc
+.dockerignore
+Dockerfile
+*.log
+
+# Skill bundle (separate distribution channel)
+skill
+.skill
+brand-engine.skill
+
+# Legacy QR generator (not used by MCP)
+generate_qr.py
+SpaceGrotesk.ttf

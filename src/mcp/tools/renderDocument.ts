@@ -1,8 +1,8 @@
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { resolve, basename } from 'node:path'
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { ServerContext } from '../server.js'
+import type { ServerContext } from '../shared/createServer.js'
 import {
   attachPdf,
   canonicalFilename,
@@ -17,7 +17,6 @@ import {
   type Recipient,
 } from '../../core/document.js'
 import { mdToHtmlFromText } from '../../core/markdown.js'
-import { resolveOutputPath } from '../shared/resolveOutputPath.js'
 import { runTool, successResult } from '../shared/toolResult.js'
 import { GeneratorError } from '../../core/errors.js'
 
@@ -97,16 +96,16 @@ export function registerRenderDocument(server: McpServer, ctx: ServerContext) {
     const { body, title } = mdToHtmlFromText(mdText, mdDir, docType === 'tos')
     const subject = args.subject || title || undefined
 
-    // Output path
-    let outputAbs: string
+    // Derive a canonical filename — used as suggestedName for the sink and
+    // as the request path itself when outputPath/outputDir specify a directory.
+    const derivedFilename = canonicalFilename({
+      docType, ref: args.ref, date: effectiveDate, recipient, subject, inputStem,
+    })
+    let requestedPath: string | undefined
     if (args.outputPath) {
-      outputAbs = resolveOutputPath(args.outputPath)
-    } else {
-      const baseDir = args.outputDir ? resolve(process.cwd(), args.outputDir) : process.cwd()
-      const filename = canonicalFilename({
-        docType, ref: args.ref, date: effectiveDate, recipient, subject, inputStem,
-      })
-      outputAbs = resolveOutputPath(resolve(baseDir, filename))
+      requestedPath = args.outputPath
+    } else if (args.outputDir) {
+      requestedPath = resolve(args.outputDir, derivedFilename)
     }
 
     const coverHtml = args.coverPath
@@ -133,15 +132,17 @@ export function registerRenderDocument(server: McpServer, ctx: ServerContext) {
       pdfBuffer = Buffer.from(merged)
     }
 
-    writeFileSync(outputAbs, pdfBuffer)
+    const result = await ctx.outputSink.write(pdfBuffer, {
+      mime: 'application/pdf',
+      suggestedName: derivedFilename,
+      requestedPath,
+    })
 
     return successResult({
-      path: outputAbs,
-      bytes: pdfBuffer.length,
-      mime: 'application/pdf',
+      ...result,
       type: docType,
       subject: subject ?? null,
       date: dateStr,
-    }, `Rendered ${docType} → ${outputAbs} (${pdfBuffer.length} bytes)`)
+    })
   }))
 }

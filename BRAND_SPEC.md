@@ -453,16 +453,17 @@ SVGs are the source of truth. Raster exports are generated artifacts — never e
 
 ## 11. Generator Interfaces
 
-### 11.0 Architecture (core lib + CLI shims + MCP server)
+### 11.0 Architecture (core lib + CLI shims + MCP server, stdio + HTTP)
 
 All render logic lives in `src/core/` as pure async functions (`renderDocumentHtml`, `htmlToPdf`, `renderHtmlToPng`, `renderSvgToPng`, `renderCarousel`, `renderPresentation`, plus shared utilities for tokens/templates/markdown/fonts and a `BrowserPool` for warm Chromium). The functions never call `process.exit`, never read CWD, never `console.log` — they take explicit `BrandPaths` and `BrowserPool` arguments, return `Buffer`s or structured results, and throw `GeneratorError` on failure.
 
-Two consumers wrap the core:
+Three consumers wrap the core:
 
 1. **CLI shims** in `generators/{pdf,image,carousel,presentation}.ts` — parse argv, construct a local `BrowserPool`, call the core, write the buffer to disk, close. Behavior on the CLI is byte-identical to the pre-refactor version; the sections below remain the canonical CLI reference.
-2. **MCP server** in `src/mcp/server.ts` — stdio MCP server exposing 7 tools (`render_document`, `render_image`, `render_image_html`, `render_carousel`, `render_presentation`, `list_templates`, `get_tokens`) with a single long-lived `BrowserPool`. See `brand/CLAUDE.md` § MCP Server for tool surface, registration, and the JSON-fixture E2E suite at `tests/mcp/`.
+2. **MCP stdio server** in `src/mcp/server.ts` — local subprocess entrypoint for Claude Code dev. Exposes 7 tools with a single long-lived `BrowserPool` and a `LocalOutputSink` that writes files to the caller's CWD.
+3. **MCP HTTP server** in `src/mcp/server-http.ts` — remote/containerized entrypoint. Same 7 tools, same `BrowserPool`, but a `RemoteOutputSink` that writes through `ArtifactStore` and returns HMAC-signed download URLs. Routes: `POST /mcp` (bearer-gated), `GET /artifacts/<token>` (HMAC-gated), `GET /health`. Containerized via `Dockerfile`, deployed via `.github/workflows/deploy-mcp.yml` to a GHCR image consumed by the server admin's GCP VM. See `brand/CLAUDE.md` § MCP Server for the full tool table, env-var contract, Claude Code registration, and the JSON-fixture E2E suites at `tests/mcp/` (stdio + HTTP).
 
-When you add a new generator, do it in `src/core/` first, then add both wrappers. Don't put render logic in `generators/*.ts` or in MCP tool files.
+All three share the same tool surface via `src/mcp/shared/createServer.ts`. The only per-transport difference is the injected `OutputSink`. When you add a new generator, do it in `src/core/` first, then add all three wrappers. Don't put render logic in `generators/*.ts` or in MCP tool files.
 
 ### 11.1 `pdf.ts` — Document Generator
 

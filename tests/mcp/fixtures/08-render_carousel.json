@@ -17,10 +17,11 @@
       "slideCount": 3,
       "width": 1080,
       "height": 1350,
-      "slidePaths": { "isArray": true, "minLength": 3 }
+      "slides": { "isArray": true, "minLength": 3 },
+      "pdf": { "bytes": { "min": 20000 }, "mime": "application/pdf" }
     },
     "files": [
-      { "path": "{{structured.pdfPath}}", "minBytes": 20000 }
+      { "path": "{{structured.pdf.path}}", "minBytes": 20000 }
     ]
   }
 }
