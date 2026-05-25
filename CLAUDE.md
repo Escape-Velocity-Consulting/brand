@@ -414,10 +414,10 @@ For production / packaged use: `npm run build:mcp` → point at `node dist/src/m
 
 `.github/workflows/deploy-mcp.yml` triggers on `push` to main when MCP-relevant paths change. Pipeline:
 
-1. **build** — Docker build (loaded into local daemon).
-2. **Trivy scan** — fails on HIGH/CRITICAL CVEs.
-3. **push** — to `ghcr.io/escape-velocity-consulting/brand-mcp` with tags `:main`, `:prod`, `:sha-<short>`.
-4. **deploy** — gated by repo variable `MCP_DEPLOY_ENABLED == "true"`. SSHes via IAP to the GCP VM and runs `sudo /usr/local/bin/deploy-service brand-mcp` (admin's script). Needs `GCP_SA_KEY` secret.
+1. **build & push** — Docker build, pushed to `ghcr.io/escape-velocity-consulting/brand-mcp` with tags `:main`, `:prod`, `:sha-<short>`.
+2. **deploy** — gated by repo variable `MCP_DEPLOY_ENABLED == "true"`. SSHes via IAP to the GCP VM and runs `sudo /usr/local/bin/deploy-service brand-mcp` (admin's script). Needs `GCP_SA_KEY` secret.
+
+CVE scanning is **client-side only** (pre-push hook — see [Local Trivy check](#local-trivy-check)). The workflow no longer runs Trivy.
 
 To enable deploy: set repo variable `MCP_DEPLOY_ENABLED` = `true` (Settings → Variables → Actions) once the admin has provisioned the service.
 
@@ -450,6 +450,20 @@ Add a test: drop a JSON file in `tests/mcp/fixtures/` matching the schema in `te
 ### Status
 
 The skill bundled at `skill/brand-engine/` is **not** updated yet to call the MCP tools — that's a separate follow-up. Until then the skill (stdio) and the MCP server (stdio + HTTP) are parallel paths into the same core.
+
+### Local Trivy check
+
+CVE scanning runs **client-side** via a `pre-push` hook on the brand repo. CI no longer runs Trivy — if you can push, the scan has either passed or been explicitly skipped.
+
+**Run manually:** `npm run scan:fs` — invokes `trivy fs` with the same severity (`HIGH,CRITICAL`), `--ignore-unfixed`, and `.trivyignore` settings the workflow used to use.
+
+**Hook wiring:** `simple-git-hooks` (declared in `package.json`) installs `scripts/hooks/pre-push.sh` into `.git/hooks/` on `npm install` via the `prepare` script. The hook:
+- Detects MCP-relevant changes in the pushed range (same path globs as `deploy-mcp.yml` triggers); skips silently otherwise.
+- Calls `scripts/hooks/trivy-fs.sh` which exits 1 on findings.
+- Honors `SKIP_TRIVY=1` env var as an escape hatch (prints a warning).
+- Fails with an install hint if `trivy` is missing — `scoop install trivy` or `winget install AquaSecurity.Trivy`.
+
+**Tradeoff:** `trivy fs` scans dependencies (`package-lock.json`), not the built image. Base-image CVEs from `mcr.microsoft.com/playwright:v1.50.0-jammy` are not covered. **When bumping the Playwright base in `Dockerfile`, manually run `trivy image` against a local build** (requires Docker) or accept the risk and rely on monitoring after deploy.
 
 ## Skill Workflow
 

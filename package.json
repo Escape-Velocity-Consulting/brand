@@ -22,7 +22,12 @@
     "test:unit": "tsx tests/unit/run.ts",
     "test:mcp": "tsx tests/mcp/run.ts",
     "test:mcp:http": "tsx tests/mcp/run-http.ts",
-    "export": "npm run build:assets"
+    "export": "npm run build:assets",
+    "scan:fs": "bash scripts/hooks/trivy-fs.sh",
+    "prepare": "simple-git-hooks"
+  },
+  "simple-git-hooks": {
+    "pre-push": "bash scripts/hooks/pre-push.sh"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
@@ -41,6 +46,7 @@
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^22",
     "@types/nunjucks": "^3.2",
+    "simple-git-hooks": "^2.11.1",
     "tsx": "^4.21",
     "typescript": "^5.7"
   }

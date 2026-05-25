@@ -52,42 +52,17 @@ jobs:
             type=raw,value=prod
             type=sha,prefix=sha-,format=short
 
-      # Build once into the local Docker daemon so Trivy can scan the same
-      # image we'll push if scanning succeeds.
-      - name: Build (load into local daemon for scan)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: false
-          load: true
-          tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # Extract the 7-char short SHA that docker/metadata-action uses for the
-      # sha- tag (github.sha is the full 40-char hash — wrong format for Trivy).
-      - name: Get short SHA
-        id: sha
-        run: echo "short=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
-
-      - name: Trivy scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.IMAGE_NAME }}:sha-${{ steps.sha.outputs.short }}
-          format: table
-          exit-code: '1'
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          trivyignores: .trivyignore
-
+      # Vulnerability scanning runs client-side via the brand repo's pre-push
+      # hook (scripts/hooks/pre-push.sh → trivy fs). See brand/CLAUDE.md.
       - id: push
-        name: Push to GHCR
+        name: Build and push to GHCR
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # ─────────────────────────────────────────────────────────────────────────
   # Deploy job — enable once the server admin has confirmed:
