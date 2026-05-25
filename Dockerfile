@@ -19,6 +19,7 @@ RUN npm ci --include=dev --ignore-scripts
 # Bring in sources needed to compile + regenerate tokens.
 COPY tsconfig.mcp.json ./
 COPY tokens.ts ./
+COPY templates.meta.ts ./
 COPY scripts ./scripts
 COPY src ./src
 
