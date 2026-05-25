@@ -6,6 +6,7 @@ import sharp from 'sharp'
 import type { BrowserPool } from './browserPool.js'
 import type { BrandPaths } from './paths.js'
 import { renderStringTemplate } from './templates.js'
+import { loadTokensCss } from './tokens.js'
 
 export const IMAGE_PRESETS: Record<string, { width: number; height: number }> = {
   'og':                 { width: 1200, height: 630 },
@@ -55,7 +56,8 @@ export async function renderHtmlToPng(
     throw new Error('renderHtmlToPng: provide htmlPath or html')
   }
 
-  const html = renderStringTemplate(rootDir, raw, { FONTS_URI: fontsUri, ...(input.vars ?? {}) })
+  const tokensCss = loadTokensCss(paths)
+  const html = renderStringTemplate(rootDir, raw, { FONTS_URI: fontsUri, TOKENS_CSS: tokensCss, ...(input.vars ?? {}) })
 
   const tmpPath = resolve(tmpdir(), `ev-img-${Date.now()}-${Math.random().toString(36).slice(2)}.html`)
   writeFileSync(tmpPath, html, 'utf-8')

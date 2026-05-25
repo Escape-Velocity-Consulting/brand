@@ -7,6 +7,7 @@ import type { BrowserPool } from './browserPool.js'
 import { GeneratorError } from './errors.js'
 import type { BrandPaths } from './paths.js'
 import { renderStringTemplate } from './templates.js'
+import { loadTokensCss } from './tokens.js'
 
 export const CAROUSEL_FORMATS: Record<string, { width: number; height: number }> = {
   'linkedin-portrait': { width: 1080, height: 1350 },
@@ -51,9 +52,11 @@ async function renderSlideToPng(
   pool: BrowserPool,
 ): Promise<{ pngBuffer: Buffer; html: string }> {
   const fontsUri = pathToFileURL(paths.fontsDir).href
+  const tokensCss = loadTokensCss(paths)
   const raw = readFileSync(templatePath, 'utf-8')
   const html = renderStringTemplate(dirname(templatePath), raw, {
     FONTS_URI: fontsUri,
+    TOKENS_CSS: tokensCss,
     WIDTH: dims.width,
     HEIGHT: dims.height,
     ...vars,

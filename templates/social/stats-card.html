@@ -25,6 +25,8 @@
   font-display: swap;
 }
 
+{{ TOKENS_CSS | safe }}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 html, body {
@@ -34,7 +36,7 @@ html, body {
 }
 
 body {
-  background: #1E1C1A;
+  background: var(--color-black);
   position: relative;
 }
 
@@ -42,7 +44,7 @@ body {
   position: absolute;
   left: 0; top: 0; bottom: 0;
   width: 4px;
-  background: #D4784A;
+  background: var(--color-terracotta);
 }
 
 .content {
@@ -65,34 +67,34 @@ body {
 }
 
 .stat {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-headline);
   font-weight: 700;
   font-size: 260px;
   line-height: 1.0;
-  color: #D4784A;
+  color: var(--color-terracotta);
 }
 
 .unit {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-headline);
   font-weight: 700;
   font-size: 104px;
   line-height: 1.0;
-  color: #D4784A;
+  color: var(--color-terracotta);
 }
 
 .label {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-headline);
   font-weight: 600;
   font-size: 64px;
-  color: #F5F3F0;
+  color: var(--color-light);
   margin-top: 32px;
 }
 
 .context {
-  font-family: 'Manrope', sans-serif;
+  font-family: var(--font-ui);
   font-weight: 400;
   font-size: 36px;
-  color: #C4BEB8;
+  color: var(--color-muted);
   margin-top: 16px;
 }
 
@@ -107,22 +109,22 @@ body {
 }
 
 .wordmark {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-headline);
   font-weight: 700;
   font-size: 51px;
   letter-spacing: -0.01em;
-  color: #F5F3F0;
+  color: var(--color-light);
 }
 
 .wordmark .v {
-  color: #E8865A;
+  color: var(--color-accent);
 }
 
 .domain {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-weight: 400;
   font-size: 30px;
-  color: #D4784A;
+  color: var(--color-terracotta);
 }
 </style>
 </head>

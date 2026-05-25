@@ -24,6 +24,8 @@
   font-display: swap;
 }
 
+{{ TOKENS_CSS | safe }}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 html, body {
@@ -33,22 +35,22 @@ html, body {
 }
 
 body {
-  background: #1E1C1A;
+  background: var(--color-black);
   position: relative;
 }
 
-.accent { color: #E8865A; }
+.accent { color: var(--color-accent); }
 
 .eyebrow {
   position: absolute;
   top: 108px;
   left: 96px;
-  font-family: 'Manrope', sans-serif;
+  font-family: var(--font-ui);
   font-weight: 700;
   font-size: 36px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #E8865A;
+  color: var(--color-accent);
 }
 
 .content {
@@ -63,20 +65,20 @@ body {
 }
 
 .headline {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-headline);
   font-weight: 600;
   font-size: 84px;
   line-height: 1.05;
-  color: #F5F3F0;
+  color: var(--color-light);
   letter-spacing: -0.02em;
 }
 
 .subtitle {
-  font-family: 'Manrope', sans-serif;
+  font-family: var(--font-ui);
   font-weight: 500;
   font-size: 36px;
   line-height: 1.35;
-  color: #C4BEB8;
+  color: var(--color-muted);
   margin-top: 40px;
   max-width: 820px;
 }
@@ -97,20 +99,20 @@ body {
   align-items: center;
   gap: 18px;
   padding: 26px 44px;
-  background: #E8865A;
+  background: var(--color-accent);
   border-radius: 999px;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-headline);
   font-weight: 700;
   font-size: 38px;
   letter-spacing: -0.01em;
-  color: #1E1C1A;
+  color: var(--color-black);
 }
 
 .cta-url {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-weight: 500;
   font-size: 52px;
-  color: #F5F3F0;
+  color: var(--color-light);
   letter-spacing: -0.01em;
 }
 </style>
