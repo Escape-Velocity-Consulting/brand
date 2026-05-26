@@ -88,7 +88,7 @@ export interface RenderWarning {
 }
 
 /** Default author byline on title slides when no `<!-- @author: -->` directive is present. */
-const DEFAULT_AUTHOR = 'Tommi Enenkel · Escape Velocity Consulting'
+const DEFAULT_AUTHOR = 'Tommi Enenkel'
 
 /** Marker used by publish_artifact to locate the title slide's QR slot and inject the baked-in image. */
 const QR_PLACEHOLDER_MARKER = 'ESCAPE_VELOCITY_QR_PLACEHOLDER'
@@ -230,6 +230,44 @@ function renderSectionFragment(raw: string): string {
     <h1>${escapeHtml(h1)}</h1>
     ${bodyHtml ? `<div class="section-sub">${bodyHtml}</div>` : ''}
   `
+}
+
+// ─── Statement ─────────────────────────────────────────────────────────────
+//
+// A single punchy statement centered on the slide. Has logo + page-number
+// chrome (unlike @type: section which suppresses both). Designed for one
+// strong sentence or single word — use a `# Heading` to supply it. An
+// optional body line becomes a smaller subtitle below the statement.
+//
+// Font size is clamped so even long sentences stay on one line where possible;
+// the layout breaks to multiple lines naturally if the text is very long.
+function renderStatementFragment(raw: string): string {
+  const lines = raw.split('\n').filter((l) => l.trim())
+  let text = '', sub = ''
+  for (const line of lines) {
+    const m = line.match(/^#{1,2}\s+(.+)$/)
+    if (m && !text) { text = m[1].trim(); continue }
+    if (text && line.trim()) sub += (sub ? ' ' : '') + line.trim()
+  }
+  const textHtml = text ? md.renderInline(text) : ''
+  const subHtml = sub ? md.renderInline(sub) : ''
+  return `
+    <div class="statement-body">
+      <p class="statement-text">${textHtml}</p>
+      ${subHtml ? `<p class="statement-sub">${subHtml}</p>` : ''}
+    </div>
+  `
+}
+
+// ─── Closing ────────────────────────────────────────────────────────────────
+//
+// End-of-deck slide that mirrors the title chrome exactly (logo, author,
+// QR slot, accent rule). Semantically distinct from @type: title so the
+// title-once rule doesn't downgrade it. Default bg is terracotta; the
+// template emits an extra `slide--title` class on closing slides so all
+// title CSS and QR-bake logic apply automatically.
+function renderClosingFragment(raw: string, meta: Record<string, string>): string {
+  return renderTitleFragment(raw, meta)
 }
 
 function renderQuoteFragment(raw: string, meta: Record<string, string>): string {
@@ -458,7 +496,9 @@ function renderFragment(
   const html = (() => {
     switch (f.type) {
       case 'title':       return renderTitleFragment(f.raw, f.meta)
+      case 'closing':     return renderClosingFragment(f.raw, f.meta)
       case 'section':     return renderSectionFragment(f.raw)
+      case 'statement':   return renderStatementFragment(f.raw)
       case 'quote':       return renderQuoteFragment(f.raw, f.meta)
       case 'image':       return renderImageFragment(f.raw, mdDir)
       case 'two-col':     return renderTwoColFragment(f.raw)

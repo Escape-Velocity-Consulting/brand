@@ -273,6 +273,44 @@ html, body {
   max-width: 1500px;
 }
 
+/* Statement — one punchy centered sentence/word, chrome (logo + page-num) visible */
+.slide--statement { background: var(--color-cream); color: var(--color-text); }
+.slide--statement[data-bg="black"] { background: var(--color-black); color: var(--color-cream); }
+.slide--statement[data-bg="terracotta"] { background: var(--color-terracotta); color: var(--color-cream); }
+.slide--statement .slide-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.slide--statement .statement-body {
+  text-align: center;
+  max-width: 1500px;
+  padding: 0 100px;
+}
+.slide--statement .statement-text {
+  font-family: var(--font-headline);
+  font-size: clamp(52px, 6vw, 96px);
+  font-weight: 700;
+  line-height: 1.15;
+  text-wrap: balance;
+  color: var(--color-text);
+  margin: 0;
+}
+.slide--statement[data-bg="black"] .statement-text,
+.slide--statement[data-bg="terracotta"] .statement-text { color: var(--color-cream); }
+.slide--statement .statement-sub {
+  font-family: var(--font-body);
+  font-size: clamp(22px, 2.2vw, 32px);
+  color: var(--color-body);
+  margin-top: 28px;
+  text-wrap: balance;
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.slide--statement[data-bg="black"] .statement-sub,
+.slide--statement[data-bg="terracotta"] .statement-sub { color: var(--color-cream); opacity: 0.8; }
+
 /* Content */
 .slide--content .slide-inner { padding-top: 100px; }
 .slide--content h2 {
@@ -993,73 +1031,72 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
       <div class="title-qr-caption">Get the slides!</div>
     </div>
   
-    <div class="title-author">Tommi Enenkel · Escape Velocity Consulting · 28. Mai 2026</div>
+    <div class="title-author">Tommi Enenkel · 28. Mai 2026</div>
   
     </div>
-    <div class="slide-num">1 / 17</div>
-    <div class="slide-mark">Escape <span>Velocity</span></div>
-  </section>
-
-  <section class="slide slide--quote"
-           data-bg="black"
-           
-           data-index="2">
-    <div class="slide-inner">
-      
-    <blockquote>Ich ersetze mein ganzes Team durch KI.</blockquote>
-    <div class="attribution">Ein Anwalt, LinkedIn, 2026</div>
-  
-    </div>
-    <div class="slide-num">2 / 17</div>
-    <div class="slide-mark">Escape <span>Velocity</span></div>
-  </section>
-
-  <section class="slide slide--quote"
-           data-bg="cream"
-           
-           data-index="3">
-    <div class="slide-inner">
-      
-    <blockquote>Die meisten Firmen haben nicht zu wenig KI. Sie haben zu wenig Klarheit über ihre Prozesse.</blockquote>
-    <div class="attribution">Tommi Enenkel, Escape Velocity Consulting</div>
-  
-    </div>
-    <div class="slide-num">3 / 17</div>
+    <div class="slide-num">1 / 21</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--section"
            data-bg="cream"
            
-           data-index="4">
+           data-index="2">
     <div class="slide-inner">
       
     <div class="section-num">Schritt 1</div>
     <h1>Enablement</h1>
-    <div class="section-sub">Drei Schritte vom Hype zur Hebelwirkung.</div>
+    <div class="section-sub">Vom Hype zur messbaren Hebelwirkung.</div>
   
     </div>
-    <div class="slide-num">4 / 17</div>
+    <div class="slide-num">2 / 21</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
-  <section class="slide slide--content"
+  <section class="slide slide--section"
+           data-bg="black"
+           
+           data-index="3">
+    <div class="slide-inner">
+      
+    
+    <h1>Werkzeuge</h1>
+    <div class="section-sub">7 Tipps · 1 Bonus · 75 Minuten</div>
+  
+    </div>
+    <div class="slide-num">3 / 21</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--statement"
            data-bg="cream"
+           
+           data-index="4">
+    <div class="slide-inner">
+      
+    <div class="statement-body">
+      <p class="statement-text">Die meisten Firmen haben nicht zu wenig KI.</p>
+      <p class="statement-sub">Sie haben zu wenig Klarheit über ihre Prozesse.</p>
+    </div>
+  
+    </div>
+    <div class="slide-num">4 / 21</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--statement"
+           data-bg="black"
            
            data-index="5">
     <div class="slide-inner">
       
-    <h2>Das Enablement ist real</h2><div class="accent-rule"></div>
-    <div class="md"><p>KI ist eine General-Purpose-Technologie — und sie macht Einzelpersonen messbar produktiver.</p>
-<ul>
-<li>Ein Geschäftsführer mit den richtigen Werkzeugen erledigt <strong>in einem Tag</strong>, wofür er früher eine Woche brauchte</li>
-<li>Das ist kein Hype — das ist messbar</li>
-<li>Soweit liegt der Anwalt richtig</li>
-</ul>
-</div>
+    <div class="statement-body">
+      <p class="statement-text">Fokus.</p>
+      
+    </div>
   
     </div>
-    <div class="slide-num">5 / 17</div>
+    <div class="slide-num">5 / 21</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
@@ -1069,111 +1106,44 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
            data-index="6">
     <div class="slide-inner">
       
-    <h2>Drei Hebel im Überblick</h2><div class="accent-rule"></div>
-    <div class="md"><h3>Automatisierung</h3>
-<p>Repetitive Aufgaben — E-Mail-Drafts, Reports, Datenrecherche.</p>
-<h3>Augmentierung</h3>
-<p>Bessere Entscheidungen durch KI-gestützte Analyse und Zusammenfassung.</p>
-<h3>Transformation</h3>
-<p>Neue Geschäftsmodelle, die ohne KI schlicht nicht möglich wären.</p>
+    <h2>Das Enablement ist real</h2><div class="accent-rule"></div>
+    <div class="md"><p>KI ist eine General-Purpose-Technologie — und sie macht Einzelpersonen messbar produktiver.</p>
+<ul>
+<li>Ein Geschäftsführer erledigt <strong>in einem Tag</strong>, wofür er früher eine Woche brauchte</li>
+<li>Das ist kein Hype — das ist messbar</li>
+<li>Soweit liegt der Anwalt richtig</li>
+</ul>
 </div>
   
     </div>
-    <div class="slide-num">6 / 17</div>
+    <div class="slide-num">6 / 21</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
-  <section class="slide slide--html"
+  <section class="slide slide--content"
            data-bg="cream"
            
            data-index="7">
     <div class="slide-inner">
       
-    <h2 class="ev-h2">Aber in Teil zwei verrennt er sich<span class="ev-rule"></span></h2>
-    <div class="ev-canvas"><p class="ev-lead">Wenn KI dich zehnfach produktiv macht, macht sie auch jeden in deinem Team zehnfach produktiv. <strong>Falls du sie lässt.</strong></p>
-<div class="ev-mult-row">
-  <div class="ev-mult-col">
-    <div class="ev-mult-num">1×</div>
-    <div class="ev-mult-box ev-mult-box--sm">heute</div>
-  </div>
-  <div class="ev-mult-arrow">→</div>
-  <div class="ev-mult-col">
-    <div class="ev-mult-num ev-mult-num--lg ev-accent">10×</div>
-    <div class="ev-mult-box ev-mult-box--md">mit KI</div>
-  </div>
-  <div class="ev-mult-arrow">→</div>
-  <div class="ev-mult-col">
-    <div class="ev-mult-num ev-mult-num--xl">100×</div>
-    <div class="ev-mult-box ev-mult-box--lg">10 Leute, Kompounding</div>
-  </div>
-</div>
-<p class="ev-foot"><strong>Mehr Output pro Kopf. Nicht null Köpfe.</strong></p></div>
-  
-    </div>
-    <div class="slide-num">7 / 17</div>
-    <div class="slide-mark">Escape <span>Velocity</span></div>
-  </section>
-
-  <section class="slide slide--big-number"
-           data-bg="cream"
-           
-           data-index="8">
-    <div class="slide-inner">
-      
-    <div class="eyebrow">Produktivitäts-Multiplier</div>
-    <div class="big-number">10x</div>
-    <div class="big-number-body md"><p>In einem Tag erledigen, wofür sonst eine Woche reicht.</p>
+    <h2>Drei Hebel im Überblick</h2><div class="accent-rule"></div>
+    <div class="md"><h3>Automatisierung</h3>
+<p>Repetitive Aufgaben — E-Mail-Drafts, Reports, Datenrecherche.</p>
+<h3>Augmentierung</h3>
+<p>Bessere Entscheidungen durch KI-gestützte Analyse.</p>
+<h3>Transformation</h3>
+<p>Neue Geschäftsmodelle, die ohne KI schlicht nicht möglich wären.</p>
 </div>
   
     </div>
-    <div class="slide-num">8 / 17</div>
-    <div class="slide-mark">Escape <span>Velocity</span></div>
-  </section>
-
-  <section class="slide slide--html"
-           data-bg="cream"
-           
-           data-index="9">
-    <div class="slide-inner">
-      
-    <h2 class="ev-h2">Das Enablement-Spektrum<span class="ev-rule"></span></h2>
-    <div class="ev-canvas"><div class="ev-spectrum" style="--from: 32%; --to: 68%; --at: 32%;">
-  <div class="ev-spectrum-axis">
-    <div class="ev-spectrum-marker"></div>
-    <div class="ev-spectrum-shift"></div>
-  </div>
-  <div class="ev-spectrum-shift-label">KI verschiebt den Punkt</div>
-  <div class="ev-spectrum-ends">
-    <div>Alles auslagern<span>IT-Firmen, Agenturen</span></div>
-    <div>Alles selber machen<span>eigenes Team, eigene Tools</span></div>
-  </div>
-</div>
-<p class="ev-foot">Regular People können jetzt mehr selbst tun.</p></div>
-  
-    </div>
-    <div class="slide-num">9 / 17</div>
-    <div class="slide-mark">Escape <span>Velocity</span></div>
-  </section>
-
-  <section class="slide slide--section"
-           data-bg="black"
-           
-           data-index="10">
-    <div class="slide-inner">
-      
-    
-    <h1>Werkzeuge</h1>
-    <div class="section-sub">7 Tipps · 1 Bonus · 75 Minuten</div>
-  
-    </div>
-    <div class="slide-num">10 / 17</div>
+    <div class="slide-num">7 / 21</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--cards"
            data-bg="cream"
            
-           data-index="11">
+           data-index="8">
     <div class="slide-inner">
       
     <h2>Operationalisierung: Werkzeuge</h2><div class="accent-rule"></div>
@@ -1210,37 +1180,14 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
   </div>
   
     </div>
-    <div class="slide-num">11 / 17</div>
-    <div class="slide-mark">Escape <span>Velocity</span></div>
-  </section>
-
-  <section class="slide slide--html"
-           data-bg="cream"
-           
-           data-index="12">
-    <div class="slide-inner">
-      
-    <h2 class="ev-h2">Prozesse: Wie KI integrieren?<span class="ev-rule"></span></h2>
-    <div class="ev-canvas"><div class="ev-flow">
-  <div class="ev-flow-step">Input</div>
-  <div class="ev-flow-line" data-label="KI-Andock" data-dock><span class="ev-flow-dock"></span></div>
-  <div class="ev-flow-step">Verarbeitung</div>
-  <div class="ev-flow-line" data-label="KI-Andock" data-dock><span class="ev-flow-dock"></span></div>
-  <div class="ev-flow-step">Entscheidung</div>
-  <div class="ev-flow-line"></div>
-  <div class="ev-flow-step">Output</div>
-</div>
-<p class="ev-foot">KI ersetzt eure Prozesse nicht. Sie wird in sie integriert.</p></div>
-  
-    </div>
-    <div class="slide-num">12 / 17</div>
+    <div class="slide-num">8 / 21</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--two-col"
            data-bg="cream"
            
-           data-index="13">
+           data-index="9">
     <div class="slide-inner">
       
     <h2>Warum jetzt?</h2><div class="accent-rule"></div>
@@ -1262,25 +1209,14 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
     </div>
   
     </div>
-    <div class="slide-num">13 / 17</div>
-    <div class="slide-mark">Escape <span>Velocity</span></div>
-  </section>
-
-  <section class="slide slide--image"
-           data-bg="cream"
-           data-chrome="none"
-           data-index="14">
-    <div class="slide-inner">
-      <div class="img-headline">🥋</div>
-    </div>
-    <div class="slide-num">14 / 17</div>
+    <div class="slide-num">9 / 21</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--comparison"
            data-bg="cream"
            
-           data-index="15">
+           data-index="10">
     <div class="slide-inner">
       
     <h2>Orientierung</h2><div class="accent-rule"></div>
@@ -1304,7 +1240,73 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
     </div>
   
     </div>
-    <div class="slide-num">15 / 17</div>
+    <div class="slide-num">10 / 21</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--quote"
+           data-bg="black"
+           
+           data-index="11">
+    <div class="slide-inner">
+      
+    <blockquote>Ich ersetze mein ganzes Team durch KI.</blockquote>
+    <div class="attribution">Ein Anwalt, LinkedIn, 2026</div>
+  
+    </div>
+    <div class="slide-num">11 / 21</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--quote"
+           data-bg="cream"
+           
+           data-index="12">
+    <div class="slide-inner">
+      
+    <blockquote>Die meisten Firmen haben nicht zu wenig KI. Sie haben zu wenig Klarheit über ihre Prozesse.</blockquote>
+    <div class="attribution">Tommi Enenkel, Escape Velocity Consulting</div>
+  
+    </div>
+    <div class="slide-num">12 / 21</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--big-number"
+           data-bg="black"
+           
+           data-index="13">
+    <div class="slide-inner">
+      
+    <div class="eyebrow">Produktivitäts-Multiplier</div>
+    <div class="big-number">10x</div>
+    <div class="big-number-body md"><p>In einem Tag erledigen, wofür sonst eine Woche reicht.</p>
+</div>
+  
+    </div>
+    <div class="slide-num">13 / 21</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--image"
+           data-bg="cream"
+           
+           data-index="14">
+    <div class="slide-inner">
+      <div class="img-headline">🥋</div>
+    </div>
+    <div class="slide-num">14 / 21</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--image"
+           data-bg="cream"
+           data-chrome="none"
+           data-index="15">
+    <div class="slide-inner">
+      <div class="img-headline">🥋</div>
+    </div>
+    <div class="slide-num">15 / 21</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
@@ -1312,6 +1314,85 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
            data-bg="cream"
            
            data-index="16">
+    <div class="slide-inner">
+      
+    <h2 class="ev-h2">Enablement-Multiplikator<span class="ev-rule"></span></h2>
+    <div class="ev-canvas"><p class="ev-lead">Wenn KI dich zehnfach produktiv macht, macht sie auch jeden in deinem Team zehnfach produktiv. <strong>Falls du sie lässt.</strong></p>
+<div class="ev-mult-row">
+  <div class="ev-mult-col">
+    <div class="ev-mult-num">1×</div>
+    <div class="ev-mult-box ev-mult-box--sm">heute</div>
+  </div>
+  <div class="ev-mult-arrow">→</div>
+  <div class="ev-mult-col">
+    <div class="ev-mult-num ev-mult-num--lg ev-accent">10×</div>
+    <div class="ev-mult-box ev-mult-box--md">mit KI</div>
+  </div>
+  <div class="ev-mult-arrow">→</div>
+  <div class="ev-mult-col">
+    <div class="ev-mult-num ev-mult-num--xl">100×</div>
+    <div class="ev-mult-box ev-mult-box--lg">10 Leute, Kompounding</div>
+  </div>
+</div>
+<p class="ev-foot"><strong>Mehr Output pro Kopf. Nicht null Köpfe.</strong></p></div>
+  
+    </div>
+    <div class="slide-num">16 / 21</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--html"
+           data-bg="cream"
+           
+           data-index="17">
+    <div class="slide-inner">
+      
+    <h2 class="ev-h2">Das Enablement-Spektrum<span class="ev-rule"></span></h2>
+    <div class="ev-canvas"><div class="ev-spectrum" style="--from: 32%; --to: 68%; --at: 32%;">
+  <div class="ev-spectrum-axis">
+    <div class="ev-spectrum-marker"></div>
+    <div class="ev-spectrum-shift"></div>
+  </div>
+  <div class="ev-spectrum-shift-label">KI verschiebt den Punkt</div>
+  <div class="ev-spectrum-ends">
+    <div>Alles auslagern<span>IT-Firmen, Agenturen</span></div>
+    <div>Alles selber machen<span>eigenes Team, eigene Tools</span></div>
+  </div>
+</div>
+<p class="ev-foot">Regular People können jetzt mehr selbst tun.</p></div>
+  
+    </div>
+    <div class="slide-num">17 / 21</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--html"
+           data-bg="cream"
+           
+           data-index="18">
+    <div class="slide-inner">
+      
+    <h2 class="ev-h2">Prozesse: Wie KI integrieren?<span class="ev-rule"></span></h2>
+    <div class="ev-canvas"><div class="ev-flow">
+  <div class="ev-flow-step">Input</div>
+  <div class="ev-flow-line" data-label="KI-Andock" data-dock><span class="ev-flow-dock"></span></div>
+  <div class="ev-flow-step">Verarbeitung</div>
+  <div class="ev-flow-line" data-label="KI-Andock" data-dock><span class="ev-flow-dock"></span></div>
+  <div class="ev-flow-step">Entscheidung</div>
+  <div class="ev-flow-line"></div>
+  <div class="ev-flow-step">Output</div>
+</div>
+<p class="ev-foot">KI ersetzt eure Prozesse nicht. Sie wird in sie integriert.</p></div>
+  
+    </div>
+    <div class="slide-num">18 / 21</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--html"
+           data-bg="cream"
+           
+           data-index="19">
     <div class="slide-inner">
       
     <h2 class="ev-h2">Wie es weitergeht<span class="ev-rule"></span></h2>
@@ -1351,22 +1432,53 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
 </div></div>
   
     </div>
-    <div class="slide-num">16 / 17</div>
+    <div class="slide-num">19 / 21</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
-  <section class="slide slide--section"
-           data-bg="terracotta"
+  <section class="slide slide--html"
+           data-bg="cream"
            
-           data-index="17">
+           data-index="20">
     <div class="slide-inner">
       
-    
-    <h1>Danke!</h1>
-    <div class="section-sub">tommi.enenkel@escapevelocity.consulting</div>
+    <h2 class="ev-h2">Grundlagen: Canvas-Utilities<span class="ev-rule"></span></h2>
+    <div class="ev-canvas"><p class="ev-lead">Dieser Slide zeigt <strong>ev-lead</strong> — die breite Einleitung. Darunter normaler Fließtext als Absatz.</p>
+
+<p>Mit <code>ev-canvas</code> als Wrapper bekommt jeder <code>@type: html</code> Slide automatisch das richtige Padding und die richtige Schrift. Kein Boilerplate nötig.</p>
+
+<p class="ev-foot">ev-foot — zentrierte Fußzeile für kurze Aussagen oder Quellen.</p></div>
   
     </div>
-    <div class="slide-num">17 / 17</div>
+    <div class="slide-num">20 / 21</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--closing slide--title"
+           data-bg="terracotta"
+           
+           data-index="21">
+    <div class="slide-inner">
+      
+    <div class="title-chrome">
+      <div class="title-logo">Escape <span>Velocity</span></div>
+    </div>
+    <div class="title-body">
+      
+      <div class="accent-rule"></div>
+      <h1>Danke!</h1>
+      
+    </div>
+    
+    <div class="title-qr-slot">
+      <img src="qr-title.png" alt="" class="title-qr-image">
+      <div class="title-qr-caption">Get the slides!</div>
+    </div>
+  
+    <div class="title-author">Tommi Enenkel</div>
+  
+    </div>
+    <div class="slide-num">21 / 21</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 

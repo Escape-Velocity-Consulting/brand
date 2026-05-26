@@ -201,6 +201,44 @@ html, body {
   max-width: 1500px;
 }
 
+/* Statement — one punchy centered sentence/word, chrome (logo + page-num) visible */
+.slide--statement { background: var(--color-cream); color: var(--color-text); }
+.slide--statement[data-bg="black"] { background: var(--color-black); color: var(--color-cream); }
+.slide--statement[data-bg="terracotta"] { background: var(--color-terracotta); color: var(--color-cream); }
+.slide--statement .slide-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.slide--statement .statement-body {
+  text-align: center;
+  max-width: 1500px;
+  padding: 0 100px;
+}
+.slide--statement .statement-text {
+  font-family: var(--font-headline);
+  font-size: clamp(52px, 6vw, 96px);
+  font-weight: 700;
+  line-height: 1.15;
+  text-wrap: balance;
+  color: var(--color-text);
+  margin: 0;
+}
+.slide--statement[data-bg="black"] .statement-text,
+.slide--statement[data-bg="terracotta"] .statement-text { color: var(--color-cream); }
+.slide--statement .statement-sub {
+  font-family: var(--font-body);
+  font-size: clamp(22px, 2.2vw, 32px);
+  color: var(--color-body);
+  margin-top: 28px;
+  text-wrap: balance;
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.slide--statement[data-bg="black"] .statement-sub,
+.slide--statement[data-bg="terracotta"] .statement-sub { color: var(--color-cream); opacity: 0.8; }
+
 /* Content */
 .slide--content .slide-inner { padding-top: 100px; }
 .slide--content h2 {
@@ -900,7 +938,7 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
 <script src="components/radar.js"></script>
 <div class="deck" id="deck">
 {% for slide in SLIDES %}
-  <section class="slide slide--{{ slide.type }}{% if loop.first %} is-active{% endif %}"
+  <section class="slide slide--{{ slide.type }}{% if slide.type == 'closing' %} slide--title{% endif %}{% if loop.first %} is-active{% endif %}"
            data-bg="{{ slide.bg }}"
            {% if slide.chrome %}data-chrome="{{ slide.chrome }}"{% endif %}
            data-index="{{ loop.index }}">
