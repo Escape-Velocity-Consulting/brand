@@ -467,4 +467,4 @@ table td code { font-size: 12px; background: rgba(0,0,0,0.04); padding: 2px 6px;
 .overview-chapter-body p:last-child { margin-bottom: 0; }
 .overview-chapter-body pre { margin: 0; padding: 14px 18px; background: var(--color-black); border-radius: 8px; overflow-x: auto; }
 .overview-chapter-body pre code { font-family: var(--font-mono); font-size: 13px; color: rgba(255,255,255,0.85); background: none; padding: 0; }
-.overview-chapter-body a { color: var(--color-terracotta); }
+.overview-chapter-body a:not([class]) { color: var(--color-terracotta); }
