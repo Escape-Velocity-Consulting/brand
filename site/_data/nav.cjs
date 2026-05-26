@@ -4,6 +4,7 @@ module.exports = [
   { slug: "identity",      label: "Identity",      description: "Colors, typography, logos, voice & press", children: [
     { slug: "identity-foundations", href: "identity/foundations", label: "Foundations" },
     { slug: "identity-voice",       href: "identity/voice",       label: "Voice & Press" },
+    { slug: "components",                                          label: "Components" },
     { slug: "identity-system",      href: "identity/system",      label: "System" },
   ]},
   { slug: "templates",     label: "Templates",     description: "Everything the brand produces", children: [
