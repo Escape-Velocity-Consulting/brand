@@ -29,7 +29,7 @@ html, body {
 }
 
 .brandbar {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center;
   margin-bottom: 64px;
 }
 .brandbar .wordmark {
@@ -40,14 +40,6 @@ html, body {
   text-decoration: none;
 }
 .brandbar .wordmark span { color: var(--color-terracotta); }
-.brandbar nav a {
-  font-family: var(--font-ui);
-  font-size: 14px; font-weight: 600;
-  color: var(--color-subtle);
-  text-decoration: none;
-  letter-spacing: 0.04em;
-}
-.brandbar nav a:hover { color: var(--color-terracotta); }
 
 .eyebrow {
   font-family: var(--font-ui);
@@ -131,15 +123,23 @@ h1 {
   background: rgba(0,0,0,0.03);
   border-left: 4px solid var(--color-terracotta);
   border-radius: 6px;
-  padding: 24px 28px;
-  display: flex; flex-direction: column; gap: 6px;
+  padding: 28px 32px;
+  display: flex; flex-direction: row; gap: 28px; align-items: flex-start;
 }
+.author-photo {
+  width: 96px; height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 3px solid var(--color-terracotta);
+}
+.author-body { display: flex; flex-direction: column; gap: 6px; }
 .author-card .label {
   font-family: var(--font-ui);
   font-size: 11px; font-weight: 700;
   letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--color-subtle);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 .author-card .name {
   font-family: var(--font-headline);
@@ -147,24 +147,39 @@ h1 {
   color: var(--color-text);
 }
 .author-card .role {
-  font-size: 15px;
+  font-size: 14px;
+  color: var(--color-subtle);
+  font-family: var(--font-ui);
+  font-weight: 600;
+}
+.author-card .bio {
+  font-size: 14px; line-height: 1.65;
   color: var(--color-body);
+  margin-top: 8px;
+  max-width: 620px;
+}
+.author-links {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  margin-top: 6px;
 }
 .author-card a {
   color: var(--color-terracotta);
   text-decoration: none;
   font-weight: 600;
+  font-family: var(--font-ui);
+  font-size: 13px;
 }
 .author-card a:hover { text-decoration: underline; }
+@media (max-width: 560px) {
+  .author-card { flex-direction: column; gap: 18px; }
+  .author-photo { width: 72px; height: 72px; }
+}
 </style>
 </head>
 <body>
 <div class="page">
   <header class="brandbar">
     <a href="https://escapevelocity.consulting" class="wordmark">Escape <span>Velocity</span></a>
-    <nav>
-      <a href="https://escapevelocity.consulting">escapevelocity.consulting</a>
-    </nav>
   </header>
 
   <main>
@@ -205,11 +220,18 @@ h1 {
     {% endif %}
 
     <div class="author-card">
-      <div class="label">Erstellt von</div>
-      <div class="name">Tommi Enenkel</div>
-      <div class="role">Escape Velocity Consulting · Digitalisierung & Prozessoptimierung</div>
-      <div class="role">
-        <a href="https://escapevelocity.consulting">escapevelocity.consulting</a>
+      <img src="https://escapevelocity.consulting/brand/press/photos/tommi-portrait.jpg" alt="Tommi Enenkel" class="author-photo">
+      <div class="author-body">
+        <div class="label">Erstellt von</div>
+        <div class="name">Tommi Enenkel</div>
+        <div class="role">Gründer · Escape Velocity Consulting</div>
+        <p class="bio">
+          Mit 17 Jahren Erfahrung als Tech Lead, Marketing Lead und Organisationsentwickler hat Tommi IT-Systeme aufgebaut, Teams durch Transformationen geführt und Technologiestrategie auf jeder Ebene mitgestaltet — vom mittelständischen Unternehmen bis zur internationalen Organisation. Zuletzt als CIO bei NEOS für 2.500 User und die gesamte Systemlandschaft verantwortlich. Heute unterstützt er KMU bei Digitalisierung, Automatisierung und KI-Einführung als externer CTO.
+        </p>
+        <div class="author-links">
+          <a href="https://escapevelocity.consulting">escapevelocity.consulting</a>
+          <a href="https://www.linkedin.com/in/tommi-enenkel/" target="_blank" rel="noopener">LinkedIn</a>
+        </div>
       </div>
     </div>
   </main>
