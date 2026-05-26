@@ -54,13 +54,25 @@ interface ParsedFragment {
   bg: string
   notes: string
   raw: string
+  /** Arbitrary `<!-- @key: value -->` directives. Per-type renderers read what they need. */
+  meta: Record<string, string>
 }
 
 interface RenderedFragment {
   type: string
   bg: string
   html: string
+  /** Per-slide chrome directive ('none' to suppress slide-mark + slide-num). */
+  chrome?: string
 }
+
+/** Default author byline on title slides when no `<!-- @author: -->` directive is present. */
+const DEFAULT_AUTHOR = 'Tommi Enenkel · Escape Velocity Consulting'
+
+/** Marker used by publish_artifact to locate the title slide's QR slot and inject the baked-in image. */
+const QR_PLACEHOLDER_MARKER = 'ESCAPE_VELOCITY_QR_PLACEHOLDER'
+
+export const TITLE_QR_PLACEHOLDER = QR_PLACEHOLDER_MARKER
 
 function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
@@ -73,71 +85,143 @@ export function parseDeckMarkdown(source: string): { fragments: ParsedFragment[]
   const fragments: ParsedFragment[] = []
   let title = ''
 
+  // Hyphenated keys like `qr-image` need to survive the regex; accept [\w-].
+  const DIRECTIVE_RE = /^\s*<!--\s*@([\w-]+)\s*:\s*(.*?)\s*-->\s*$/
+
   for (const block of blocks) {
-    const f: ParsedFragment = { type: 'content', bg: 'cream', notes: '', raw: '' }
+    const f: ParsedFragment = { type: 'content', bg: 'cream', notes: '', raw: '', meta: {} }
     const lines = block.split(/\r?\n/)
     const body: string[] = []
     for (const line of lines) {
-      const m = line.match(/^\s*<!--\s*@(\w+)\s*:\s*(.*?)\s*-->\s*$/)
+      const m = line.match(DIRECTIVE_RE)
       if (m) {
         const key = m[1].toLowerCase()
         const val = m[2]
         if (key === 'type') f.type = val
         else if (key === 'bg') f.bg = val
         else if (key === 'notes') f.notes = val
+        else f.meta[key] = val
         continue
       }
       body.push(line)
     }
     f.raw = body.join('\n').trim()
     if (!title) {
-      const h1 = f.raw.match(/^#\s+(.+)$/m)
-      if (h1) title = h1[1].trim()
+      // Accept either H1 or H2 for the deck-title heuristic — agents sometimes
+      // use H2 for chapter slides and put the actual H1 later.
+      const h = f.raw.match(/^#{1,2}\s+(.+)$/m)
+      if (h) title = h[1].trim()
     }
     fragments.push(f)
   }
   return { fragments, title }
 }
 
-function renderTitleFragment(raw: string): string {
+function renderTitleFragment(raw: string, meta: Record<string, string>): string {
+  // Accepts either `# Title` or `## Title` as the headline. Lines starting with
+  // `> ` become the eyebrow. Remaining non-empty lines become the subtitle.
+  // `**accent**` inside the h1 renders as a terracotta-highlighted span.
   const lines = raw.split('\n').filter((l) => l.trim())
   let eyebrow = '', h1 = '', subtitle = ''
   for (const line of lines) {
-    if (line.startsWith('# ')) { h1 = line.slice(2).trim(); continue }
+    const hMatch = line.match(/^#{1,2}\s+(.+)$/)
+    if (hMatch && !h1) { h1 = hMatch[1].trim(); continue }
     if (line.startsWith('> ')) { eyebrow = line.slice(2).trim(); continue }
-    if (!subtitle && h1) subtitle += (subtitle ? '\n' : '') + line
+    if (h1) subtitle += (subtitle ? '\n' : '') + line
   }
+  const headlineHtml = h1 ? md.renderInline(h1) : ''
   const subHtml = subtitle ? md.renderInline(subtitle) : ''
+
+  const author = meta.author ?? DEFAULT_AUTHOR
+  const date = meta.date ?? ''
+  const byline = date ? `${author} · ${date}` : author
+
+  const qrMode = (meta.qr ?? '').toLowerCase()
+  const qrImage = meta['qr-image']
+  const qrCaption = meta['qr-caption'] ?? 'Get the slides!'
+
+  // Render-time QR options:
+  //   <!-- @qr: none -->         → suppress the slot entirely
+  //   <!-- @qr-image: <url> -->  → static image in the slot (e.g. project mark)
+  //   <!-- @qr: <url> -->        → bake QR pointing to this URL right now
+  //   (default)                  → emit placeholder; publish_artifact fills it
+  let qrSlot = ''
+  const wrapQr = (inner: string) => `
+    <div class="title-qr-slot">
+      ${inner}
+      <div class="title-qr-caption">${escapeHtml(qrCaption)}</div>
+    </div>
+  `
+  if (qrImage) {
+    qrSlot = wrapQr(`<img src="${escapeHtml(qrImage)}" alt="" class="title-qr-image">`)
+  } else if (qrMode === 'none') {
+    qrSlot = ''
+  } else if (qrMode && qrMode !== 'auto') {
+    qrSlot = wrapQr(`<!-- ${QR_PLACEHOLDER_MARKER} -->`)
+  } else {
+    qrSlot = wrapQr(`<!-- ${QR_PLACEHOLDER_MARKER} -->`)
+  }
+
   return `
-    ${eyebrow ? `<div class="eyebrow">${escapeHtml(eyebrow)}</div>` : ''}
-    <div class="accent-rule"></div>
-    <h1>${escapeHtml(h1)}</h1>
-    ${subHtml ? `<div class="subtitle">${subHtml}</div>` : ''}
+    <div class="title-chrome">
+      <div class="title-logo">Escape <span>Velocity</span></div>
+    </div>
+    <div class="title-body">
+      ${eyebrow ? `<div class="eyebrow">${escapeHtml(eyebrow)}</div>` : ''}
+      <div class="accent-rule"></div>
+      <h1>${headlineHtml}</h1>
+      ${subHtml ? `<div class="subtitle">${subHtml}</div>` : ''}
+    </div>
+    ${qrSlot}
+    <div class="title-author">${escapeHtml(byline)}</div>
   `
 }
 
 function renderSectionFragment(raw: string): string {
+  // Accept both H1 (`# Title`) and H2 (`## Title`) — the agent commonly uses H2
+  // for chapter slides since they often sit between H1 content slides.
   const lines = raw.split('\n').filter((l) => l.trim())
-  let num = '', h1 = ''
+  let num = '', h1 = '', body = ''
   for (const line of lines) {
-    if (line.startsWith('# ')) { h1 = line.slice(2).trim(); continue }
+    const m = line.match(/^#{1,2}\s+(.+)$/)
+    if (m && !h1) { h1 = m[1].trim(); continue }
     if (line.startsWith('> ')) { num = line.slice(2).trim(); continue }
+    if (h1 && line.trim()) body += (body ? '\n' : '') + line
   }
+  const bodyHtml = body ? md.renderInline(body) : ''
   return `
     ${num ? `<div class="section-num">${escapeHtml(num)}</div>` : ''}
     <h1>${escapeHtml(h1)}</h1>
+    ${bodyHtml ? `<div class="section-sub">${bodyHtml}</div>` : ''}
   `
 }
 
-function renderQuoteFragment(raw: string): string {
+function renderQuoteFragment(raw: string, meta: Record<string, string>): string {
+  // Three ways to attribute a quote, in priority order:
+  //   1. <!-- @source: ... -->  (explicit directive — most discoverable)
+  //   2. — Source · Attribution  (em-dash / en-dash / hyphen prefix on its own line)
+  //   3. plain non-blockquote line treated as fall-through source if nothing else matched
   const lines = raw.split('\n')
   const quoteLines: string[] = []
-  let attribution = ''
+  let attribution = meta.source ?? ''
+  const tail: string[] = []
   for (const line of lines) {
-    const m = line.match(/^\s*[—–-]+\s*(.+)$/)
-    if (m && !line.trim().startsWith('>')) { attribution = m[1].trim(); continue }
-    if (line.startsWith('> ')) quoteLines.push(line.slice(2))
-    else if (line.trim()) quoteLines.push(line)
+    if (line.startsWith('> ')) { quoteLines.push(line.slice(2)); continue }
+    if (!line.trim()) continue
+    if (!attribution) {
+      const m = line.match(/^\s*[—–-]+\s*(.+)$/)
+      if (m) { attribution = m[1].trim(); continue }
+    }
+    tail.push(line)
+  }
+  // Final fallback: any plain tail line gets treated as the source. This catches
+  // the common agent mistake of writing the source on its own line without an
+  // em-dash prefix (and without using @source: either).
+  if (!attribution && tail.length > 0) {
+    attribution = tail.join(' ').trim()
+  } else if (attribution && tail.length > 0) {
+    // Keep the tail content inside the quote if the source was already set.
+    quoteLines.push(...tail)
   }
   const inner = md.renderInline(quoteLines.join(' ').trim())
   return `
@@ -147,19 +231,31 @@ function renderQuoteFragment(raw: string): string {
 }
 
 function renderImageFragment(raw: string, mdDir: string): string {
-  const m = raw.match(/!\[([^\]]*)\]\(([^)]+)\)/)
-  if (!m) return `<div class="img-wrap"><p>Invalid image syntax</p></div>`
-  const caption = m[1]
-  const src = m[2]
-  let resolvedSrc = src
-  if (!/^(https?:|data:|file:|\/)/i.test(src)) {
-    const abs = resolve(mdDir, decodeURI(src))
-    if (existsSync(abs)) resolvedSrc = pathToFileURL(abs).href
+  // Two supported shapes:
+  //   1. Standard image: `![caption](url)`  → fullscreen image, optional caption.
+  //      Caption is suppressed when the alt-text is empty (`![](url)`) so meme
+  //      slides aren't forced to carry a label.
+  //   2. Emoji / headline-only: a single `# 🥋` or `## Some Headline` line
+  //      with no markdown image — renders as a giant centered glyph, no caption.
+  const mImg = raw.match(/!\[([^\]]*)\]\(([^)]+)\)/)
+  if (mImg) {
+    const caption = mImg[1]
+    const src = mImg[2]
+    let resolvedSrc = src
+    if (!/^(https?:|data:|file:|\/)/i.test(src)) {
+      const abs = resolve(mdDir, decodeURI(src))
+      if (existsSync(abs)) resolvedSrc = pathToFileURL(abs).href
+    }
+    return `
+      <div class="img-wrap"><img src="${resolvedSrc}" alt="${escapeHtml(caption)}"></div>
+      ${caption ? `<div class="caption">${escapeHtml(caption)}</div>` : ''}
+    `
   }
-  return `
-    <div class="img-wrap"><img src="${resolvedSrc}" alt="${escapeHtml(caption)}"></div>
-    ${caption ? `<div class="caption">${escapeHtml(caption)}</div>` : ''}
-  `
+  const mHead = raw.match(/^#{1,2}\s+(.+)$/m)
+  if (mHead) {
+    return `<div class="img-headline">${escapeHtml(mHead[1].trim())}</div>`
+  }
+  return `<div class="img-wrap"><p>Invalid image syntax</p></div>`
 }
 
 function renderTwoColFragment(raw: string): string {
@@ -197,20 +293,125 @@ function renderContentFragment(raw: string): string {
   `
 }
 
+// ─── Cards (auto-grid from a markdown bullet list) ─────────────────────────
+//
+// Bullets in the form `**Title** — body` become cards. Plain bullets get a
+// title-less card. Grid columns are picked from item count:
+//   1–3 items  → 3-col          4 items  → 2x2          5 items  → 3-col
+//   6 items    → 3x2            7 items  → 4-col        8 items  → 4x2
+function renderCardsFragment(raw: string): string {
+  const lines = raw.split('\n')
+  let h2 = ''
+  const cards: { title: string; body: string }[] = []
+  for (const line of lines) {
+    if (line.startsWith('## ') && !h2) { h2 = line.slice(3).trim(); continue }
+    const item = line.match(/^\s*[-*]\s+(.+)$/)
+    if (!item) continue
+    const text = item[1]
+    const split = text.match(/^\*\*(.+?)\*\*\s*[—–-]\s*(.+)$/) ?? text.match(/^\*\*(.+?)\*\*\s*(.*)$/)
+    if (split) cards.push({ title: split[1].trim(), body: (split[2] ?? '').trim() })
+    else cards.push({ title: '', body: text.trim() })
+  }
+  const n = cards.length
+  const cols = n <= 3 ? n || 1 : n === 4 ? 2 : n <= 6 ? 3 : 4
+  const cardsHtml = cards.map((c) => `
+    <div class="ev-card">
+      ${c.title ? `<div class="ev-card-title">${md.renderInline(c.title)}</div>` : ''}
+      ${c.body ? `<div class="ev-card-body">${md.renderInline(c.body)}</div>` : ''}
+    </div>
+  `).join('')
+  return `
+    ${h2 ? `<h2>${escapeHtml(h2)}</h2><div class="accent-rule"></div>` : ''}
+    <div class="cards-grid" data-cols="${cols}">${cardsHtml}</div>
+  `
+}
+
+// ─── Big number (huge accent number + body copy) ───────────────────────────
+function renderBigNumberFragment(raw: string): string {
+  const lines = raw.split('\n')
+  let eyebrow = '', number = ''
+  const body: string[] = []
+  for (const line of lines) {
+    if (line.startsWith('> ') && !eyebrow) { eyebrow = line.slice(2).trim(); continue }
+    const m = line.match(/^#{1,2}\s+(.+)$/)
+    if (m && !number) { number = m[1].trim(); continue }
+    body.push(line)
+  }
+  const bodyMd = renderMarkdown(body.join('\n').trim())
+  return `
+    ${eyebrow ? `<div class="eyebrow">${escapeHtml(eyebrow)}</div>` : ''}
+    <div class="big-number">${escapeHtml(number)}</div>
+    ${bodyMd ? `<div class="big-number-body md">${bodyMd}</div>` : ''}
+  `
+}
+
+// ─── Comparison (opinionated A vs B — muted left, terracotta-accented right) ─
+//
+// Same `:::` separator as `two-col`. The first H3 in each column is the lane
+// label; everything else is body markdown.
+function renderComparisonFragment(raw: string): string {
+  const lines = raw.split('\n')
+  let h2 = ''
+  const body: string[] = []
+  for (const line of lines) {
+    if (line.startsWith('## ') && !h2) { h2 = line.slice(3).trim(); continue }
+    body.push(line)
+  }
+  const bodyText = body.join('\n').trim()
+  const parts = bodyText.split(/^\s*:::\s*$/m)
+  const left = (parts[0] || '').trim()
+  const right = (parts[1] || '').trim()
+  return `
+    ${h2 ? `<h2>${escapeHtml(h2)}</h2><div class="accent-rule"></div>` : ''}
+    <div class="comparison">
+      <div class="comparison-col comparison-muted md">${renderMarkdown(left)}</div>
+      <div class="comparison-col comparison-accent md">${renderMarkdown(right)}</div>
+    </div>
+  `
+}
+
+// ─── HTML passthrough with leading heading extraction ─────────────────────
+//
+// Markdown is NOT parsed inside `@type: html` blocks. To let authors mix a
+// proper styled heading with their custom HTML, we peel a single leading
+// `## Title` (or `# Title`) line off the top before passing the rest through.
+function renderHtmlFragment(raw: string): string {
+  const lines = raw.split('\n')
+  let heading = ''
+  let startIdx = 0
+  // Skip leading blank lines.
+  while (startIdx < lines.length && !lines[startIdx].trim()) startIdx++
+  if (startIdx < lines.length) {
+    const m = lines[startIdx].match(/^#{1,2}\s+(.+)$/)
+    if (m) {
+      heading = m[1].trim()
+      startIdx++
+    }
+  }
+  const body = lines.slice(startIdx).join('\n').trim()
+  return `
+    ${heading ? `<h2 class="slide-heading">${escapeHtml(heading)}</h2><div class="accent-rule"></div>` : ''}
+    ${body}
+  `
+}
+
 function renderFragment(f: ParsedFragment, mdDir: string): RenderedFragment {
   const html = (() => {
     switch (f.type) {
-      case 'title':   return renderTitleFragment(f.raw)
-      case 'section': return renderSectionFragment(f.raw)
-      case 'quote':   return renderQuoteFragment(f.raw)
-      case 'image':   return renderImageFragment(f.raw, mdDir)
-      case 'two-col': return renderTwoColFragment(f.raw)
-      case 'html':    return f.raw
+      case 'title':       return renderTitleFragment(f.raw, f.meta)
+      case 'section':     return renderSectionFragment(f.raw)
+      case 'quote':       return renderQuoteFragment(f.raw, f.meta)
+      case 'image':       return renderImageFragment(f.raw, mdDir)
+      case 'two-col':     return renderTwoColFragment(f.raw)
+      case 'cards':       return renderCardsFragment(f.raw)
+      case 'big-number':  return renderBigNumberFragment(f.raw)
+      case 'comparison':  return renderComparisonFragment(f.raw)
+      case 'html':        return renderHtmlFragment(f.raw)
       case 'content':
-      default:        return renderContentFragment(f.raw)
+      default:            return renderContentFragment(f.raw)
     }
   })()
-  return { type: f.type, bg: f.bg, html }
+  return { type: f.type, bg: f.bg, html, chrome: f.meta.chrome }
 }
 
 // ─── Public types ──────────────────────────────────────────────────────────

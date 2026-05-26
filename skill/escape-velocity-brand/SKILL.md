@@ -246,6 +246,88 @@ If nothing matches and the request feels like it _should_ have a template, call 
 
 <!-- /AUTO-GENERATED:ROUTING -->
 
+## Slide design rules
+
+The presentation template (`render_slides` markdown mode) ships with named slide layouts. Pick the right layout *first*, then write the content. Reaching for `@type: html` to lay out a list-shaped slide produces inline-style spam that loses the brand voice.
+
+### Layout decision tree
+
+| Content shape | Use `@type:` |
+|---------------|--------------|
+| Deck cover (logo + title + author + QR auto-bakes on publish) | `title` |
+| Chapter / section divider (single word or short phrase) | `section` |
+| Narrative prose, ≤6 bullets, ≤80 words | `content` |
+| Symmetric A/B pair (e.g. "Optimierung" vs "Wachstum") | `two-col` |
+| Opinionated contrast (old way vs new way, before/after, generic vs branded) | `comparison` |
+| Direct quotation with attribution | `quote` |
+| 3–8 short parallel items (tools, threats, principles) | `cards` |
+| Stat / impact line (one big number + caption) | `big-number` |
+| Real image (photo, screenshot, diagram file) | `image` with `![](url)` |
+| Meme / punchline (emoji + headline only — no caption, no subtitle) | `image` with `# 🥋` headline syntax |
+| Custom SVG, chart, anything no layout supports | `html` (last resort) |
+
+### Slide directives reference
+
+All directives use `<!-- @key: value -->` syntax, one per line, at the top of a slide block:
+
+| Directive | Slide types | Effect |
+|-----------|-------------|--------|
+| `@type:` | all | Layout selector (see table above). |
+| `@bg:` | all | Background variant: `cream` (default), `light`, `black`, `terracotta`. Foreground colors auto-adapt. |
+| `@chrome:` | all | `none` suppresses the wordmark + page-number footer (image / meme / hero slides). |
+| `@notes:` | all | Speaker notes (not rendered in viewer; kept for export). |
+| `@author:` | `title` | Override the default author byline (`Tommi Enenkel · Escape Velocity Consulting`). |
+| `@date:` | `title` | Appends ` · <date>` to the author byline. Keeps the date out of the subtitle. |
+| `@qr:` | `title` | `none` suppresses the QR slot; an explicit URL bakes that destination; default leaves a placeholder that `publish_artifact` fills with the publication's detail-page URL. |
+| `@qr-image:` | `title` | Static image (e.g. project mark) in the right-hand slot instead of a QR. |
+| `@qr-caption:` | `title` | Override the caption beneath the QR (default: `Get the slides!`). |
+| `@source:` | `quote` | Attribution line. Alternative to writing `— Source · Author` with an em-dash. |
+
+### Authoring rules
+
+- **Section / chapter slides:** `# Title` is canonical. The parser also accepts `## Title` as a safety net, but write `#`.
+- **Quote slides:** put the quotation in `> ` lines. Attribute the source with either `<!-- @source: ... -->` (preferred) or a single line starting with an em-dash (`— Source · Date`). Never bury the source inside the blockquote.
+- **Custom HTML escape hatch (`@type: html`):** the *leading* `## Title` line is auto-extracted and rendered as a styled heading above the raw HTML. The rest is raw — markdown is **not** parsed inside. Prefer the utility classes below over inline `style="…"` attributes.
+- **Title slides** automatically get the logo, the author byline, and a QR placeholder. The publish step fills the QR with the detail-page URL of the publication.
+
+### Utility classes inside `@type: html`
+
+Shipped with the presentation viewer — use these instead of inline styles when you must reach for the escape hatch:
+
+| Class | What it gives you |
+|-------|-------------------|
+| `.ev-card` | Cream-bg panel with terracotta left border and rounded corners. |
+| `.ev-card--dark` | Same shape on a dark background. |
+| `.ev-eyebrow` | Manrope 600 uppercase eyebrow text. |
+| `.ev-dash-list` | `<ul>` with the brand's terracotta dash bullets (no inline span hacks needed). |
+| `.ev-grid-2` / `.ev-grid-3` / `.ev-grid-4` | Equal-column grid containers. |
+| `.ev-accent` | Terracotta text color. |
+| `.ev-quote-bar` | Left terracotta border + matching padding. |
+
+### Visual rules
+
+- **One accent per slide.** Pick the single most important word/phrase, mark it terracotta — `**bold**` inside a title-slide H1 renders as the highlight; `<strong>` inside `content` slides; `.ev-accent` inside `html` slides. Sprinkling terracotta on multiple words per slide weakens every accent.
+- **Density cap.** Content slides max ~6 bullets or ~80 words. If you exceed that, split into two slides instead of shrinking text.
+- **Lists vs. grids.** 3+ short parallel items with a `**Title** — body` shape → `cards`. One dense narrative list → `content`.
+- **Memes carry themselves.** Use `@type: image` with a single emoji or short headline. Pair with `@chrome: none` so the brand footer doesn't intrude on the punchline.
+
+### Contrast adaptation (text color by background)
+
+Backgrounds dictate which tokens are valid for text. The shipped slide CSS already adapts per `[data-bg]`; the rules below cover any text you author inside `@type: html` blocks, and any new slide type contributed later.
+
+| Background | Primary text | Secondary / body | Subtle / labels |
+|------------|--------------|------------------|-----------------|
+| `cream` / `light` | `--color-text` (#1A1816) | `--color-body` (#5C5650) | `--color-subtle` (#807A74) |
+| `black` | `--color-cream` (#F9F7F4) | `rgba(255,255,255,0.88)` | `rgba(255,255,255,0.72)` |
+| `terracotta` | `--color-cream` | `--color-cream` | `rgba(255,255,255,0.85)` |
+
+Hard rules:
+
+- **`--color-subtle` (#807A74) is fg-on-cream only.** It is *not* valid on black or terracotta — it disappears.
+- **`--color-muted` (#C4BEB8) is a background tint, not body text.** Using it for foreground text on cream produces near-invisible labels (this was the page-number bug before).
+- **Quote attributions, page numbers, footers, captions** all need explicit per-bg color rules. Default to body color on light, ≥0.72 white on dark.
+- **`<strong>` accents** stay terracotta on light backgrounds; on terracotta backgrounds they collapse to cream (they'd be invisible otherwise).
+
 ## HTML authoring rules
 
 Whether using `render_template` (MCP) or authoring inline, the same rules apply:
@@ -353,11 +435,49 @@ User asks: "make me an on-brand landing page for the Process-Review service."
 
 ## Anti-patterns
 
+General:
+
 - ❌ **Writing custom HTML for a standard asset type.** If the user's request matches any phrasing in the Routing table above, use the mapped template — don't author HTML from scratch. Custom HTML is only for designs no template covers.
 - ❌ **Recreating a template from memory.** The canonical files are bundled with you under `templates/`. Read them.
 - ❌ **Hardcoding hex values** (`#c0392b`) or font names (`'Space Grotesk'`) in HTML you write. Use `var(--color-terracotta)` / `var(--font-headline)`.
 - ❌ **Calling N times for a multi-page render.** Use `render_slides` with output toggles — one round trip.
 - ❌ **Calling `list_templates` on the hot path.** The catalog above is already in your context — only call it if you suspect drift.
+
+Slide-specific (markdown mode of `render_slides`):
+
+- ❌ **Writing custom HTML for a list of parallel items.** Use `@type: cards` — the layout auto-grids and styles each card.
+- ❌ **Adding a subtitle below a meme.** Use `@type: image` with a `# 🥋` headline + `@chrome: none`; no caption, no subtitle. The punchline lives alone.
+- ❌ **Using `##` for section/chapter slide titles** as a deliberate choice. The parser tolerates it as a safety net, but `#` is canonical for section/title slides.
+- ❌ **Burying the quote source inside the blockquote.** Use `<!-- @source: ... -->` or an em-dash attribution line on its own.
+- ❌ **Inline `style="font-size: …; font-family: …; color: …"`** inside `@type: html`. Use the `.ev-card` / `.ev-grid-3` / `.ev-dash-list` / `.ev-accent` utility classes; they pick up tokens automatically.
+- ❌ **Marking three different words terracotta on one slide.** One accent per slide. Pick the *point* of the slide.
+- ❌ **Cramming a content slide past ~6 bullets or ~80 words.** Split into multiple slides instead of shrinking text.
+- ❌ **`--color-subtle` (#807A74) or `--color-muted` (#C4BEB8) as foreground on dark backgrounds.** They render as low-contrast smudges. Use `--color-cream` / `rgba(255,255,255,0.72+)` on dark, `--color-body` / `--color-subtle` on light. See the contrast pair table above.
+- ❌ **Putting the date in the title-slide subtitle.** Use `<!-- @date: ... -->` — it appends to the author byline at the bottom of the slide so the subtitle stays a clean tagline.
+
+### Worked example: `previews/decks/reference-deck.md`
+
+The repo ships a canonical 10-slide example exercising every type and directive. It's the right starting point when authoring a new deck — read it before composing from scratch. The reference covers:
+
+- Light-themed title slide with `**accent**` h1, `@date:`, QR auto-bake
+- Dark quote with `@source:`
+- `@type: section` (cream + black variants)
+- `@type: content` with bullets + bold accent
+- `@type: big-number` with eyebrow + caption
+- `@type: cards` (6-up auto-grid)
+- `@type: image` + `@chrome: none` (emoji punchline)
+- `@type: comparison` (muted vs. accent)
+- Terracotta closing title with QR + email subtitle
+
+Render locally:
+```
+npm run pres -- previews/decks/reference-deck.md --output previews/decks/reference-deck
+```
+
+Or bake with publish-time QR (needs MCP-stack dependencies):
+```
+npm run build:reference-deck
+```
 
 ## See also
 

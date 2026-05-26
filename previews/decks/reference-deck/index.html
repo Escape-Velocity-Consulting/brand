@@ -1,24 +1,96 @@
 <!DOCTYPE html>
-<html lang="{{ LANG }}">
+<html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ TITLE }}</title>
+<title>Reference Deck</title>
 <style>
 /* Fonts */
-@font-face { font-family: 'Space Grotesk'; src: url('{{ FONTS_URI }}/space-grotesk.woff2') format('woff2'); font-weight: 400 700; font-display: swap; }
-@font-face { font-family: 'Space Grotesk'; src: url('{{ FONTS_URI }}/space-grotesk-ext.woff2') format('woff2'); font-weight: 400 700; font-display: swap; }
-@font-face { font-family: 'Inter'; src: url('{{ FONTS_URI }}/inter.woff2') format('woff2'); font-weight: 400 600; font-display: swap; }
-@font-face { font-family: 'Inter'; src: url('{{ FONTS_URI }}/inter-ext.woff2') format('woff2'); font-weight: 400 600; font-display: swap; }
-@font-face { font-family: 'Manrope'; src: url('{{ FONTS_URI }}/manrope.woff2') format('woff2'); font-weight: 400 800; font-display: swap; }
-@font-face { font-family: 'Manrope'; src: url('{{ FONTS_URI }}/manrope-ext.woff2') format('woff2'); font-weight: 400 800; font-display: swap; }
+@font-face { font-family: 'Space Grotesk'; src: url('./fonts/space-grotesk.woff2') format('woff2'); font-weight: 400 700; font-display: swap; }
+@font-face { font-family: 'Space Grotesk'; src: url('./fonts/space-grotesk-ext.woff2') format('woff2'); font-weight: 400 700; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url('./fonts/inter.woff2') format('woff2'); font-weight: 400 600; font-display: swap; }
+@font-face { font-family: 'Inter'; src: url('./fonts/inter-ext.woff2') format('woff2'); font-weight: 400 600; font-display: swap; }
+@font-face { font-family: 'Manrope'; src: url('./fonts/manrope.woff2') format('woff2'); font-weight: 400 800; font-display: swap; }
+@font-face { font-family: 'Manrope'; src: url('./fonts/manrope-ext.woff2') format('woff2'); font-weight: 400 800; font-display: swap; }
 
 /* Tokens — injected from brand/tokens.css (built from tokens.ts) */
-{{ TOKENS_CSS | safe }}
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('./fonts/space-grotesk.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('./fonts/space-grotesk-ext.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+  unicode-range: U+0100-024F;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('./fonts/manrope.woff2') format('woff2');
+  font-weight: 400 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('./fonts/manrope-ext.woff2') format('woff2');
+  font-weight: 400 800;
+  font-display: swap;
+  unicode-range: U+0100-024F;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('./fonts/inter.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('./fonts/inter-ext.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+  unicode-range: U+0100-024F;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('./fonts/jetbrains-mono.woff2') format('woff2');
+  font-weight: 400 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('./fonts/jetbrains-mono-ext.woff2') format('woff2');
+  font-weight: 400 500;
+  font-display: swap;
+  unicode-range: U+0100-024F;
+}
+:root {
+  --color-cream: #F9F7F4;
+  --color-black: #1E1C1A;
+  --color-terracotta: #D4784A;
+  --color-terracotta-hover: #C2653A;
+  --color-accent: #E8865A;
+  --color-light: #F5F3F0;
+  --color-muted: #C4BEB8;
+  --color-subtle: #807A74;
+  --color-body: #5C5650;
+  --color-text: #1A1816;
+  --color-doc-text: #3D3A36;
+  --color-doc-border: #E8E5E0;
+  --color-blue: #3B82F6;
+  --color-green: #16A34A;
+  --font-headline: 'Space Grotesk', sans-serif;
+  --font-ui: 'Manrope', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
 
 :root {
-  --slide-w: {{ SLIDE_W }}px;
-  --slide-h: {{ SLIDE_H }}px;
+  --slide-w: 1920px;
+  --slide-h: 1080px;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -594,7 +666,7 @@ body.print-mode .slide:last-child {
 body.print-mode .hud, body.print-mode .hud-hint { display: none; }
 
 @page {
-  size: {{ SLIDE_W }}px {{ SLIDE_H }}px;
+  size: 1920px 1080px;
   margin: 0;
 }
 </style>
@@ -602,18 +674,229 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
 <body>
 <script src="components/radar.js"></script>
 <div class="deck" id="deck">
-{% for slide in SLIDES %}
-  <section class="slide slide--{{ slide.type }}{% if loop.first %} is-active{% endif %}"
-           data-bg="{{ slide.bg }}"
-           {% if slide.chrome %}data-chrome="{{ slide.chrome }}"{% endif %}
-           data-index="{{ loop.index }}">
+
+  <section class="slide slide--title is-active"
+           data-bg="cream"
+           
+           data-index="1">
     <div class="slide-inner">
-      {{ slide.html | safe }}
+      
+    <div class="title-chrome">
+      <div class="title-logo">Escape <span>Velocity</span></div>
     </div>
-    <div class="slide-num">{{ loop.index }} / {{ SLIDES | length }}</div>
+    <div class="title-body">
+      
+      <div class="accent-rule"></div>
+      <h1><strong>KI Masterclass</strong> für Geschäftsführer</h1>
+      <div class="subtitle">KI als 10x Hebel in Deinem Unternehmen einsetzen.</div>
+    </div>
+    
+    <div class="title-qr-slot">
+      <img src="qr-title.png" alt="" class="title-qr-image">
+      <div class="title-qr-caption">Get the slides!</div>
+    </div>
+  
+    <div class="title-author">Tommi Enenkel · Escape Velocity Consulting · 28. Mai 2026</div>
+  
+    </div>
+    <div class="slide-num">1 / 10</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
-{% endfor %}
+
+  <section class="slide slide--quote"
+           data-bg="black"
+           
+           data-index="2">
+    <div class="slide-inner">
+      
+    <blockquote>Ich ersetze mein ganzes Team durch KI.</blockquote>
+    <div class="attribution">Ein Anwalt, LinkedIn, 2026</div>
+  
+    </div>
+    <div class="slide-num">2 / 10</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--section"
+           data-bg="cream"
+           
+           data-index="3">
+    <div class="slide-inner">
+      
+    
+    <h1>Enablement</h1>
+    <div class="section-sub">Drei Schritte vom Hype zur Hebelwirkung.</div>
+  
+    </div>
+    <div class="slide-num">3 / 10</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--content"
+           data-bg="cream"
+           
+           data-index="4">
+    <div class="slide-inner">
+      
+    <h2>Das Enablement ist real</h2><div class="accent-rule"></div>
+    <div class="md"><p>KI ist eine General-Purpose-Technologie — und sie macht Einzelpersonen messbar produktiver.</p>
+<ul>
+<li>Ein Geschäftsführer mit den richtigen Werkzeugen erledigt <strong>in einem Tag</strong>, wofür er früher eine Woche brauchte</li>
+<li>Das ist kein Hype — das ist messbar</li>
+<li>Soweit liegt der Anwalt richtig</li>
+</ul>
+</div>
+  
+    </div>
+    <div class="slide-num">4 / 10</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--big-number"
+           data-bg="cream"
+           
+           data-index="5">
+    <div class="slide-inner">
+      
+    <div class="eyebrow">Produktivitäts-Multiplier</div>
+    <div class="big-number">10x</div>
+    <div class="big-number-body md"><p>In einem Tag erledigen, wofür sonst eine Woche reicht.</p>
+</div>
+  
+    </div>
+    <div class="slide-num">5 / 10</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--section"
+           data-bg="black"
+           
+           data-index="6">
+    <div class="slide-inner">
+      
+    
+    <h1>Werkzeuge</h1>
+    <div class="section-sub">7 Tipps · 1 Bonus · 75 Minuten</div>
+  
+    </div>
+    <div class="slide-num">6 / 10</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--cards"
+           data-bg="cream"
+           
+           data-index="7">
+    <div class="slide-inner">
+      
+    <h2>Operationalisierung: Werkzeuge</h2><div class="accent-rule"></div>
+    <div class="cards-grid" data-cols="3">
+    <div class="ev-card">
+      <div class="ev-card-title">Claude Chat</div>
+      <div class="ev-card-body">Text, schnelles Denken und Schreiben</div>
+    </div>
+  
+    <div class="ev-card">
+      <div class="ev-card-title">Claude Cowork</div>
+      <div class="ev-card-body">langlaufende, mehrstufige Arbeit</div>
+    </div>
+  
+    <div class="ev-card">
+      <div class="ev-card-title">Claude Code</div>
+      <div class="ev-card-body">Software entwickeln im Terminal</div>
+    </div>
+  
+    <div class="ev-card">
+      <div class="ev-card-title">Claude Design</div>
+      <div class="ev-card-body">Websites, Layouts, visuelle Drafts</div>
+    </div>
+  
+    <div class="ev-card">
+      <div class="ev-card-title">ChatGPT</div>
+      <div class="ev-card-body">Bildgenerierung</div>
+    </div>
+  
+    <div class="ev-card">
+      <div class="ev-card-title">NotebookLM</div>
+      <div class="ev-card-body">Audio aus Quellenmaterial</div>
+    </div>
+  </div>
+  
+    </div>
+    <div class="slide-num">7 / 10</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--image"
+           data-bg="cream"
+           data-chrome="none"
+           data-index="8">
+    <div class="slide-inner">
+      <div class="img-headline">🥋</div>
+    </div>
+    <div class="slide-num">8 / 10</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--comparison"
+           data-bg="cream"
+           
+           data-index="9">
+    <div class="slide-inner">
+      
+    <h2>Orientierung</h2><div class="accent-rule"></div>
+    <div class="comparison">
+      <div class="comparison-col comparison-muted md"><h3>Optimierung</h3>
+<p>“Was kostet mich jeden Tag Zeit?”</p>
+<ul>
+<li>Löst interne Probleme</li>
+<li>Erhöht Effizienz und Kapazität</li>
+<li>Verbessert bestehende Prozesse</li>
+</ul>
+</div>
+      <div class="comparison-col comparison-accent md"><h3>Wachstum</h3>
+<p>“Was könnten wir tun, was wir nie konnten?”</p>
+<ul>
+<li>Schafft Innovation und neue Angebote</li>
+<li>Erschließt neue Märkte</li>
+<li>Baut neue Infrastrukturen</li>
+</ul>
+</div>
+    </div>
+  
+    </div>
+    <div class="slide-num">9 / 10</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--title"
+           data-bg="terracotta"
+           
+           data-index="10">
+    <div class="slide-inner">
+      
+    <div class="title-chrome">
+      <div class="title-logo">Escape <span>Velocity</span></div>
+    </div>
+    <div class="title-body">
+      
+      <div class="accent-rule"></div>
+      <h1>Danke!</h1>
+      <div class="subtitle">tommi.enenkel@escapevelocity.consulting</div>
+    </div>
+    
+    <div class="title-qr-slot">
+      <img src="qr-title.png" alt="" class="title-qr-image">
+      <div class="title-qr-caption">Get the slides!</div>
+    </div>
+  
+    <div class="title-author">Tommi Enenkel · Escape Velocity Consulting</div>
+  
+    </div>
+    <div class="slide-num">10 / 10</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
 </div>
 
 <script>

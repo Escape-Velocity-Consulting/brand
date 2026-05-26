@@ -3,6 +3,8 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ServerContext } from '../shared/createServer.js'
 import { runTool, successResult, errorResult } from '../shared/toolResult.js'
 import { publishedItemToApi } from '../shared/publishedApi.js'
+import { bakeQrIntoPublishedDeck } from '../shared/qrInject.js'
+import { log } from '../shared/logger.js'
 
 const BUNDLE_TYPES = ['deck', 'document', 'image', 'carousel', 'html-pdf', 'html-png'] as const
 
@@ -30,6 +32,7 @@ export function registerPublishArtifact(server: McpServer, ctx: ServerContext) {
       bundleId: z.string().describe('The bundleId from a recent render response (top-level field).'),
       title: z.string().optional().describe('Override the bundle\'s auto-derived title (shown on cards + viewer).'),
       type: z.enum(BUNDLE_TYPES).optional().describe('Override the bundle\'s inferred type. Drives which Brand Site section the item appears in.'),
+      bakeQr: z.boolean().optional().describe('Auto-bake a QR code (pointing to the detail-page URL) onto the title slide. Defaults to true for decks. Pass false to skip.'),
     },
   }, async (args) => runTool(async () => {
     try {
@@ -37,7 +40,39 @@ export function registerPublishArtifact(server: McpServer, ctx: ServerContext) {
         title: args.title,
         type: args.type,
       })
-      return successResult({ ...publishedItemToApi(item, ctx.publicBaseUrl!) })
+
+      // Best-effort QR bake: default on for decks. Failure logs but never aborts
+      // the publish — the deck is already on disk and reachable; only the QR
+      // would be missing.
+      const bakeQr = args.bakeQr ?? (item.type === 'deck')
+      if (bakeQr && item.type === 'deck') {
+        const itemDir = ctx.publishedStore!.getItemDir(item.id)
+        if (itemDir) {
+          try {
+            const detailUrl = `${ctx.publicBaseUrl!.replace(/\/+$/, '')}/published/${item.id}`
+            const result = await bakeQrIntoPublishedDeck({
+              itemDir,
+              detailUrl,
+              pool: ctx.pool,
+              paths: ctx.paths,
+            })
+            if (result.baked) {
+              ctx.publishedStore!.refreshMeta(item.id, [
+                { relativeName: 'qr-title.png', filename: 'qr-title.png', mime: 'image/png' },
+              ])
+              log('qr_bake_ok', { id: item.id, added: result.added, updated: result.updated })
+            } else {
+              log('qr_bake_skip', { id: item.id, reason: result.reason })
+            }
+          } catch (err) {
+            log('qr_bake_fail', { id: item.id, err: err instanceof Error ? err : String(err) })
+          }
+        }
+      }
+
+      // Re-fetch the item so meta.json updates from the bake are reflected.
+      const fresh = ctx.publishedStore!.get(item.id) ?? item
+      return successResult({ ...publishedItemToApi(fresh, ctx.publicBaseUrl!) })
     } catch (err) {
       return errorResult(err)
     }

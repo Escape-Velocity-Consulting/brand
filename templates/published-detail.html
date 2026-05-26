@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ TITLE }} — Escape Velocity</title>
+<meta name="description" content="{{ TITLE }} — published via Escape Velocity Brand.">
+<meta property="og:title" content="{{ TITLE }}">
+<meta property="og:type" content="article">
+<meta property="og:url" content="{{ DETAIL_URL }}">
+{% if THUMBNAIL_URL %}<meta property="og:image" content="{{ THUMBNAIL_URL }}">{% endif %}
+<style>
+{{ TOKENS_CSS | safe }}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  font-family: var(--font-body);
+  color: var(--color-text);
+  background: var(--color-cream);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 48px 32px 96px;
+}
+
+.brandbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 64px;
+}
+.brandbar .wordmark {
+  font-family: var(--font-headline);
+  font-size: 22px; font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+  text-decoration: none;
+}
+.brandbar .wordmark span { color: var(--color-terracotta); }
+.brandbar nav a {
+  font-family: var(--font-ui);
+  font-size: 14px; font-weight: 600;
+  color: var(--color-subtle);
+  text-decoration: none;
+  letter-spacing: 0.04em;
+}
+.brandbar nav a:hover { color: var(--color-terracotta); }
+
+.eyebrow {
+  font-family: var(--font-ui);
+  font-size: 13px; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--color-terracotta);
+  margin-bottom: 24px;
+}
+
+.meta-row {
+  display: flex; align-items: center; gap: 16px;
+  font-family: var(--font-ui);
+  font-size: 14px; font-weight: 600;
+  color: var(--color-subtle);
+  letter-spacing: 0.04em;
+  margin-bottom: 16px;
+}
+.meta-row .badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: var(--color-terracotta);
+  color: var(--color-cream);
+  border-radius: 4px;
+  font-size: 11px; letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.meta-row time { color: var(--color-subtle); }
+.meta-row .dot { color: var(--color-muted); }
+
+h1 {
+  font-family: var(--font-headline);
+  font-size: clamp(40px, 6vw, 64px);
+  font-weight: 700;
+  line-height: 1.05; letter-spacing: -0.025em;
+  color: var(--color-text);
+  margin-bottom: 40px;
+}
+
+.actions {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  margin-bottom: 56px;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 24px;
+  font-family: var(--font-ui);
+  font-size: 15px; font-weight: 600;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: background 120ms ease;
+}
+.btn-primary {
+  background: var(--color-terracotta);
+  color: var(--color-cream);
+}
+.btn-primary:hover { background: var(--color-terracotta-hover); }
+.btn-secondary {
+  background: transparent;
+  color: var(--color-text);
+  border: 1.5px solid var(--color-muted);
+}
+.btn-secondary:hover { border-color: var(--color-terracotta); color: var(--color-terracotta); }
+
+.preview-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 64px;
+}
+.preview-strip img {
+  width: 100%; height: auto;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04);
+  display: block;
+}
+@media (max-width: 640px) {
+  .preview-strip { grid-template-columns: repeat(2, 1fr); }
+}
+
+.author-card {
+  background: rgba(0,0,0,0.03);
+  border-left: 4px solid var(--color-terracotta);
+  border-radius: 6px;
+  padding: 24px 28px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.author-card .label {
+  font-family: var(--font-ui);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--color-subtle);
+  margin-bottom: 4px;
+}
+.author-card .name {
+  font-family: var(--font-headline);
+  font-size: 22px; font-weight: 700;
+  color: var(--color-text);
+}
+.author-card .role {
+  font-size: 15px;
+  color: var(--color-body);
+}
+.author-card a {
+  color: var(--color-terracotta);
+  text-decoration: none;
+  font-weight: 600;
+}
+.author-card a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="brandbar">
+    <a href="https://escapevelocity.consulting" class="wordmark">Escape <span>Velocity</span></a>
+    <nav>
+      <a href="https://escapevelocity.consulting">escapevelocity.consulting</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="eyebrow">Publication</div>
+    <div class="meta-row">
+      <span class="badge">{{ TYPE_LABEL }}</span>
+      <time datetime="{{ PUBLISHED_AT }}">{{ PUBLISHED_AT_LABEL }}</time>
+    </div>
+
+    <h1>{{ TITLE }}</h1>
+
+    <div class="actions">
+      {% if VIEW_URL %}
+      <a href="{{ VIEW_URL }}" class="btn btn-primary">
+        {{ OPEN_LABEL }} →
+      </a>
+      {% endif %}
+      {% if PDF_URL %}
+      <a href="{{ PDF_URL }}" class="btn btn-secondary" download>
+        Download PDF
+      </a>
+      {% endif %}
+      {% if MD_URL %}
+      <a href="{{ MD_URL }}" class="btn btn-secondary" download>
+        Download Markdown
+      </a>
+      {% endif %}
+    </div>
+
+    {% if THUMBNAILS and THUMBNAILS.length %}
+    <div class="preview-strip">
+      {% for t in THUMBNAILS %}<img src="{{ t }}" alt="Slide preview">{% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="author-card">
+      <div class="label">Erstellt von</div>
+      <div class="name">Tommi Enenkel</div>
+      <div class="role">Escape Velocity Consulting · Digitalisierung & Prozessoptimierung</div>
+      <div class="role">
+        <a href="https://escapevelocity.consulting">escapevelocity.consulting</a>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

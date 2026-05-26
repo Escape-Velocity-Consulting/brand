@@ -755,21 +755,45 @@ Generates a self-contained HTML slide-deck viewer (16:9 or 4:3) from a Markdown 
 
 | Directive | Values | Default | Notes |
 |-----------|--------|---------|-------|
-| `<!-- @type: X -->` | `title`, `section`, `content`, `two-col`, `quote`, `image`, `html` | `content` | Slide layout |
-| `<!-- @bg: X -->` | `cream`, `black`, `terracotta`, `light` | `cream` | Background color |
+| `<!-- @type: X -->` | `title`, `section`, `content`, `two-col`, `comparison`, `cards`, `big-number`, `quote`, `image`, `html` | `content` | Slide layout |
+| `<!-- @bg: X -->` | `cream`, `black`, `terracotta`, `light` | `cream` | Background color (auto-adapts text). Section slides default to `terracotta`. |
+| `<!-- @chrome: X -->` | `none` | — | Suppress wordmark + page-number footer (image / hero slides) |
 | `<!-- @notes: ... -->` | free text | — | Speaker notes (reserved; ignored in v1) |
+| `<!-- @author: ... -->` | free text | `Tommi Enenkel · Escape Velocity Consulting` | Title-slide author byline override |
+| `<!-- @date: ... -->` | free text | — | Title-slide date appended to author byline |
+| `<!-- @qr: X -->` | `none`, URL | publish-time auto-bake | Title-slide QR slot — `none` suppresses; explicit URL bakes that destination |
+| `<!-- @qr-image: <url> -->` | url | — | Title-slide static image in the QR slot (alternative to QR) |
+| `<!-- @qr-caption: ... -->` | free text | `Get the slides!` | Caption beneath the QR code |
+| `<!-- @source: ... -->` | free text | — | Quote-slide attribution (alternative to em-dash attribution line) |
+
+**Contrast adaptation (text color by background):**
+
+Backgrounds dictate which tokens are valid for text. Builtin slide CSS enforces this; custom HTML inside `@type: html` blocks must follow the same pairs.
+
+| Background | Primary text | Body text | Subtle / labels |
+|------------|--------------|-----------|-----------------|
+| `cream` / `light` | `--color-text` | `--color-body` | `--color-subtle` |
+| `black` | `--color-cream` | `rgba(255,255,255,0.88)` | `rgba(255,255,255,0.72)` |
+| `terracotta` | `--color-cream` | `--color-cream` | `rgba(255,255,255,0.85)` |
+
+- `--color-subtle` (#807A74) is fg-on-cream only — invalid on dark backgrounds.
+- `--color-muted` (#C4BEB8) is a background tint, never body text.
+- Quote attribution / page numbers / captions / footers all need explicit per-bg color rules.
 
 **Slide-type conventions:**
 
 | Type | Markdown contract |
 |------|-------------------|
-| `title` | `# H1` = headline. `> eyebrow` = above-headline eyebrow. Remaining lines = subtitle. |
-| `section` | `# H1` = section name. `> Teil 1` = section number/label. |
-| `content` | `## H2` = slide heading (+ accent rule). Body = markdown (lists, paragraphs, tables, `### H3`). |
-| `two-col` | `## H2` heading, then markdown for left column, `:::` separator, markdown for right column. |
-| `quote` | Markdown blockquote (`> ...`) plus an attribution line starting with `—`. |
-| `image` | `![caption](path)` — relative paths resolved against the source MD's directory. |
-| `html` | Raw HTML passthrough — use for embedding components (e.g. `<script>` calls into `components/radar.js`). No markdown rendering. |
+| `title` | `# H1` (or `##`) = headline. `> eyebrow` = above-headline eyebrow. Remaining lines = subtitle. Auto-renders logo, author byline, and a QR slot filled at publish time. |
+| `section` | `# H1` (or `##`) = section name. `> Teil 1` = section number/label. Any remaining lines become a subtitle below the heading. Background defaults to terracotta but accepts `@bg:` override. |
+| `content` | `## H2` = slide heading (+ accent rule). Body = markdown (lists, paragraphs, tables, `### H3`). Density cap: ~6 bullets / ~80 words. |
+| `two-col` | `## H2` heading, then markdown for left column, `:::` separator, markdown for right column. Symmetric — both columns visually equal. |
+| `comparison` | Same syntax as `two-col` but opinionated: left column muted, right column terracotta-accented. For "old way vs new way" framings. |
+| `cards` | `## H2` heading, then a markdown bullet list. Each `**Title** — body` bullet becomes a card. Auto-grid 1–4 columns by item count. |
+| `big-number` | `> eyebrow` (optional), `# <number>` (huge terracotta), body markdown (caption). |
+| `quote` | Markdown blockquote (`> ...`) plus an attribution. Attribute via `<!-- @source: -->` (preferred) or an em-dash line. |
+| `image` | `![caption](path)` — relative paths resolved against the source MD's directory. *Or* `# 🥋` (emoji / short headline only) — renders as a giant centered glyph with no caption (memes / punchline slides). |
+| `html` | Raw HTML passthrough — use for embedding components (e.g. `<script>` calls into `components/radar.js`). Leading `## Title` is extracted and rendered as a styled heading; the rest is raw. Prefer utility classes (`.ev-card`, `.ev-grid-3`, `.ev-dash-list`, `.ev-accent`) over inline styles. |
 
 **CLI:**
 ```bash

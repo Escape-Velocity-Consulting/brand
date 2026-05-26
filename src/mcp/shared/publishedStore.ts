@@ -6,6 +6,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs'
 import { dirname, join, sep } from 'node:path'
@@ -187,6 +188,53 @@ export class PublishedStore {
     if (!absPath.startsWith(rootWithSep)) return null
     if (!existsSync(absPath)) return null
     return { absPath, mime: file.mime, filename: file.filename }
+  }
+
+  /**
+   * Absolute path to the directory holding a published item's files, or null
+   * if the item doesn't exist. Used by `publish_artifact` to bake the QR code
+   * onto the title slide after the initial copy.
+   */
+  getItemDir(id: string): string | null {
+    if (!isValidId(id)) return null
+    const itemRoot = join(this.publishedDir, id)
+    return existsSync(itemRoot) ? itemRoot : null
+  }
+
+  /**
+   * Re-scan files on disk and rewrite meta.json. Handles:
+   *  - new files (e.g. `qr-title.png` added at bake time)
+   *  - changed file sizes (e.g. patched `index.html`, regenerated `slide-01.png`)
+   *
+   * Pass `addedFiles` for entries not yet in the manifest. Existing entries
+   * have their `bytes` field refreshed from disk.
+   */
+  refreshMeta(id: string, addedFiles: Array<{ relativeName: string; filename: string; mime: string }> = []): void {
+    if (!isValidId(id)) return
+    const item = this.get(id)
+    if (!item) return
+    const itemRoot = join(this.publishedDir, id)
+
+    // Refresh sizes for known files.
+    for (const f of item.files) {
+      const p = join(itemRoot, f.relativeName)
+      if (existsSync(p)) f.bytes = statSync(p).size
+    }
+
+    // Register any newly added files that weren't in the manifest.
+    for (const added of addedFiles) {
+      if (item.files.some((f) => f.relativeName === added.relativeName)) continue
+      const p = join(itemRoot, added.relativeName)
+      if (!existsSync(p)) continue
+      item.files.push({
+        relativeName: added.relativeName,
+        filename: added.filename,
+        mime: added.mime,
+        bytes: statSync(p).size,
+      })
+    }
+
+    writeFileSync(join(itemRoot, 'meta.json'), JSON.stringify(item, null, 2), 'utf-8')
   }
 
   private artifactPath(f: { artifactUuid: string; mime: string; filename: string }): string {

@@ -91,6 +91,67 @@ Need the live values at runtime? Call `get_tokens` (returns parsed
 
 ---
 
+## Slide layouts
+
+The presentation template ships these named layouts. Pick the layout that fits the content shape — don't reach for `html` until none of the others fit.
+
+| `@type:` | When to pick it |
+|----------|-----------------|
+| `title` | Deck cover. Auto-renders logo + author + QR placeholder. |
+| `section` | Chapter divider. Single word or short phrase as `# Title`. |
+| `content` | Narrative prose ≤6 bullets, ≤80 words. Default for body slides. |
+| `two-col` | Symmetric A/B pair. Same visual weight on both sides. |
+| `comparison` | Opinionated A vs B. Left muted, right terracotta-accented. |
+| `quote` | Direct quotation. `> quote` + em-dash attribution or `@source:` directive. |
+| `cards` | 3–8 parallel items as `**Title** — body` bullets. Auto-grid 2–4 cols. |
+| `big-number` | Stat / impact line. Single huge terracotta number + caption. |
+| `image` | Real images (`![](url)`) — *or* memes (`# 🥋` headline syntax). |
+| `html` | Last resort. Markdown is NOT parsed inside; use utility classes. |
+
+### Utility classes (inside `@type: html`)
+
+Shipped with `presentation.html` — reach for these instead of inline styles:
+
+- `.ev-card` / `.ev-card--dark` — branded panel
+- `.ev-eyebrow` — Manrope uppercase eyebrow
+- `.ev-dash-list` — `<ul>` with terracotta dash bullets
+- `.ev-grid-2` / `.ev-grid-3` / `.ev-grid-4` — equal-column grids
+- `.ev-accent` — terracotta text color
+- `.ev-quote-bar` — left terracotta border + padding
+
+### Slide directives
+
+| Directive | Applies to | Effect |
+|-----------|------------|--------|
+| `@type:`, `@bg:`, `@notes:` | all | Layout, background variant, speaker notes |
+| `@chrome:` | all | `none` suppresses wordmark + page number (image/meme slides) |
+| `@author:`, `@date:` | `title` | Author byline override + date appended at bottom of slide |
+| `@qr:` / `@qr-image:` / `@qr-caption:` | `title` | QR destination / static image override / caption text (default "Get the slides!") |
+| `@source:` | `quote` | Quote attribution (alternative to em-dash line) |
+
+### Visual rules for slides
+
+- **One accent per slide.** Pick the highlight, mark it terracotta. Don't sprinkle. `**word**` inside title-slide H1 → terracotta highlight.
+- **Density cap.** Content slides max ~6 bullets / ~80 words. Split if longer.
+- **Lists vs. grids.** 3+ parallel items → `cards`. One narrative list → `content`.
+- **Memes carry themselves.** `@type: image` + emoji headline + `@chrome: none`. No caption, no subtitle.
+
+### Contrast pair table (text color by background)
+
+| Background | Primary text | Body text | Subtle / labels |
+|------------|--------------|-----------|-----------------|
+| `cream` / `light` | `--color-text` (#1A1816) | `--color-body` (#5C5650) | `--color-subtle` (#807A74) |
+| `black` | `--color-cream` | `rgba(255,255,255,0.88)` | `rgba(255,255,255,0.72)` |
+| `terracotta` | `--color-cream` | `--color-cream` | `rgba(255,255,255,0.85)` |
+
+Hard rules:
+
+- `--color-subtle` is **fg-on-cream only**. Don't use it on black or terracotta.
+- `--color-muted` is a **background tint**, not body text. Never use as fg color.
+- Quote attributions, page numbers, captions all need explicit per-bg color rules.
+
+---
+
 ## Voice & content rules
 
 - **German default.** All client-facing copy is German unless explicitly English. Headlines use German typography rules (capitalize nouns, "ß" not "ss", curly quotes).

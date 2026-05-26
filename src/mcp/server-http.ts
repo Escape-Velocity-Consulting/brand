@@ -27,7 +27,9 @@ import {
 } from './shared/oauthServer.js'
 import { RefreshTokenStore } from './shared/refreshTokenStore.js'
 import { resolveBrandDir } from './shared/resolveBrandDir.js'
+import { renderPublishedDetailPage } from './shared/publishedDetailPage.js'
 import { SessionStore } from './shared/sessionStore.js'
+import type { BrandPaths } from '../core/paths.js'
 
 /**
  * Streamable-HTTP MCP entrypoint.
@@ -232,7 +234,7 @@ async function main() {
 
   const httpServer = createHttpServer(async (req, res) => {
     try {
-      await route(req, res, transports, createSessionTransport, store, publishedStore, publicBaseUrl, authConfig, oauthConfig, oauthEnabled)
+      await route(req, res, transports, createSessionTransport, store, publishedStore, publicBaseUrl, paths, authConfig, oauthConfig, oauthEnabled)
     } catch (err) {
       log('http_500', {
         path: (req.url ?? '/').split('?')[0],
@@ -312,6 +314,7 @@ async function route(
   store: ArtifactStore,
   publishedStore: PublishedStore,
   publicBaseUrl: string,
+  paths: BrandPaths,
   authConfig: AuthConfig,
   oauthConfig: OAuthConfig,
   oauthEnabled: boolean,
@@ -440,18 +443,84 @@ async function route(
     return
   }
 
+  // /published/<id>          → publication detail page
+  // /published/<id>/         → same (trailing-slash variant)
+  // /published/<id>/view     → deck viewer (alias for index.html)
+  // /published/<id>/view/    → same
   if (path.startsWith('/published/') && method === 'GET') {
-    // Parse: /published/<id>/<relativeName...>
     const rest = path.slice('/published/'.length)
     const slash = rest.indexOf('/')
-    if (slash <= 0) {
+
+    // Case 1: bare `/published/<id>` (no path component) → detail page.
+    if (slash === -1) {
+      const id = rest
+      const item = publishedStore.get(id)
+      if (!item) {
+        log('http_404', { path, method })
+        res.writeHead(404, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'not_found' }))
+        return
+      }
+      const html = renderPublishedDetailPage(item, publicBaseUrl, paths)
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=60',
+      })
+      res.end(html)
+      return
+    }
+
+    if (slash === 0) {
       log('http_404', { path, method })
       res.writeHead(404, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify({ error: 'not_found' }))
       return
     }
+
     const id = rest.slice(0, slash)
     const relativeNameRaw = rest.slice(slash + 1)
+
+    // Case 2: trailing slash with empty path → detail page.
+    if (relativeNameRaw === '' || relativeNameRaw === '/') {
+      const item = publishedStore.get(id)
+      if (!item) {
+        log('http_404', { path, method })
+        res.writeHead(404, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'not_found' }))
+        return
+      }
+      const html = renderPublishedDetailPage(item, publicBaseUrl, paths)
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=60',
+      })
+      res.end(html)
+      return
+    }
+
+    // Case 3: `/published/<id>/view` (with or without trailing slash) →
+    // deck viewer alias. Rewrite to the index.html in the bundle.
+    if (relativeNameRaw === 'view' || relativeNameRaw === 'view/') {
+      const item = publishedStore.get(id)
+      if (!item) {
+        log('http_404', { path, method })
+        res.writeHead(404, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'not_found' }))
+        return
+      }
+      const resolved = publishedStore.resolveFile(id, 'index.html')
+      if (!resolved) {
+        res.writeHead(404, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'viewer_not_available' }))
+        return
+      }
+      res.writeHead(200, {
+        'Content-Type': resolved.mime,
+        'Cache-Control': 'public, max-age=300',
+      })
+      createReadStream(resolved.absPath).pipe(res)
+      return
+    }
     // Decode and reject any decoded path that starts with '/' or contains '..' segments.
     let relativeName: string
     try {

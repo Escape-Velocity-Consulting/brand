@@ -35,8 +35,10 @@ If the bundle's TTL expires before publish, the publish call fails loudly with `
 ## Tool surface
 
 ```
-publish_artifact({ bundleId, title?, type? })
+publish_artifact({ bundleId, title?, type?, bakeQr? })
   → moves an ephemeral bundle into MCP_PUBLISHED_DIR/<id>/
+  → for decks: bakes a QR code (pointing to the detail page) onto the title slide
+    in the HTML viewer + PDF page 1. Suppress with bakeQr: false.
   → returns { id, type, title, publishedAt, primaryUrl, thumbnailUrl, files }
   → bundleId is deleted (publishing twice from the same bundleId is a footgun)
 
@@ -61,9 +63,13 @@ render_slides({ ..., persist: true })
 |-------|---------|
 | `GET /api/published[?type=<bundle-type>]` | List published items. CORS: `*`. |
 | `GET /api/published/<id>` | Single item metadata. |
-| `GET /published/<id>/<relativeName>` | Serve a published file (path-traversal guarded). |
+| `GET /published/<id>` | **Publication detail page** (HTML). Canonical share URL — title, type badge, date, Open / Download buttons, 4-up deck thumbnails, author card. |
+| `GET /published/<id>/view` | Deck viewer (alias to the bundle's `index.html`). |
+| `GET /published/<id>/<relativeName>` | Serve a published file (path-traversal guarded). `index.html` continues to work directly for backward compatibility. |
 
 Published data is public by design — no auth on the read side. Auth lives on the *write* side (the MCP tools require the same OAuth allowlist as render).
+
+The detail page (`/published/<id>`) is what QR codes on deck title slides resolve to — it's the audience-facing landing, not the raw viewer.
 
 URLs in API responses are computed at read time from `MCP_PUBLIC_BASE_URL`, not stored in `meta.json`. This keeps the on-disk state portable across dev/prod and across domain migrations.
 
@@ -74,8 +80,11 @@ URLs in API responses are computed at read time from `MCP_PUBLIC_BASE_URL`, not 
   <id>/                     ← ~10-char base64 ID
     meta.json               ← serialized PublishedItem (no URLs)
     index.html              ← (deck) the viewer
-    <slug>.pdf              ← the PDF
-    slides/slide-01.png     ← per-slide PNGs (deck)
+    <slug>.pdf              ← the PDF (page 1 patched with QR after bake)
+    qr-title.png            ← (deck) the auto-baked QR pointing to detail page
+    slides/slide-01.png     ← per-slide PNGs (deck) — slide 1 regenerated post-bake
+    slides/slide-NN.png     ← rest of the slides
+    source.md               ← (deck) original markdown source
     ...
 ```
 
@@ -142,7 +151,7 @@ User wants to remove it → reads the ID off the card chip → tells Claude **"u
 - ❌ Embedding URLs in `meta.json`. The `publicBaseUrl` can change (dev vs prod); compute URLs at read time via `publishedItemToApi`.
 - ❌ Adding new artifact-bearing routes without CORS headers. The Brand Site fetches cross-origin.
 - ❌ Publishing single-file outputs without going through `beginBundle/endBundle`. The publish flow expects a bundle manifest; one-file renders must still create a one-entry bundle. **V1 only wires this for `render_slides`. Other render tools' `persist: true` is a follow-up.** When you wire it for `render_template` etc., follow the `renderSlides.ts` pattern: open a bundle around the single write, then call `publishedStore.publish` if `persist: true`.
-- ❌ Storing rendered deck output dirs as committed files under `previews/decks/<slug>/`. That's the legacy filesystem-discovery pattern, retired by this flow. Source markdown at `previews/decks/<slug>.md` is fine to commit; the rendered output is what flows through publish.
+- ❌ Storing rendered deck output dirs as committed files under `previews/decks/<slug>/`. That's the legacy filesystem-discovery pattern, retired by this flow. Source markdown at `previews/decks/<slug>.md` is fine to commit; the rendered output is what flows through publish. **Exception:** `previews/decks/reference-deck/` is the canonical worked example — its rendered HTML viewer + PDF + slide PNGs are intentionally committed alongside the source MD so the skill bundle and docs can link directly to a viewable artifact. Regenerate via `npm run build:reference-deck`.
 
 ## See also
 
