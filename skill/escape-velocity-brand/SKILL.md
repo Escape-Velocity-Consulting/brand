@@ -1,14 +1,19 @@
 ---
 name: escape-velocity-brand
 description: |
-  Use when creating or rendering any Escape Velocity branded asset —
-  branded documents (letter, offer, invoice, tos, report), social images
-  (OG, LinkedIn banner, Twitter banner, LinkedIn post, quote/stats card),
-  LinkedIn carousels, slide decks, on-brand website prototypes, or ad-hoc
-  on-brand HTML/SVG. The skill ships templates, tokens, fonts, logos, the
-  brand reference, and the canonical spec — it can author any of these
-  standalone. The escape-velocity-brand MCP server is an OPTIONAL extension
-  that adds pixel-perfect PNG/PDF rendering and publishing.
+  Use when creating or rendering any Escape Velocity branded asset. Trigger
+  on ANY request to: write a letter, draft an offer or proposal, make an
+  invoice, create terms of service, produce a report, generate a LinkedIn
+  post, banner, or carousel, build a slide deck, make a social image, or
+  prototype an on-brand web page — even if the user doesn't say "brand" or
+  "Escape Velocity" explicitly.
+  German trigger terms: Brief, Angebot, Rechnung, AGB, Bericht, LinkedIn-Post,
+  LinkedIn-Karussell, Foliendeck, Präsentation, Ankündigung, Zitat-Karte,
+  Zahlen-Karte, Social-Bild, Landing Page.
+  The skill ships templates, tokens, fonts, logos, the brand reference, and
+  the canonical spec — it can author any of these standalone. The
+  escape-velocity-brand MCP server is an OPTIONAL extension that adds
+  pixel-perfect PNG/PDF rendering and publishing.
 ---
 
 # Escape Velocity Brand
@@ -23,6 +28,42 @@ description: |
 - **Publishing** — promotes a render to a permanent public URL on the Brand Site
 
 If the MCP is registered, prefer it for binary outputs (PDF, PNG) — the canonical templates render identically server-side. If the MCP isn't registered, I still produce the asset by handing the user finished HTML they can save and open in any browser.
+
+## Brand identity defaults
+
+These are fixed for all Escape Velocity assets. Pre-fill them whenever a template needs sender / company information.
+
+| Field | Value |
+|-------|-------|
+| Name | Thomas (Tommi) Enenkel |
+| Company | Thomas Enenkel GmbH |
+| Brand | Escape Velocity |
+| Address | Wiener Straße 11-13/2/3, 3002 Purkersdorf, Austria |
+| Phone | +43 664 6522083 |
+| Email | tommi.enenkel@escapevelocity.consulting |
+| Website | escapevelocity.consulting |
+| Meeting | https://meetings-eu1.hubspot.com/tommi-enenkel/meeting |
+| UID (VAT) | ATU77669024 |
+| IBAN | AT03 3266 7000 0003 8695 |
+
+The `recipient` and `date` vars in document templates refer to the **client**, not the sender — the sender block is baked into the templates.
+
+## Brand voice
+
+All client-facing copy defaults to **German** unless the user explicitly requests English. Key rules:
+
+- **Clear** — one idea per sentence; no jargon without explanation
+- **Concrete** — use numbers, names, timelines; never "innovative solutions"
+- **Calm** — no urgency, no all-caps, no "exclusive offer" language
+- **Direct** — active voice, present tense ("Wir liefern" not "geliefert wird")
+
+Formatting:
+- Sentence case for headlines and labels (not Title Case)
+- No emoji in client-facing documents (letters, offers, invoices, ToS)
+- No exclamation marks in formal documents
+- German typography: noun caps, „curly quotes", "ß" not "ss"
+
+Full reference: `references/brand-reference.md`
 
 ## What's inside this skill bundle
 
