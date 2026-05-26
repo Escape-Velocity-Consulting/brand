@@ -402,8 +402,8 @@ Multi-output tools (`render_slides`) return nested objects of these (`{ viewer, 
 - **`src/mcp/shared/artifactStore.ts`** — on-disk store + HMAC-signed token issuer (`signedToken.ts`) + periodic cleanup.
 - **`src/mcp/shared/bearerAuth.ts`** — constant-time bearer check (used by legacy fallback paths only — `jwtAuth.ts` handles `POST /mcp` today).
 - **`src/mcp/shared/jwtAuth.ts`** — JWT issuance + validation. Issues HS256 tokens via `issueAccessToken`; `authenticate()` verifies them, re-checks `sub` against the runtime allowlist, and falls back to the legacy static bearer when present. Logs every auth event.
-- **`src/mcp/shared/refreshTokenStore.ts`** — disk-backed refresh-token store at `<MCP_TMP_DIR>/refresh-tokens.json`. SHA-256-hashed at rest; `consume()` is atomic single-use (rotation). Persists across container restarts.
-- **`src/mcp/shared/sessionStore.ts`** — disk-backed session-ID store at `<MCP_TMP_DIR>/sessions.json`. Lets sessions survive container restarts — on boot, pre-creates `StreamableHTTPServerTransport` instances for every non-expired ID.
+- **`src/mcp/shared/refreshTokenStore.ts`** — disk-backed refresh-token store at `<MCP_STATE_DIR>/refresh-tokens.json`. SHA-256-hashed at rest; `consume()` is atomic single-use (rotation). Persists across container restarts AND redeploys when `MCP_STATE_DIR` is wired to a host volume — see [§ Storage](#storage).
+- **`src/mcp/shared/sessionStore.ts`** — disk-backed session-ID store at `<MCP_STATE_DIR>/sessions.json`. Lets sessions survive container restarts and redeploys (when `MCP_STATE_DIR` is host-mounted). On boot, pre-creates `StreamableHTTPServerTransport` instances for every non-expired ID.
 - **`src/mcp/shared/logger.ts`** — structured key=value stderr logger. Used everywhere in `src/mcp/`. See [§ Diagnostic logging](#diagnostic-logging).
 - **`src/mcp/tools/*.ts`** — one file per tool. Each tool: Zod input schema → call core → `ctx.outputSink.write(buffer, opts)` → return result via `runTool` / `successResult`.
 - **`generators/*.ts`** — unchanged CLI behavior; thin shims importing from `src/core/`. Each constructs a local `BrowserPool`, runs once, closes.
@@ -495,6 +495,28 @@ The MCP server is **both** the OAuth 2.1 resource server AND the authorization s
 
 Allowlist changes take effect on the next request OR the next refresh — no token revocation list needed.
 
+#### Storage
+
+The deployment platform runs three storage tiers. Knowing which is which avoids the disconnect we hit in May 2026 (sessions + refresh tokens were on tmpfs → every redeploy wiped them → clients forced to re-OAuth).
+
+| Tier | Example paths | Survives restart? | Survives redeploy? | Use for |
+|---|---|---|---|---|
+| **In-container (default)** | anywhere not mounted, e.g. `/app/cache` | ✅ | ❌ | nothing we care about across deploys |
+| **tmpfs `/tmp`** | `/tmp/brand-mcp` (artifacts) | ❌ | ❌ | scratch within one request; short-TTL artifacts that are designed to expire |
+| **Host-mounted volume** | `/app/published`, `/app/state` | ✅ | ✅ | anything we must hand off across deploys |
+
+The `VOLUME` directive in `Dockerfile` is **not** sufficient — it creates an anonymous Docker volume that disappears on container recreation. Persistence only works when the sysadmin wires a host bind mount in `deploy-service brand-mcp` (or wherever the container is launched).
+
+**What lives where in prod:**
+
+| Env var | Container path | Tier | What's inside |
+|---|---|---|---|
+| `MCP_TMP_DIR` | `/tmp/brand-mcp` | tmpfs | Artifact files (PNG/PDF outputs) + bundle manifests. 1h TTL by design — fine to lose on redeploy. |
+| `MCP_STATE_DIR` | `/app/state` | host volume | `sessions.json` + `refresh-tokens.json`. Must survive redeploys so clients don't re-OAuth. |
+| `MCP_PUBLISHED_DIR` | `/app/published` | host volume | Promoted bundles served at stable `/api/published/<id>` URLs. |
+
+**Adding a new persistent path:** before writing any data, ask: must this survive a redeploy? If yes, request a new mount from the sysadmin with the in-container path and the env var you'll read. They wire the bind mount + chown to match the container UID. Don't rely on `VOLUME` in the Dockerfile.
+
 #### Env vars (set on the deployment platform)
 
 | Variable | Required | Default | Purpose |
@@ -509,8 +531,9 @@ Allowlist changes take effect on the next request OR the next refresh — no tok
 | `MCP_BEARER_TOKEN` | no (legacy / tests) | — | Legacy static bearer for the E2E test runner. Will be removed once OAuth E2E is in place. One of `MCP_JWT_SECRET` or `MCP_BEARER_TOKEN` must be set. |
 | `MCP_PORT` | no | `8080` | Listen port. |
 | `MCP_BIND_HOST` | no | `0.0.0.0` | Listen host. |
-| `MCP_TMP_DIR` | no | `<os.tmpdir>/brand-mcp` | Artifact store directory (also where bundle manifests live, same TTL). |
-| `MCP_PUBLISHED_DIR` | no | `<os.tmpdir>/brand-mcp-published` (container default: `/app/published`) | Persistent published-items directory. **Mount a host volume here in production** — see [§ Publishing](#publishing). |
+| `MCP_TMP_DIR` | no | `<os.tmpdir>/brand-mcp` | **Ephemeral** artifact store directory (also where bundle manifests live, same TTL). Fine on tmpfs — outputs have 1h TTL by design. |
+| `MCP_STATE_DIR` | no | falls back to `MCP_TMP_DIR` | **Persistent** state directory for `sessions.json` + `refresh-tokens.json`. **Mount a host volume here in production** or sessions and refresh tokens are wiped on every redeploy → clients are forced to re-OAuth. See [§ Storage](#storage). |
+| `MCP_PUBLISHED_DIR` | no | `<os.tmpdir>/brand-mcp-published` (container default: `/app/published`) | **Persistent** published-items directory. **Mount a host volume here in production** — see [§ Publishing](#publishing). |
 | `MCP_ARTIFACT_TTL_SECONDS` | no | `3600` | Signed-URL TTL. |
 | `MCP_CLEANUP_INTERVAL_SECONDS` | no | `300` | Cleanup-loop cadence. |
 | `MCP_ALLOWED_ORIGINS` | no | (empty) | Optional comma-separated browser-Origin allowlist (DNS-rebinding defense). |

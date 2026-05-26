@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createServer as createHttpServer, type IncomingMessage, type ServerResponse } from 'node:http'
-import { createReadStream } from 'node:fs'
+import { createReadStream, mkdirSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
@@ -110,10 +110,25 @@ async function main() {
   const host = process.env.MCP_BIND_HOST ?? '0.0.0.0'
   const storeDir = process.env.MCP_TMP_DIR ?? resolve(tmpdir(), 'brand-mcp')
   const publishedDir = process.env.MCP_PUBLISHED_DIR ?? resolve(tmpdir(), 'brand-mcp-published')
+  // State files (session IDs + refresh tokens) MUST survive container redeploys
+  // and restarts, otherwise clients are forced to re-OAuth every time we push
+  // a new image. In prod this is a host-mounted volume; in dev/test it
+  // defaults to storeDir (tmpfs is fine when we don't care about persistence).
+  // See brand/CLAUDE.md § Storage for the three-tier model.
+  const stateDir = process.env.MCP_STATE_DIR ?? storeDir
   const ttlSeconds = optEnvInt('MCP_ARTIFACT_TTL_SECONDS', 3600)
   const cleanupIntervalSeconds = optEnvInt('MCP_CLEANUP_INTERVAL_SECONDS', 300)
   const allowedOrigins = (process.env.MCP_ALLOWED_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean)
   const refreshTokenTtlSeconds = optEnvInt('MCP_REFRESH_TOKEN_TTL_SECONDS', 30 * 24 * 60 * 60)
+
+  // Ensure the state dir exists. In prod, this is an empty bind-mounted host
+  // dir on first boot; in dev, may not exist yet. mkdirSync is a no-op if the
+  // path already exists.
+  try { mkdirSync(stateDir, { recursive: true }) }
+  catch (err) {
+    console.error(`[escape-velocity-brand MCP/http] FATAL: cannot create MCP_STATE_DIR=${stateDir}: ${err instanceof Error ? err.message : String(err)}`)
+    process.exit(1)
+  }
 
   // OAuth (Google-delegated). Optional — only enabled if Google client creds
   // are present. If not configured, /authorize etc. return 503; the static
@@ -121,7 +136,7 @@ async function main() {
   const googleClientId = process.env.MCP_OAUTH_GOOGLE_CLIENT_ID ?? ''
   const googleClientSecret = process.env.MCP_OAUTH_GOOGLE_CLIENT_SECRET ?? ''
   const oauthEnabled = !!(googleClientId && googleClientSecret && jwtSecret && allowedEmails.size > 0)
-  const refreshTokenStore = new RefreshTokenStore(resolve(storeDir, 'refresh-tokens.json'))
+  const refreshTokenStore = new RefreshTokenStore(resolve(stateDir, 'refresh-tokens.json'))
   const oauthConfig: OAuthConfig = {
     publicBaseUrl,
     googleClientId,
@@ -172,10 +187,11 @@ async function main() {
   // Per-session transports. Each MCP client connection gets one.
   const transports = new Map<string, StreamableHTTPServerTransport>()
 
-  // Session ID persistence: survives container restarts so clients don't need
-  // to re-register. On startup we pre-create transports for all known session
+  // Session ID persistence: survives container restarts AND redeploys (when
+  // MCP_STATE_DIR is wired to a host-mounted volume — see brand/CLAUDE.md
+  // § Storage). On startup we pre-create transports for all known session
   // IDs — see the pre-load loop below.
-  const sessionStore = new SessionStore(resolve(storeDir, 'sessions.json'))
+  const sessionStore = new SessionStore(resolve(stateDir, 'sessions.json'))
 
   /**
    * Create a transport+McpServer pair for one MCP session.
@@ -273,6 +289,8 @@ async function main() {
       port,
       brand_dir: brandDir,
       store_dir: storeDir,
+      state_dir: stateDir,
+      state_persistent: stateDir !== storeDir,
       published_dir: publishedDir,
       jwt: jwtSecret ? 'on' : 'off',
       legacy_bearer: legacyBearerToken ? 'on' : 'off',
