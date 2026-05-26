@@ -18,6 +18,7 @@ import { pathToFileURL } from 'node:url'
 import { randomBytes } from 'node:crypto'
 import MarkdownIt from 'markdown-it'
 import { PDFDocument } from 'pdf-lib'
+import sharp from 'sharp'
 import type { BrowserPool } from './browserPool.js'
 import { GeneratorError } from './errors.js'
 import type { BrandPaths } from './paths.js'
@@ -447,6 +448,8 @@ export interface SlidesResult {
   viewer?: { html: string; mode: 'standalone' | 'bundle'; bundleDir?: string }
   pdf?: Buffer
   pngs: Buffer[]
+  /** Thumbnail PNGs (640×proportional). Parallel array with pngs. Always generated alongside pngs. */
+  thumbs: Buffer[]
   slideCount: number
   width: number
   height: number
@@ -539,6 +542,7 @@ async function renderFromMarkdown(
 
     const result: SlidesResult = {
       pngs: [],
+      thumbs: [],
       slideCount: renderedFragments.length,
       width: dims.width,
       height: dims.height,
@@ -569,6 +573,8 @@ async function renderFromMarkdown(
     }
 
     if (flags.wantPngs) {
+      const thumbW = 640
+      const thumbH = Math.round(640 * dims.height / dims.width)
       const { page, context } = await pool.getPage({ width: dims.width, height: dims.height }, { deviceScaleFactor: 2 })
       try {
         for (let i = 0; i < renderedFragments.length; i++) {
@@ -579,6 +585,8 @@ async function renderFromMarkdown(
           if (handle) {
             const buf = await handle.screenshot({ omitBackground: false })
             result.pngs.push(buf)
+            const thumbBuf = await sharp(buf).resize(thumbW, thumbH).png().toBuffer()
+            result.thumbs.push(thumbBuf)
           }
         }
       } finally {
@@ -647,8 +655,18 @@ async function renderFromPages(
     pngs.push(pngBuffer)
   }
 
+  const thumbs: Buffer[] = []
+  if (flags.wantPngs) {
+    const thumbW = 640
+    const thumbH = Math.round(640 * dims.height / dims.width)
+    for (const buf of pngs) {
+      thumbs.push(await sharp(buf).resize(thumbW, thumbH).png().toBuffer())
+    }
+  }
+
   const result: SlidesResult = {
     pngs: flags.wantPngs ? pngs : [],
+    thumbs,
     slideCount: pages.length,
     width: dims.width,
     height: dims.height,

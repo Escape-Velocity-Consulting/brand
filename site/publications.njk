@@ -38,6 +38,7 @@ subtitle: All published brand outputs — decks, images, documents, and more.
   var container = document.getElementById('published-container');
   if (!container) return;
 
+  var MCP_BASE = 'https://mcp.escapevelocity.consulting';
   var TYPE_ORDER = ['deck', 'carousel', 'document', 'image', 'html-png', 'html-pdf'];
   var TYPE_LABELS = { deck: 'Decks', carousel: 'Carousels', document: 'Documents', image: 'Images', 'html-png': 'HTML PNGs', 'html-pdf': 'HTML PDFs' };
   var TYPE_IDS    = { deck: 'decks', carousel: 'carousels', document: 'documents', image: 'images', 'html-png': 'html-pngs', 'html-pdf': 'html-pdfs' };
@@ -72,22 +73,36 @@ subtitle: All published brand outputs — decks, images, documents, and more.
     return slides;
   }
 
+  function thumbFiles(item) {
+    var thumbs = item.files.filter(function (f) {
+      return f.relativeName.indexOf('thumbs/thumb-') === 0 && f.mime === 'image/png';
+    });
+    thumbs.sort(function (a, b) { return a.relativeName.localeCompare(b.relativeName); });
+    return thumbs;
+  }
+
   function renderThumbnail(item) {
     var type = item.type;
 
     if (type === 'deck') {
-      var strip = el('a', { class: 'deck-thumbs', href: item.primaryUrl || '#', target: '_blank', rel: 'noopener' });
-      slideFiles(item).slice(0, 4).forEach(function (f) {
+      // Link the strip to the detail page; viewer is still reachable via the action button.
+      var detailUrl = MCP_BASE + '/published/' + item.id;
+      var strip = el('a', { class: 'deck-thumbs', href: detailUrl, target: '_blank', rel: 'noopener' });
+      var imgSources = thumbFiles(item);
+      if (imgSources.length === 0) imgSources = slideFiles(item);
+      imgSources.slice(0, 4).forEach(function (f) {
         strip.appendChild(el('img', { class: 'deck-thumb', src: f.url, alt: item.title + ' slide', loading: 'lazy' }));
       });
       return strip;
     }
 
     if (type === 'carousel') {
-      var slides = slideFiles(item);
-      if (slides.length > 0) {
-        var wrap = el('a', { class: 'deck-thumbs', href: item.primaryUrl || '#', target: '_blank', rel: 'noopener' });
-        wrap.appendChild(el('img', { class: 'deck-thumb', src: slides[0].url, alt: item.title, loading: 'lazy', style: 'grid-column: 1 / -1' }));
+      var detailUrl = MCP_BASE + '/published/' + item.id;
+      var imgSources = thumbFiles(item);
+      if (imgSources.length === 0) imgSources = slideFiles(item);
+      if (imgSources.length > 0) {
+        var wrap = el('a', { class: 'deck-thumbs', href: detailUrl, target: '_blank', rel: 'noopener' });
+        wrap.appendChild(el('img', { class: 'deck-thumb', src: imgSources[0].url, alt: item.title, loading: 'lazy', style: 'grid-column: 1 / -1' }));
         return wrap;
       }
     }

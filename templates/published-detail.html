@@ -112,20 +112,19 @@ h1 {
 }
 .btn-secondary:hover { border-color: var(--color-terracotta); color: var(--color-terracotta); }
 
-.preview-strip {
+.slides-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
   margin-bottom: 64px;
 }
-.preview-strip img {
+.slides-grid a { display: block; }
+.slides-grid img {
   width: 100%; height: auto;
   border-radius: 4px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04);
   display: block;
-}
-@media (max-width: 640px) {
-  .preview-strip { grid-template-columns: repeat(2, 1fr); }
+  image-rendering: auto;
 }
 
 .author-card {
@@ -196,8 +195,12 @@ h1 {
     </div>
 
     {% if THUMBNAILS and THUMBNAILS.length %}
-    <div class="preview-strip">
-      {% for t in THUMBNAILS %}<img src="{{ t }}" alt="Slide preview">{% endfor %}
+    <div class="slides-grid">
+      {% for i in range(0, THUMBNAILS.length) %}
+      <a href="{{ THUMBNAILS[i] }}" target="_blank" rel="noopener">
+        <img src="{{ THUMB_URLS[i] if THUMB_URLS and THUMB_URLS[i] else THUMBNAILS[i] }}" alt="Slide {{ loop.index }}">
+      </a>
+      {% endfor %}
     </div>
     {% endif %}
 

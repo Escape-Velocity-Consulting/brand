@@ -58,14 +58,19 @@ export function renderPublishedDetailPage(
   const pdfFile = item.files.find((f) => f.mime === 'application/pdf')
   const mdFile = item.files.find((f) => f.relativeName === 'source.md')
 
-  // First four slide thumbnails for the preview strip (deck only).
+  // All slide thumbnails for the detail-page grid (deck only).
   const thumbnails: string[] = []
+  const thumbUrls: string[] = []
   if (isDeck) {
     const slidePngs = item.files
       .filter((f) => /^slides\/slide-\d+\.png$/.test(f.relativeName))
       .sort((a, b) => a.relativeName.localeCompare(b.relativeName))
-      .slice(0, 4)
     for (const f of slidePngs) thumbnails.push(urlFor(f.relativeName))
+
+    const thumbPngs = item.files
+      .filter((f) => /^thumbs\/thumb-\d+\.png$/.test(f.relativeName))
+      .sort((a, b) => a.relativeName.localeCompare(b.relativeName))
+    for (const f of thumbPngs) thumbUrls.push(urlFor(f.relativeName))
   }
 
   const env = getTemplateEnv(paths.templatesDir)
@@ -82,6 +87,7 @@ export function renderPublishedDetailPage(
     PDF_URL: pdfFile ? urlFor(pdfFile.relativeName) : undefined,
     MD_URL: mdFile ? urlFor(mdFile.relativeName) : undefined,
     THUMBNAILS: thumbnails,
+    THUMB_URLS: thumbUrls,
     THUMBNAIL_URL: item.thumbnailFile ? urlFor(item.thumbnailFile) : undefined,
     TOKENS_CSS: tokensCss,
   })

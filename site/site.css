@@ -222,8 +222,7 @@ table td code { font-size: 12px; background: rgba(0,0,0,0.04); padding: 2px 6px;
 .slidetype-card:hover { border-color: var(--color-terracotta); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
 
 .slidetype-thumb { display: block; aspect-ratio: 16 / 9; background: var(--color-light); overflow: hidden; border-bottom: 1px solid rgba(0,0,0,0.08); }
-.slidetype-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; image-rendering: -webkit-optimize-contrast; }
-@supports (image-rendering: high-quality) { .slidetype-thumb img { image-rendering: high-quality; } }
+.slidetype-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; image-rendering: auto; }
 .slidetype-thumb-missing { display: flex; align-items: center; justify-content: center; height: 100%; padding: 24px; text-align: center; color: var(--color-subtle); font-family: var(--font-ui); font-size: 13px; }
 
 .slidetype-meta { padding: 20px 24px 24px; }
@@ -256,8 +255,7 @@ table td code { font-size: 12px; background: rgba(0,0,0,0.04); padding: 2px 6px;
 .deck-card:hover { border-color: var(--color-terracotta); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
 
 .deck-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 12px; background: var(--color-light); }
-.deck-thumb { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; border-radius: 4px; border: 1px solid rgba(0,0,0,0.08); background: white; image-rendering: -webkit-optimize-contrast; }
-@supports (image-rendering: high-quality) { .deck-thumb { image-rendering: high-quality; } }
+.deck-thumb { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; border-radius: 4px; border: 1px solid rgba(0,0,0,0.08); background: white; image-rendering: auto; }
 
 .deck-meta { padding: 18px 22px 22px; }
 .deck-titlerow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 4px; }

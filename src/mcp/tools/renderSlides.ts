@@ -60,11 +60,16 @@ export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
     },
   }, async (args) => runTool(async () => {
     const dims = args.dimensions as DimensionsInput
+    // Auto-enable pngs when persisting — thumbnails are required for the published card.
+    const effectiveOutputs = {
+      ...args.outputs,
+      pngs: args.outputs.pngs || args.persist === true,
+    }
     const result = await renderSlides({
       markdown: args.markdown,
       pages: args.pages,
       dimensions: dims,
-      outputs: args.outputs,
+      outputs: effectiveOutputs,
       title: args.title,
       theme: args.theme,
     }, ctx.paths, ctx.pool)
@@ -86,7 +91,7 @@ export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
     // pdf + pngs, etc.). For HTTP transport we open a bundle scope so the publish
     // flow can promote the whole set later.
     const outputCount =
-      (result.viewer ? 1 : 0) + (result.pdf ? 1 : 0) + result.pngs.length
+      (result.viewer ? 1 : 0) + (result.pdf ? 1 : 0) + result.pngs.length + result.thumbs.length
     const isBundle = outputCount > 1 || result.pngs.length > 1 || !!result.viewer
 
     // Bundle metadata: deck for markdown mode, carousel for pages mode.
@@ -99,9 +104,12 @@ export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
         : result.pngs.length > 0
           ? join('slides', 'slide-01.png')
           : undefined
-    const thumbnailFile = result.pngs.length > 0
-      ? join('slides', 'slide-01.png')
-      : undefined
+    // Prefer the small thumb as thumbnailFile so published cards use it directly.
+    const thumbnailFile = result.thumbs.length > 0
+      ? join('thumbs', 'thumb-01.png')
+      : result.pngs.length > 0
+        ? join('slides', 'slide-01.png')
+        : undefined
 
     let bundleId = ''
     if (isBundle && ctx.outputSink.kind === 'remote') {
@@ -152,6 +160,16 @@ export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
       }))
     }
 
+    const thumbs: WriteResult[] = []
+    for (let i = 0; i < result.thumbs.length; i++) {
+      const num = String(i + 1).padStart(2, '0')
+      thumbs.push(await writeBundleEntry(ctx.outputSink, result.thumbs[i], {
+        relativeName: join('thumbs', `thumb-${num}.png`),
+        mime: 'image/png',
+        bundleDir,
+      }))
+    }
+
     if (args.markdown) {
       await writeBundleEntry(ctx.outputSink, Buffer.from(args.markdown, 'utf-8'), {
         relativeName: 'source.md',
@@ -179,6 +197,7 @@ export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
       viewer,
       pdf,
       pngs,
+      thumbs,
       slideCount: result.slideCount,
       width: result.width,
       height: result.height,
