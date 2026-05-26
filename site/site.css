@@ -116,9 +116,12 @@ h3:first-child { margin-top: 0; }
 .voice-patterns li::before { background: var(--color-subtle); }
 
 /* ===== Components page ===== */
-.btn-primary { display: inline-flex; align-items: center; gap: 8px; padding: 15px 34px; background: var(--color-terracotta); color: white; border-radius: 8px; font-family: var(--font-ui); font-weight: 600; font-size: 16px; text-decoration: none; border: none; cursor: pointer; }
-.btn-secondary { display: inline-flex; align-items: center; gap: 8px; padding: 15px 34px; background: transparent; color: var(--color-light); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; font-family: var(--font-ui); font-weight: 500; font-size: 16px; text-decoration: none; cursor: pointer; }
-.btn-email { display: inline-block; padding: 12px 28px; background: var(--color-terracotta); color: white; border-radius: 6px; font-family: var(--font-ui); font-weight: 600; font-size: 14px; text-decoration: none; border: none; cursor: pointer; }
+.btn-primary { display: inline-flex; align-items: center; gap: 8px; padding: 15px 34px; background: var(--color-terracotta); color: white; border-radius: 8px; font-family: var(--font-ui); font-weight: 600; font-size: 16px; text-decoration: none; border: none; cursor: pointer; transition: background 0.15s, box-shadow 0.15s; }
+.btn-primary:hover { background: #B85C32; box-shadow: 0 4px 12px rgba(212,120,74,0.35); color: white; }
+.btn-secondary { display: inline-flex; align-items: center; gap: 8px; padding: 15px 34px; background: transparent; color: var(--color-light); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; font-family: var(--font-ui); font-weight: 500; font-size: 16px; text-decoration: none; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.btn-secondary:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.4); color: white; }
+.btn-email { display: inline-block; padding: 12px 28px; background: var(--color-terracotta); color: white; border-radius: 6px; font-family: var(--font-ui); font-weight: 600; font-size: 14px; text-decoration: none; border: none; cursor: pointer; transition: background 0.15s; }
+.btn-email:hover { background: #B85C32; color: white; }
 .dark-strip { background: var(--color-black); padding: 32px; border-radius: 12px; display: flex; align-items: center; gap: 16px; margin-top: 24px; }
 .button-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 
