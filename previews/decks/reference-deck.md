@@ -1,40 +1,37 @@
 <!--
   Reference deck — canonical type catalog for `render_slides` markdown mode.
-  Sorted by slide type (not story). Every type appears in all relevant bg
-  variants so rendering errors and contrast failures are immediately visible.
-  HTML slides are last; multiple HTML slides demonstrate each recipe.
+  Sorted by slide type. Every type appears in all supported bg variants.
+  HTML slides last. Accent color (`**bold**`, `.ev-accent`) exercised throughout.
 
-  Slide inventory (21 slides):
-     1  @type: title     — cream                (slide-1-only chrome: logo, QR, author)
-     2  @type: section   — cream, > eyebrow     (section-num above headline)
-     3  @type: section   — black                (dark chapter break, no chrome)
-     4  @type: statement — cream                (centered sentence, logo + page-num visible)
-     5  @type: statement — black                (dark variant, single bold word)
-     6  @type: content   — cream, bullets       (standard text layout)
-     7  @type: content   — cream, ### H3        (terracotta uppercase section eyebrows)
-     8  @type: cards     — cream                (auto-grid from bullet list)
-     9  @type: two-col   — cream                (symmetric two-column)
-    10  @type: comparison— cream                (muted left / accent right)
-    11  @type: quote     — black                (attribution in --color-cream)
-    12  @type: quote     — cream                (attribution in --color-text — contrast fix)
-    13  @type: big-number— black                (clamped number + eyebrow + caption)
-    14  @type: image     — cream, chrome on     (logo + page-num visible)
-    15  @type: image     — cream, chrome off    (@chrome: none — full-bleed)
-    16  @type: html      — .ev-mult-row         (multiplier recipe)
-    17  @type: html      — .ev-spectrum         (axis + marker recipe)
-    18  @type: html      — .ev-flow             (process flow recipe)
-    19  @type: html      — .ev-tiers            (offer ladder recipe)
-    20  @type: html      — .ev-lead / .ev-foot  (basic canvas utilities)
-    21  @type: closing   — terracotta           (end-card: same chrome as title, QR baked)
-
-  Render locally:    npm run pres -- previews/decks/reference-deck.md --output previews/decks/reference-deck
-  Bake (with QR):    npm run build:reference-deck
-  Publish via MCP:   render_slides → publish_artifact → /published/<id>
+  Slide inventory (23 slides):
+     1  @type: title     — cream                (slide-1 chrome; **accent** in h1)
+     2  @type: section   — cream, > eyebrow     (section-num prefix)
+     3  @type: section   — black                (dark chapter break)
+     4  @type: section   — terracotta           (contrast check: all elements cream)
+     5  @type: statement — cream                (**accent** word in sentence)
+     6  @type: statement — black                (single bold word)
+     7  @type: statement — terracotta           (contrast check)
+     8  @type: content   — cream, bullets       (**bold**, *italic* in copy)
+     9  @type: content   — cream, ### H3        (terracotta uppercase section eyebrows)
+    10  @type: cards     — cream
+    11  @type: two-col   — cream
+    12  @type: comparison— cream
+    13  @type: quote     — black                (attribution in --color-cream)
+    14  @type: quote     — cream                (attribution in --color-text)
+    15  @type: big-number— black                (clamped number + eyebrow + caption)
+    16  @type: image     — cream, chrome on     (logo + page-num visible)
+    17  @type: image     — cream, @chrome: none (full-bleed, no chrome)
+    18  @type: html      — .ev-mult-row         (multiplier; .ev-accent on number)
+    19  @type: html      — .ev-spectrum         (axis + marker)
+    20  @type: html      — .ev-flow             (process flow)
+    21  @type: html      — .ev-tiers            (offer ladder)
+    22  @type: html      — .ev-lead / .ev-foot  (canvas basics)
+    23  @type: closing   — terracotta           (end-card; **accent** in h1)
 -->
 
 <!-- @type: title -->
 <!-- @bg: cream -->
-<!-- @date: 28. Mai 2026 -->
+<!-- @date: 27. Mai 2026 -->
 # **KI Masterclass** für Geschäftsführer
 
 KI als 10x Hebel in Deinem Unternehmen einsetzen.
@@ -58,9 +55,17 @@ Vom Hype zur messbaren Hebelwirkung.
 
 ===
 
+<!-- @type: section -->
+<!-- @bg: terracotta -->
+## Abschluss
+
+Fragen und nächste Schritte.
+
+===
+
 <!-- @type: statement -->
 <!-- @bg: cream -->
-# Die meisten Firmen haben nicht zu wenig KI.
+# Die meisten Firmen haben nicht zu wenig **KI**.
 
 Sie haben zu wenig Klarheit über ihre Prozesse.
 
@@ -72,10 +77,16 @@ Sie haben zu wenig Klarheit über ihre Prozesse.
 
 ===
 
+<!-- @type: statement -->
+<!-- @bg: terracotta -->
+# **Klarheit** schlägt Komplexität.
+
+===
+
 <!-- @type: content -->
 ## Das Enablement ist real
 
-KI ist eine General-Purpose-Technologie — und sie macht Einzelpersonen messbar produktiver.
+KI ist eine **General-Purpose-Technologie** — und sie macht Einzelpersonen *messbar* produktiver.
 
 - Ein Geschäftsführer erledigt **in einem Tag**, wofür er früher eine Woche brauchte
 - Das ist kein Hype — das ist messbar
@@ -115,19 +126,19 @@ Neue Geschäftsmodelle, die ohne KI schlicht nicht möglich wären.
 <!-- @type: two-col -->
 ## Warum jetzt?
 
-Kosten sinken exponentiell — Qualität steigt.
+Kosten sinken exponentiell — **Qualität steigt**.
 
-- GPT-3 (2020): **$100** pro 1M Token
-- GPT-4 (2023): **$30** pro 1M Token
+- GPT-3 (2020): $100 pro 1M Token
+- GPT-4 (2023): $30 pro 1M Token
 - Claude 3.5 (2024): **$3** pro 1M Token
 
 :::
 
 Die Fähigkeiten wachsen schneller als die Adoption.
 
-- Reasoning: PhD-Niveau in Fachdomänen
-- Code: Senior-Engineer-Niveau
-- Übersetzung: muttersprachlich
+- Reasoning: *PhD-Niveau* in Fachdomänen
+- Code: *Senior-Engineer-Niveau*
+- Übersetzung: *muttersprachlich*
 
 ===
 
@@ -139,7 +150,7 @@ Die Fähigkeiten wachsen schneller als die Adoption.
 "Was kostet mich jeden Tag Zeit?"
 
 - Löst interne Probleme
-- Erhöht Effizienz und Kapazität
+- Erhöht **Effizienz** und Kapazität
 - Verbessert bestehende Prozesse
 
 :::
@@ -148,7 +159,7 @@ Die Fähigkeiten wachsen schneller als die Adoption.
 
 "Was könnten wir tun, was wir nie konnten?"
 
-- Schafft Innovation und neue Angebote
+- Schafft **Innovation** und neue Angebote
 - Erschließt neue Märkte
 - Baut neue Infrastrukturen
 
@@ -289,18 +300,18 @@ In einem Tag erledigen, wofür sonst eine Woche reicht.
 ===
 
 <!-- @type: html -->
-## Grundlagen: Canvas-Utilities
+## Canvas-Utilities: ev-lead und ev-foot
 
-<p class="ev-lead">Dieser Slide zeigt <strong>ev-lead</strong> — die breite Einleitung. Darunter normaler Fließtext als Absatz.</p>
+<p class="ev-lead">Dieser Slide zeigt <strong>ev-lead</strong> — die breite Einleitung mit vollem Zeilenabstand und <span class="ev-accent">ev-accent</span> für terracotta-Akzente inline.</p>
 
-<p>Mit <code>ev-canvas</code> als Wrapper bekommt jeder <code>@type: html</code> Slide automatisch das richtige Padding und die richtige Schrift. Kein Boilerplate nötig.</p>
+<p>Normaler Fließtext in einem Absatz. Er benutzt <code>--font-body</code> und <code>--color-body</code> automatisch über das <code>ev-canvas</code> Wrapper-DIV, das der Renderer automatisch hinzufügt.</p>
 
-<p class="ev-foot">ev-foot — zentrierte Fußzeile für kurze Aussagen oder Quellen.</p>
+<p class="ev-foot">ev-foot — zentrierte Fußzeile für kurze Aussagen.</p>
 
 ===
 
 <!-- @type: closing -->
 <!-- @bg: terracotta -->
-# Danke!
+# **Danke!**
 
 tommi.enenkel@escapevelocity.consulting

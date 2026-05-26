@@ -127,7 +127,13 @@ html, body {
 .slide--title[data-bg="terracotta"] .title-author { color: var(--color-cream); opacity: 0.95; }
 
 /* Wordmark — "Escape Velocity" with the second word as accent. Color picks
-   itself by background; default is dark word + terracotta accent on cream. */
+   itself by background:
+     cream bg   → dark text + terracotta "Velocity" accent
+     black bg   → cream text + terracotta "Velocity" accent (terracotta pops on black)
+     terracotta → full cream text + slightly-dimmed cream "Velocity"
+   Rule: on terracotta, NO element may use the terracotta token — it would be
+   invisible. Every accent/rule/eyebrow that is terracotta on cream must switch
+   to cream (or cream/0.8) on a terracotta background. */
 .slide--title .title-logo {
   font-family: var(--font-headline);
   font-size: 42px; font-weight: 700;
@@ -137,7 +143,8 @@ html, body {
 .slide--title .title-logo span { color: var(--color-terracotta); }
 .slide--title[data-bg="black"] .title-logo,
 .slide--title[data-bg="terracotta"] .title-logo { color: var(--color-cream); }
-.slide--title[data-bg="terracotta"] .title-logo span { color: var(--color-cream); opacity: 0.75; }
+/* On terracotta: both words full cream. No opacity reduction — we need contrast. */
+.slide--title[data-bg="terracotta"] .title-logo span { color: var(--color-cream); opacity: 0.8; }
 
 .slide--title .eyebrow {
   font-family: var(--font-ui);
@@ -146,6 +153,8 @@ html, body {
   color: var(--color-terracotta);
   margin-bottom: 28px;
 }
+/* On terracotta bg: eyebrow must not be terracotta (invisible). Switch to cream. */
+.slide--title[data-bg="terracotta"] .eyebrow { color: var(--color-cream); opacity: 0.85; }
 .slide--title h1 {
   font-family: var(--font-headline);
   font-size: 116px; font-weight: 700;
@@ -153,11 +162,13 @@ html, body {
   color: var(--color-text);
   margin-bottom: 32px;
 }
-/* `**accent**` inside the title h1 → terracotta highlight. One accent per slide. */
+/* `**accent**` inside the title h1 → terracotta highlight. One accent per slide.
+   On terracotta bg: the strong element switches to brighter cream so it still
+   pops against the headline text (both cream, but strong is slightly brighter). */
 .slide--title h1 strong { color: var(--color-terracotta); font-weight: 700; }
 .slide--title[data-bg="black"] h1,
 .slide--title[data-bg="terracotta"] h1 { color: var(--color-cream); }
-.slide--title[data-bg="terracotta"] h1 strong { color: var(--color-cream); }
+.slide--title[data-bg="terracotta"] h1 strong { color: var(--color-cream); font-weight: 800; }
 .slide--title .subtitle {
   font-family: var(--font-body);
   font-size: 40px; font-weight: 400;
@@ -226,6 +237,11 @@ html, body {
 }
 .slide--statement[data-bg="black"] .statement-text,
 .slide--statement[data-bg="terracotta"] .statement-text { color: var(--color-cream); }
+/* `**accent**` inside a statement → terracotta highlight on light bg,
+   brighter cream (font-weight: 800) on dark/terracotta bg. */
+.slide--statement .statement-text strong { color: var(--color-terracotta); font-weight: 800; }
+.slide--statement[data-bg="black"] .statement-text strong { color: var(--color-terracotta); }
+.slide--statement[data-bg="terracotta"] .statement-text strong { color: var(--color-cream); font-weight: 800; }
 .slide--statement .statement-sub {
   font-family: var(--font-body);
   font-size: clamp(22px, 2.2vw, 32px);
@@ -408,8 +424,14 @@ html, body {
 .slide--image[data-bg="cream"] .img-wrap,
 .slide--image[data-bg="light"] .img-wrap { background: transparent; }
 
-/* HTML passthrough */
-.slide--html .slide-inner { padding: 100px 130px; }
+/* HTML passthrough — vertically centred by default so recipe graphics
+   (flow, spectrum, multiplier, etc.) sit in the visual middle of the slide
+   rather than pressing against the top. Dense slides (tiers, long text)
+   still look fine because flex centering with overflow visible. */
+.slide--html .slide-inner {
+  padding: 0;
+  justify-content: center;
+}
 .slide--html h2,
 .slide--html .slide-heading {
   font-family: var(--font-headline);
@@ -618,6 +640,8 @@ html, body {
    default, so authors don't reinvent padding + body font on every slide. */
 .ev-canvas {
   width: 100%;
+  padding: 100px 130px;
+  box-sizing: border-box;
   font-family: var(--font-body);
   color: var(--color-body);
   display: flex; flex-direction: column;

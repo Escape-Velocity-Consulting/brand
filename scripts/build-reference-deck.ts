@@ -52,8 +52,8 @@ async function main() {
     }, paths, pool)
 
     console.log('  slides=' + result.slideCount + '  pngs=' + result.pngs.length + '  hasPdf=' + !!result.pdf + '  warnings=' + result.warnings.length)
-    assert(result.slideCount === 21, 'rendered 21 slides')
-    assert(result.pngs.length === 21, 'got 21 slide PNGs')
+    assert(result.slideCount === 23, 'rendered 23 slides')
+    assert(result.pngs.length === 23, 'got 23 slide PNGs')
     assert(!!result.pdf, 'got PDF')
     assert(!!result.viewer, 'got viewer')
     // The canonical reference deck must lint clean — no inline-style spam,
@@ -130,7 +130,7 @@ async function main() {
     copyFileSync(join(itemDir, 'index.html'), join(previewDir, 'index.html'))
     copyFileSync(join(itemDir, 'qr-title.png'), join(previewDir, 'qr-title.png'))
     copyFileSync(join(itemDir, 'reference-deck.pdf'), join(previewDir, 'reference-deck.pdf'))
-    for (let i = 0; i < 21; i++) {
+    for (let i = 0; i < 23; i++) {
       const n = String(i + 1).padStart(2, '0')
       const src = join(itemDir, 'slides', `slide-${n}.png`)
       if (existsSync(src)) copyFileSync(src, join(previewDir, 'slides', `slide-${n}.png`))

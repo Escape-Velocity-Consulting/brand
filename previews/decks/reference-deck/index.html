@@ -199,7 +199,13 @@ html, body {
 .slide--title[data-bg="terracotta"] .title-author { color: var(--color-cream); opacity: 0.95; }
 
 /* Wordmark — "Escape Velocity" with the second word as accent. Color picks
-   itself by background; default is dark word + terracotta accent on cream. */
+   itself by background:
+     cream bg   → dark text + terracotta "Velocity" accent
+     black bg   → cream text + terracotta "Velocity" accent (terracotta pops on black)
+     terracotta → full cream text + slightly-dimmed cream "Velocity"
+   Rule: on terracotta, NO element may use the terracotta token — it would be
+   invisible. Every accent/rule/eyebrow that is terracotta on cream must switch
+   to cream (or cream/0.8) on a terracotta background. */
 .slide--title .title-logo {
   font-family: var(--font-headline);
   font-size: 42px; font-weight: 700;
@@ -209,7 +215,8 @@ html, body {
 .slide--title .title-logo span { color: var(--color-terracotta); }
 .slide--title[data-bg="black"] .title-logo,
 .slide--title[data-bg="terracotta"] .title-logo { color: var(--color-cream); }
-.slide--title[data-bg="terracotta"] .title-logo span { color: var(--color-cream); opacity: 0.75; }
+/* On terracotta: both words full cream. No opacity reduction — we need contrast. */
+.slide--title[data-bg="terracotta"] .title-logo span { color: var(--color-cream); opacity: 0.8; }
 
 .slide--title .eyebrow {
   font-family: var(--font-ui);
@@ -218,6 +225,8 @@ html, body {
   color: var(--color-terracotta);
   margin-bottom: 28px;
 }
+/* On terracotta bg: eyebrow must not be terracotta (invisible). Switch to cream. */
+.slide--title[data-bg="terracotta"] .eyebrow { color: var(--color-cream); opacity: 0.85; }
 .slide--title h1 {
   font-family: var(--font-headline);
   font-size: 116px; font-weight: 700;
@@ -225,11 +234,13 @@ html, body {
   color: var(--color-text);
   margin-bottom: 32px;
 }
-/* `**accent**` inside the title h1 → terracotta highlight. One accent per slide. */
+/* `**accent**` inside the title h1 → terracotta highlight. One accent per slide.
+   On terracotta bg: the strong element switches to brighter cream so it still
+   pops against the headline text (both cream, but strong is slightly brighter). */
 .slide--title h1 strong { color: var(--color-terracotta); font-weight: 700; }
 .slide--title[data-bg="black"] h1,
 .slide--title[data-bg="terracotta"] h1 { color: var(--color-cream); }
-.slide--title[data-bg="terracotta"] h1 strong { color: var(--color-cream); }
+.slide--title[data-bg="terracotta"] h1 strong { color: var(--color-cream); font-weight: 800; }
 .slide--title .subtitle {
   font-family: var(--font-body);
   font-size: 40px; font-weight: 400;
@@ -298,6 +309,11 @@ html, body {
 }
 .slide--statement[data-bg="black"] .statement-text,
 .slide--statement[data-bg="terracotta"] .statement-text { color: var(--color-cream); }
+/* `**accent**` inside a statement → terracotta highlight on light bg,
+   brighter cream (font-weight: 800) on dark/terracotta bg. */
+.slide--statement .statement-text strong { color: var(--color-terracotta); font-weight: 800; }
+.slide--statement[data-bg="black"] .statement-text strong { color: var(--color-terracotta); }
+.slide--statement[data-bg="terracotta"] .statement-text strong { color: var(--color-cream); font-weight: 800; }
 .slide--statement .statement-sub {
   font-family: var(--font-body);
   font-size: clamp(22px, 2.2vw, 32px);
@@ -480,8 +496,14 @@ html, body {
 .slide--image[data-bg="cream"] .img-wrap,
 .slide--image[data-bg="light"] .img-wrap { background: transparent; }
 
-/* HTML passthrough */
-.slide--html .slide-inner { padding: 100px 130px; }
+/* HTML passthrough — vertically centred by default so recipe graphics
+   (flow, spectrum, multiplier, etc.) sit in the visual middle of the slide
+   rather than pressing against the top. Dense slides (tiers, long text)
+   still look fine because flex centering with overflow visible. */
+.slide--html .slide-inner {
+  padding: 0;
+  justify-content: center;
+}
 .slide--html h2,
 .slide--html .slide-heading {
   font-family: var(--font-headline);
@@ -690,6 +712,8 @@ html, body {
    default, so authors don't reinvent padding + body font on every slide. */
 .ev-canvas {
   width: 100%;
+  padding: 100px 130px;
+  box-sizing: border-box;
   font-family: var(--font-body);
   color: var(--color-body);
   display: flex; flex-direction: column;
@@ -1031,10 +1055,10 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
       <div class="title-qr-caption">Get the slides!</div>
     </div>
   
-    <div class="title-author">Tommi Enenkel · 28. Mai 2026</div>
+    <div class="title-author">Tommi Enenkel · 27. Mai 2026</div>
   
     </div>
-    <div class="slide-num">1 / 21</div>
+    <div class="slide-num">1 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
@@ -1049,7 +1073,7 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
     <div class="section-sub">Vom Hype zur messbaren Hebelwirkung.</div>
   
     </div>
-    <div class="slide-num">2 / 21</div>
+    <div class="slide-num">2 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
@@ -1064,30 +1088,45 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
     <div class="section-sub">7 Tipps · 1 Bonus · 75 Minuten</div>
   
     </div>
-    <div class="slide-num">3 / 21</div>
+    <div class="slide-num">3 / 23</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--section"
+           data-bg="terracotta"
+           
+           data-index="4">
+    <div class="slide-inner">
+      
+    
+    <h1>Abschluss</h1>
+    <div class="section-sub">Fragen und nächste Schritte.</div>
+  
+    </div>
+    <div class="slide-num">4 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--statement"
            data-bg="cream"
            
-           data-index="4">
+           data-index="5">
     <div class="slide-inner">
       
     <div class="statement-body">
-      <p class="statement-text">Die meisten Firmen haben nicht zu wenig KI.</p>
+      <p class="statement-text">Die meisten Firmen haben nicht zu wenig <strong>KI</strong>.</p>
       <p class="statement-sub">Sie haben zu wenig Klarheit über ihre Prozesse.</p>
     </div>
   
     </div>
-    <div class="slide-num">4 / 21</div>
+    <div class="slide-num">5 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--statement"
            data-bg="black"
            
-           data-index="5">
+           data-index="6">
     <div class="slide-inner">
       
     <div class="statement-body">
@@ -1096,18 +1135,34 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
     </div>
   
     </div>
-    <div class="slide-num">5 / 21</div>
+    <div class="slide-num">6 / 23</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--statement"
+           data-bg="terracotta"
+           
+           data-index="7">
+    <div class="slide-inner">
+      
+    <div class="statement-body">
+      <p class="statement-text"><strong>Klarheit</strong> schlägt Komplexität.</p>
+      
+    </div>
+  
+    </div>
+    <div class="slide-num">7 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--content"
            data-bg="cream"
            
-           data-index="6">
+           data-index="8">
     <div class="slide-inner">
       
     <h2>Das Enablement ist real</h2><div class="accent-rule"></div>
-    <div class="md"><p>KI ist eine General-Purpose-Technologie — und sie macht Einzelpersonen messbar produktiver.</p>
+    <div class="md"><p>KI ist eine <strong>General-Purpose-Technologie</strong> — und sie macht Einzelpersonen <em>messbar</em> produktiver.</p>
 <ul>
 <li>Ein Geschäftsführer erledigt <strong>in einem Tag</strong>, wofür er früher eine Woche brauchte</li>
 <li>Das ist kein Hype — das ist messbar</li>
@@ -1116,14 +1171,14 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
 </div>
   
     </div>
-    <div class="slide-num">6 / 21</div>
+    <div class="slide-num">8 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--content"
            data-bg="cream"
            
-           data-index="7">
+           data-index="9">
     <div class="slide-inner">
       
     <h2>Drei Hebel im Überblick</h2><div class="accent-rule"></div>
@@ -1136,14 +1191,14 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
 </div>
   
     </div>
-    <div class="slide-num">7 / 21</div>
+    <div class="slide-num">9 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--cards"
            data-bg="cream"
            
-           data-index="8">
+           data-index="10">
     <div class="slide-inner">
       
     <h2>Operationalisierung: Werkzeuge</h2><div class="accent-rule"></div>
@@ -1180,43 +1235,43 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
   </div>
   
     </div>
-    <div class="slide-num">8 / 21</div>
+    <div class="slide-num">10 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--two-col"
            data-bg="cream"
            
-           data-index="9">
+           data-index="11">
     <div class="slide-inner">
       
     <h2>Warum jetzt?</h2><div class="accent-rule"></div>
     <div class="columns">
-      <div class="col md"><p>Kosten sinken exponentiell — Qualität steigt.</p>
+      <div class="col md"><p>Kosten sinken exponentiell — <strong>Qualität steigt</strong>.</p>
 <ul>
-<li>GPT-3 (2020): <strong>$100</strong> pro 1M Token</li>
-<li>GPT-4 (2023): <strong>$30</strong> pro 1M Token</li>
+<li>GPT-3 (2020): $100 pro 1M Token</li>
+<li>GPT-4 (2023): $30 pro 1M Token</li>
 <li>Claude 3.5 (2024): <strong>$3</strong> pro 1M Token</li>
 </ul>
 </div>
       <div class="col md"><p>Die Fähigkeiten wachsen schneller als die Adoption.</p>
 <ul>
-<li>Reasoning: PhD-Niveau in Fachdomänen</li>
-<li>Code: Senior-Engineer-Niveau</li>
-<li>Übersetzung: muttersprachlich</li>
+<li>Reasoning: <em>PhD-Niveau</em> in Fachdomänen</li>
+<li>Code: <em>Senior-Engineer-Niveau</em></li>
+<li>Übersetzung: <em>muttersprachlich</em></li>
 </ul>
 </div>
     </div>
   
     </div>
-    <div class="slide-num">9 / 21</div>
+    <div class="slide-num">11 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--comparison"
            data-bg="cream"
            
-           data-index="10">
+           data-index="12">
     <div class="slide-inner">
       
     <h2>Orientierung</h2><div class="accent-rule"></div>
@@ -1225,14 +1280,14 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
 <p>“Was kostet mich jeden Tag Zeit?”</p>
 <ul>
 <li>Löst interne Probleme</li>
-<li>Erhöht Effizienz und Kapazität</li>
+<li>Erhöht <strong>Effizienz</strong> und Kapazität</li>
 <li>Verbessert bestehende Prozesse</li>
 </ul>
 </div>
       <div class="comparison-col comparison-accent md"><h3>Wachstum</h3>
 <p>“Was könnten wir tun, was wir nie konnten?”</p>
 <ul>
-<li>Schafft Innovation und neue Angebote</li>
+<li>Schafft <strong>Innovation</strong> und neue Angebote</li>
 <li>Erschließt neue Märkte</li>
 <li>Baut neue Infrastrukturen</li>
 </ul>
@@ -1240,42 +1295,42 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
     </div>
   
     </div>
-    <div class="slide-num">10 / 21</div>
+    <div class="slide-num">12 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--quote"
            data-bg="black"
            
-           data-index="11">
+           data-index="13">
     <div class="slide-inner">
       
     <blockquote>Ich ersetze mein ganzes Team durch KI.</blockquote>
     <div class="attribution">Ein Anwalt, LinkedIn, 2026</div>
   
     </div>
-    <div class="slide-num">11 / 21</div>
+    <div class="slide-num">13 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--quote"
            data-bg="cream"
            
-           data-index="12">
+           data-index="14">
     <div class="slide-inner">
       
     <blockquote>Die meisten Firmen haben nicht zu wenig KI. Sie haben zu wenig Klarheit über ihre Prozesse.</blockquote>
     <div class="attribution">Tommi Enenkel, Escape Velocity Consulting</div>
   
     </div>
-    <div class="slide-num">12 / 21</div>
+    <div class="slide-num">14 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--big-number"
            data-bg="black"
            
-           data-index="13">
+           data-index="15">
     <div class="slide-inner">
       
     <div class="eyebrow">Produktivitäts-Multiplier</div>
@@ -1284,36 +1339,36 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
 </div>
   
     </div>
-    <div class="slide-num">13 / 21</div>
+    <div class="slide-num">15 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--image"
            data-bg="cream"
            
-           data-index="14">
+           data-index="16">
     <div class="slide-inner">
       <div class="img-headline">🥋</div>
     </div>
-    <div class="slide-num">14 / 21</div>
+    <div class="slide-num">16 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--image"
            data-bg="cream"
            data-chrome="none"
-           data-index="15">
+           data-index="17">
     <div class="slide-inner">
       <div class="img-headline">🥋</div>
     </div>
-    <div class="slide-num">15 / 21</div>
+    <div class="slide-num">17 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--html"
            data-bg="cream"
            
-           data-index="16">
+           data-index="18">
     <div class="slide-inner">
       
     <h2 class="ev-h2">Enablement-Multiplikator<span class="ev-rule"></span></h2>
@@ -1337,14 +1392,14 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
 <p class="ev-foot"><strong>Mehr Output pro Kopf. Nicht null Köpfe.</strong></p></div>
   
     </div>
-    <div class="slide-num">16 / 21</div>
+    <div class="slide-num">18 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--html"
            data-bg="cream"
            
-           data-index="17">
+           data-index="19">
     <div class="slide-inner">
       
     <h2 class="ev-h2">Das Enablement-Spektrum<span class="ev-rule"></span></h2>
@@ -1362,14 +1417,14 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
 <p class="ev-foot">Regular People können jetzt mehr selbst tun.</p></div>
   
     </div>
-    <div class="slide-num">17 / 21</div>
+    <div class="slide-num">19 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--html"
            data-bg="cream"
            
-           data-index="18">
+           data-index="20">
     <div class="slide-inner">
       
     <h2 class="ev-h2">Prozesse: Wie KI integrieren?<span class="ev-rule"></span></h2>
@@ -1385,14 +1440,14 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
 <p class="ev-foot">KI ersetzt eure Prozesse nicht. Sie wird in sie integriert.</p></div>
   
     </div>
-    <div class="slide-num">18 / 21</div>
+    <div class="slide-num">20 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--html"
            data-bg="cream"
            
-           data-index="19">
+           data-index="21">
     <div class="slide-inner">
       
     <h2 class="ev-h2">Wie es weitergeht<span class="ev-rule"></span></h2>
@@ -1432,32 +1487,32 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
 </div></div>
   
     </div>
-    <div class="slide-num">19 / 21</div>
+    <div class="slide-num">21 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--html"
            data-bg="cream"
            
-           data-index="20">
+           data-index="22">
     <div class="slide-inner">
       
-    <h2 class="ev-h2">Grundlagen: Canvas-Utilities<span class="ev-rule"></span></h2>
-    <div class="ev-canvas"><p class="ev-lead">Dieser Slide zeigt <strong>ev-lead</strong> — die breite Einleitung. Darunter normaler Fließtext als Absatz.</p>
+    <h2 class="ev-h2">Canvas-Utilities: ev-lead und ev-foot<span class="ev-rule"></span></h2>
+    <div class="ev-canvas"><p class="ev-lead">Dieser Slide zeigt <strong>ev-lead</strong> — die breite Einleitung mit vollem Zeilenabstand und <span class="ev-accent">ev-accent</span> für terracotta-Akzente inline.</p>
 
-<p>Mit <code>ev-canvas</code> als Wrapper bekommt jeder <code>@type: html</code> Slide automatisch das richtige Padding und die richtige Schrift. Kein Boilerplate nötig.</p>
+<p>Normaler Fließtext in einem Absatz. Er benutzt <code>--font-body</code> und <code>--color-body</code> automatisch über das <code>ev-canvas</code> Wrapper-DIV, das der Renderer automatisch hinzufügt.</p>
 
-<p class="ev-foot">ev-foot — zentrierte Fußzeile für kurze Aussagen oder Quellen.</p></div>
+<p class="ev-foot">ev-foot — zentrierte Fußzeile für kurze Aussagen.</p></div>
   
     </div>
-    <div class="slide-num">20 / 21</div>
+    <div class="slide-num">22 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--closing slide--title"
            data-bg="terracotta"
            
-           data-index="21">
+           data-index="23">
     <div class="slide-inner">
       
     <div class="title-chrome">
@@ -1466,7 +1521,7 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
     <div class="title-body">
       
       <div class="accent-rule"></div>
-      <h1>Danke!</h1>
+      <h1><strong>Danke!</strong></h1>
       
     </div>
     
@@ -1478,7 +1533,7 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
     <div class="title-author">Tommi Enenkel</div>
   
     </div>
-    <div class="slide-num">21 / 21</div>
+    <div class="slide-num">23 / 23</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
