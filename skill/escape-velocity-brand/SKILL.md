@@ -241,4 +241,4 @@ render_slides({
 ## See also
 
 - `references/brand-reference.md` — token table, CSS vars, design patterns
-- `brand/CLAUDE.md` § MCP Server — how to register escape-velocity-brand on your workstation (Claude Code or Claude Desktop)
+- `brand/docs/mcp-server.md` § Registering the MCP server — how to register escape-velocity-brand on your workstation (Claude Code or Claude Desktop)

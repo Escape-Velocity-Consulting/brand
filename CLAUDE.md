@@ -1,870 +1,176 @@
 # Brand OS
 
-## CI Monitoring Rule
+Agent-facing operational reference for the brand repo. Holds the **rules** (because rules are mandates, not docs) and the **navigation hub** for everything else. Depth lives in [`docs/`](docs/).
 
-**After any `git push` to the brand repo that could trigger the Deploy MCP workflow, immediately monitor the run until it completes.**
+| If you want to … | Look in |
+|---|---|
+| Understand the system | [docs/architecture.md](docs/architecture.md) |
+| Read the rules in full | [docs/rules.md](docs/rules.md) |
+| Add/modify a template | [docs/templates.md](docs/templates.md) |
+| Work on the MCP server | [docs/mcp-server.md](docs/mcp-server.md) |
+| Publish a deck / item | [docs/publishing.md](docs/publishing.md) |
+| Iterate the Brand Site | [docs/brand-site.md](docs/brand-site.md) |
+| Assemble the Brand Kit | [docs/brand-kit.md](docs/brand-kit.md) |
+| Edit the deployed skill | [docs/skill.md](docs/skill.md) |
+| Run / add tests | [docs/testing.md](docs/testing.md) |
+| Deploy / coordinate with admin | [docs/deployment.md](docs/deployment.md) |
+| Diagnose a failure | [docs/troubleshooting.md](docs/troubleshooting.md) |
+| Look up a term | [docs/glossary.md](docs/glossary.md) |
+| Read the canonical contract | [`BRAND_SPEC.md`](BRAND_SPEC.md) |
 
-The workflow (`.github/workflows/deploy-mcp.yml`) triggers on pushes to `main` that touch:
-`src/`, `templates/`, `fonts/`, `components/`, `tokens.ts`, `tokens.css`, `package.json`, `package-lock.json`, `tsconfig.mcp.json`, `scripts/build-tokens.ts`, `Dockerfile`, `.dockerignore`, `.github/workflows/deploy-mcp.yml`
+[`docs/README.md`](docs/README.md) has the full index + lookup tables.
 
-After pushing, run:
+---
+
+## The 5 rules
+
+Every rule below has a one-paragraph mandate here and full text in [`docs/rules.md`](docs/rules.md). Edit the rule in `docs/rules.md`; the summary here just exists so you don't miss it on the path.
+
+### CI Monitoring Rule
+
+**After any `git push` to the brand repo that could trigger the Deploy MCP workflow, immediately monitor the run until it completes.** Don't declare a push "done" until the build job passes. Workflow trigger paths: `src/`, `templates/`, `fonts/`, `components/`, `tokens.ts`, `tokens.css`, `package.json`, `package-lock.json`, `tsconfig.mcp.json`, `scripts/build-tokens.ts`, `Dockerfile`, `.dockerignore`, `.github/workflows/deploy-mcp.yml`.
+
 ```bash
 gh run list --repo Escape-Velocity-Consulting/brand --limit 1
 gh run watch <run-id> --repo Escape-Velocity-Consulting/brand --exit-status
 ```
 
-If the run fails, fetch the logs of the failing step and report the error:
-```bash
-gh run view <run-id> --repo Escape-Velocity-Consulting/brand --log-failed
-```
+Full text: [docs/rules.md § CI Monitoring Rule](docs/rules.md#ci-monitoring-rule).
 
-Do not declare a push "done" until the build job passes (or explicitly confirm with the user that they'll watch it themselves).
+### Spec-First Rule
+
+**[`BRAND_SPEC.md`](BRAND_SPEC.md) is the source of truth.** Before changing brand code, templates, or tokens: consult the spec, get explicit approval if the spec needs updating, then update spec → implement. Never silently deviate.
+
+Full text: [docs/rules.md § Spec-First Rule](docs/rules.md#spec-first-rule).
+
+### Documentation-Sync Rule
+
+**Any change to a system capability MUST update every relevant describing surface in the same commit.** The six surfaces are `BRAND_SPEC.md` (contract), `CLAUDE.md` (rules + nav), `docs/` (operational depth), `BRAND_SKILL.md` (skill sidecar), `skill/escape-velocity-brand/SKILL.md` (deployed skill source), and the automations under `.github/workflows/` + `scripts/hooks/`. A change in code but not docs is broken on arrival.
+
+Before declaring a change complete: spec updated if contract changed → `docs/` reflects the new surface → `CLAUDE.md` nav table current → skill source updated + `npm run build:skill` run → CI path globs updated if needed → user-facing surface (nav, README, Brand Site) mentions the capability.
+
+Full text + anti-patterns: [docs/rules.md § Documentation-Sync Rule](docs/rules.md#documentation-sync-rule).
+
+### Token-Sourcing Rule
+
+**[`tokens.ts`](tokens.ts) is the single source of truth for color, type, and spacing values. Never duplicate them in templates.** Every new template MUST source its tokens by injecting `{{ TOKENS_CSS | safe }}` at render time. Use `var(--color-terracotta)` / `var(--font-headline)` everywhere downstream — never raw hex or font names.
+
+Verify before declaring done: flip one value in `tokens.ts`, rebuild, confirm the new value appears, revert. If the output didn't change, your template is hardcoded somewhere.
+
+Reference implementation: `templates/presentation.html` + `generators/presentation.ts`.
+
+Full text: [docs/rules.md § Token-Sourcing Rule](docs/rules.md#token-sourcing-rule).
+
+### Brand-Site Coverage Rule
+
+**Every new template that produces a tangible output (document, deck, social image, infographic, etc.) MUST be surfaced on the Brand Site.** A template without a Brand Site presence is undiscoverable. Coverage means two things, applied in order:
+
+1. **Showcase page (always required)** — a `site/<type>.njk` page that demonstrates the template's variants with sample renders, syntax, and a link to the canonical demo output. Drive data from `site/_data/<type>.cjs`; pull renders from a canonical showcase artifact regenerated by `build:assets`.
+2. **Archive page (where it makes sense)** — a `site/<plural>.njk` page that lists every rendered output. Use filesystem-scan when outputs are repo-committed assets; use live-API fetch (like `/brand/decks/` does) when outputs are user-driven.
+
+Always add a nav entry in `site/_data/nav.cjs`. Verify `scripts/build-site.sh` already copies your output dir into `dist/site/`.
+
+Full text + coverage table: [docs/rules.md § Brand-Site Coverage Rule](docs/rules.md#brand-site-coverage-rule).
 
 ---
 
-## Spec-First Rule
+## Quick reference
 
-**BRAND_SPEC.md is the source of truth.** Before changing any brand code, templates, or tokens:
-
-1. Consult the spec to understand current rules
-2. If the change requires a spec update, get explicit user approval first
-3. Update the spec, then implement
-
-Never silently deviate from the spec. If a conflict arises, flag it.
-
-## Documentation-Sync Rule
-
-The brand system has six surfaces that *describe* it: `BRAND_SPEC.md` (truth), `CLAUDE.md` (operational reference for agents), `BRAND_SKILL.md` (skill cheatsheet), the deployed skill bundle at `skill/escape-velocity-brand/`, `AGENT_GUIDE.md` (lookup tables), and the automations under `.github/workflows/` + `scripts/hooks/`. **Any change to a system capability — new tool, new env var, new rule, new file layout, removed feature — MUST update every relevant surface in the same change.**
-
-A change that lands in code but not in docs is broken on arrival. The next agent (or you in three weeks) will silently call the wrong tool, miss the new flag, or rely on a removed file. The Documentation-Sync Rule prevents that.
-
-### Checklist before declaring a system change complete
-
-1. **Spec updated** (`BRAND_SPEC.md`) if the contract changed.
-2. **`CLAUDE.md` reflects the new surface** — tool table, env table, route table, rule, file layout.
-3. **Skill source updated** — `SKILL.md` + `BRAND_SKILL.md`; `npm run build:skill` ran; the new `.skill` reinstalled.
-4. **`AGENT_GUIDE.md` lookup tables current.**
-5. **CI/automation aware of the change** — new path globs in `deploy-mcp.yml`, new hook checks, new build steps.
-6. **User-facing surface mentions the new capability** — nav entry, help text, README, Brand Site page.
-
-### Anti-patterns to refuse
-
-- ❌ "I'll update docs in a follow-up PR." Follow-ups rot.
-- ❌ Updating only one of the parallel skill files (source vs reference sidecar vs deployed copy).
-- ❌ Adding an MCP tool without registering it in the SKILL routing block. (For template additions, that block is auto-generated from `templates.meta.ts` — so the registry edit *is* the doc update.)
-- ❌ Bumping a tool count or env list without grepping for the previous count/list across the repo.
-
-## Token-Sourcing Rule
-
-**`tokens.ts` is the single source of truth for color, type, and spacing values. Never duplicate them in templates.**
-
-### The rule
-
-**Every new template you create — document, deck, social, anything that ships brand styling — MUST source its tokens by injecting `tokens.css` at render time. No exceptions.** This is not "preferred"; it is mandatory. A template that hardcodes brand values is broken on arrival, even if it looks correct, because it silently forks the design system.
-
-Concretely, when you create a new template:
-
-1. **Template file:** put `{{ TOKENS_CSS | safe }}` near the top of the `<style>` block. Use the `var(--color-terracotta)` / `var(--font-headline)` syntax everywhere downstream. Never write a raw hex value or font name.
-2. **Generator file:** read `brand/tokens.css` into a string and pass it as the `TOKENS_CSS` Nunjucks variable. If `tokens.css` doesn't exist, fail with an error message telling the user to run `npm run build:tokens` — don't fall back to defaults.
-3. **Verify before declaring done:** flip one value in `tokens.ts` (e.g. `terracotta` → `#3B82F6`), run `build:tokens` + your generator, confirm the new color appears in the output, then revert. If the output didn't change, your template is hardcoded somewhere — find it.
-
-Reference implementation: `templates/presentation.html` + `generators/presentation.ts`. Copy that pattern.
-
-### Anti-patterns to refuse
-
-- ❌ Pasting hex values or font names directly into a template's CSS — not even "just this once for inline-friendliness."
-- ❌ Writing your own `:root { --color-… }` block in the template. That silently forks the tokens.
-- ❌ Hardcoding tokens "for now" with a TODO to refactor later. Do it right the first time; the cost is one extra import.
-
-### Coverage
-
-All current top-level templates (`presentation.html`, `letter.html`, `offer.html`, `invoice.html`, `tos.html`, `report.html`) source tokens via `_base.html`'s `{{ TOKENS_CSS | safe }}` injection. New templates must do the same.
-
-Subdirectory templates (`templates/social/*.html`, `templates/carousel/*.html`) also source tokens — `src/core/image.ts` and `src/core/carousel.ts` pass `TOKENS_CSS` into `renderStringTemplate`, and each template injects it inside its own `<style>` block (these templates are standalone, not based on `_base.html`).
-
-## Brand-Site Coverage Rule
-
-**Every new template that produces a tangible output (document, deck, social image, infographic, etc.) MUST be surfaced on the Brand Site. A template without a Brand Site presence is undiscoverable to the user. This is mandatory, not nice-to-have.**
-
-Coverage means two things, applied in order:
-
-### 1. Showcase page (always required)
-
-A `site/<type>.njk` page that demonstrates the template's variants/types with sample renders, syntax examples, and a link to the canonical demo output.
-
-When the template emits multiple types/variants, drive the page from `site/_data/<type>.cjs` and read sample renders from a **canonical showcase artifact** regenerated by `build:assets` so the page tracks template changes automatically — you don't have to remember to re-screenshot.
-
-Reference implementation: `site/presentations.njk` + `site/_data/slide-types.cjs` + `previews/showcase/slide-types.md` + the showcase regen step at the bottom of `scripts/export-assets.ts`.
-
-### 2. Archive page (where it makes sense)
-
-A `site/<plural>.njk` page that lists every rendered output of that type via a `site/_data/<plural>.cjs` filesystem scan.
-
-Use this when outputs are **non-sensitive and worth re-finding** (e.g. slide decks the user has produced). Skip it when outputs are confidential (client letters, invoices, contracts) or noisy (one-off social PNGs).
-
-Reference implementations:
-- **Filesystem-scan (legacy pattern, simpler):** `site/social.njk` + `site/_data/social.cjs`.
-- **Live API fetch (current pattern for user-published artifacts):** `site/decks.njk` reads from `GET /api/published?type=deck` on the brand MCP. See [§ Publishing](#publishing).
-
-### Always
-
-- Add the nav entry in `site/_data/nav.cjs` — order matters.
-- Verify `scripts/build-site.sh` already copies your output directory into `dist/site/` (today it copies the whole `previews/` tree, so anything under there is covered).
-- If you add a new top-level dir outside `previews/`, extend `build-site.sh`.
-
-### Anti-patterns to refuse
-
-- ❌ Building a generator without a showcase page. "I'll add the site page later" leads to forgotten work — do it in the same change.
-- ❌ Hardcoding showcase thumbnails as static images checked into the repo instead of regenerating them from a canonical showcase artifact. The whole point is that the page tracks the template; static screenshots drift.
-- ❌ Hardcoding archive content when filesystem discovery would work.
-
-### Coverage today
-
-| Template type | Showcase | Archive |
-|---|---|---|
-| **Documents** (letter/offer/invoice/tos/report) | ✅ `documents.njk` — auto-discovered from `previews/*-preview.png` via `site/_data/documents.cjs` (with colocated `DOCS_META` for title/blurb/cmd copy). | ❌ Correct — client docs are sensitive. |
-| **Components** (UI patterns) | ✅ `components.njk` | N/A |
-| **Social** (LinkedIn banner / cards / OG) | ✅ `social.njk` — auto-discovered from `templates/social/*.html` via `site/_data/social.cjs` (with colocated `SOCIAL_META` for title/size/cmd copy). | ❌ Consider adding when next touched. |
-| **Presentations / decks** | ✅ `presentations.njk` — auto-regenerated showcase. **Reference implementation.** | ✅ `decks.njk` — **client-side fetched from `GET /api/published?type=deck`**. Updates appear on refresh. See [§ Publishing](#publishing). |
-| **Carousel** (LinkedIn carousels) | ❌ — known gap, add when carousel templates next touched. | ❌ |
-
-## Terminology
-
-Use these terms consistently — they have specific meanings in this repo:
-
-| Term | Meaning |
-|------|---------|
-| **Brand System** | This `brand/` repo as a whole: tokens, templates, generators, site source. |
-| **Brand Site** | The multi-page reference at `/brand/` (overview, identity, components, documents, social, workflow). Built from `site/`. Viewable standalone at `localhost:3000/brand/` and embedded on the live website at the same URL. |
-| **Brand Assets** | Logos, fonts, generated PNGs, QR codes — anything that ships as a file. |
-| **Brand Distribution** | `dist/site/` — the build output. Self-contained, ready to serve at `/brand/`. The website consumes this via git submodule. |
-| **Brand Kit** | `dist/brand-kit.zip` — downloadable bundle for designers, partners, press. Linked from `/brand/download/`. Assembled by `build:kit` from existing canonical sources. |
-| **Brand Templates** | `templates/*.html` — document/social templates rendered by generators. Not the same as Brand Site templates. |
-| **Brand Generators** | `generators/` — `pdf.ts`, `image.ts`, `carousel.ts`, `presentation.ts`. Thin CLI shims over the rendering core. |
-| **Rendering Core** | `src/core/` — pure-function library (no `process.exit`, no CWD assumptions, shared `BrowserPool`). The single source of truth for render logic, used by both CLI shims and the MCP server. |
-| **Brand MCP** | `src/mcp/` — stdio + HTTP MCP server wrapping the rendering core. Exposes 9 tools (`render_template`, `render_html_to_png`, `render_html_to_pdf`, `render_slides`, `list_templates`, `get_tokens`, `publish_artifact`, `unpublish_artifact`, `list_published`) with a warm Chromium across calls. Public endpoint: `https://mcp.escapevelocity.consulting/mcp` (Google-OAuth gated). The three publish-flow tools only register on the HTTP transport (they need persistent storage). |
-| **Brand Tokens** | `tokens.ts` → `tokens.css` + `tokens.json`. Single source of truth for color, type, spacing. |
-
-## Repository Layout
-
-```
-brand/
-├── BRAND_SPEC.md          ← canonical spec (source of truth)
-├── CLAUDE.md              ← this file (operational reference)
-├── BRAND_SKILL.md         ← brand reference (token table + CSS vars + layout patterns); shipped in the .skill as references/brand-reference.md
-├── VARIANTS.md            ← variant tracking registry
-├── templates.meta.ts      ← template registry (output format / dims / required vars / tags)
-├── tokens.ts              ← token source of truth
-├── tokens.css             ← generated by build:tokens
-├── tokens.json            ← generated by build:tokens (gitignored; consumed by site/_data/)
-├── tsconfig.json
-├── package.json
-├── generate_qr.py         ← legacy Python QR generator
-├── SpaceGrotesk.ttf       ← font for generate_qr.py only
-├── fonts/                 ← woff2 fonts (canonical home)
-│   └── LICENSES/          ← OFL + per-family copyrights (shipped in kit)
-├── press/                 ← canonical press copy (boilerplate, photos, license)
-│   ├── boilerplate.md     ← single source of truth for press copy (DE + EN + contact)
-│   ├── LICENSE.txt        ← brand-kit usage terms
-│   └── photos/            ← founder photos
-├── assets/
-│   ├── logos/             ← SVG sources
-│   ├── raster/            ← generated PNGs (multi-size: 300/512/1024/2048)
-│   └── qr/                ← generated QR codes
-├── previews/              ← generated document PDFs + preview PNGs (by export-assets.ts)
-├── components/            ← portable JS components for HTML slides (e.g. radar.js)
-├── generators/            ← pdf.ts, image.ts, carousel.ts, presentation.ts (CLI shims over src/core/)
-├── src/
-│   ├── core/              ← pure-function rendering library (BrowserPool, document.ts, image.ts, carousel.ts, presentation.ts, markdown.ts, templates.ts, tokens.ts, paths.ts, errors.ts)
-│   └── mcp/               ← stdio MCP server (server.ts + tools/* + shared/*)
-├── tests/
-│   └── mcp/               ← JSON-fixture E2E suite for the MCP server. Run via `npm run test:mcp`; report at tests/mcp/report/index.html
-├── templates/             ← document/social templates (consumed by generators)
-│   ├── presentation.html  ← slide-deck viewer template (16:9, viewer JS inlined)
-│   └── palette-sheet.html ← swatch sheet for the brand-kit palette.pdf
-├── site/                  ← Brand Site source (11ty)
-│   ├── _includes/         ← base.njk + partial templates
-│   ├── _data/             ← palette, typography, nav, version, press (read tokens.json + press/)
-│   ├── .eleventy.cjs      ← 11ty config
-│   ├── site.css           ← Brand Site shared CSS
-│   ├── print.css          ← print overrides
-│   ├── index.njk          ← Overview page
-│   ├── identity.njk, components.njk, documents.njk, social.njk, workflow.njk
-│   └── download.njk, press.njk  ← Brand Kit download + press boilerplate
-├── dist/                  ← Brand Distribution (gitignored)
-│   ├── site/              ← rendered Brand Site + tokens.css + assets + fonts + previews + brand-kit.zip
-│   ├── brand-kit/         ← staged Brand Kit (folder, before zip)
-│   ├── brand-kit.zip      ← Brand Kit artifact (consumed via /brand/brand-kit.zip)
-│   └── escape-velocity-brand.skill ← packaged skill
-└── scripts/
-    ├── build-tokens.ts                ← tokens.ts → tokens.css + tokens.json
-    ├── build-site.sh                  ← render Brand Site → dist/site/
-    ├── build-dist.sh                  ← meta: tokens → assets → site → kit
-    ├── build-kit.ts                   ← assemble dist/brand-kit/ + zip it
-    ├── build-skill.sh                 ← package skill
-    ├── export-assets.ts               ← regenerate rasters + document previews
-    ├── export-logo-pngs.ts            ← website-specific logo PNG export (separate flow)
-    ├── generate-palette-pdf.ts        ← A4 swatch sheet → palette.pdf
-    ├── generate-palette-ase.ts        ← Adobe .ase swatch file
-    └── generate-brand-guide-pdf.ts    ← print dist/site/ → single multi-page PDF
-```
-
-## npm Scripts
+### npm Scripts
 
 | Script | Command | What it does |
 |--------|---------|--------------|
-| `dev` | `build:tokens && build:site && eleventy --serve` | Regenerate tokens, render Brand Site, then serve at `localhost:3000/brand/` with live reload. **Primary iteration command.** Skips the slow asset/kit builds. |
+| `dev` | `build:tokens && build:site && eleventy --serve` | Regenerate tokens, render Brand Site, then serve at `localhost:3000/brand/` with live reload. **Primary iteration command.** Skips slow asset/kit builds. |
 | `build:tokens` | `tsx scripts/build-tokens.ts` | Regenerate `tokens.css` + `tokens.json` from `tokens.ts` |
-| `build:assets` | `tsx scripts/export-assets.ts` | Regenerate all rasters + document previews into `assets/raster/` and `previews/`. Slow (Playwright). |
-| `build:site` | `bash scripts/build-site.sh` | Render Brand Site → `dist/site/` (assumes tokens + assets already built) |
-| `build:kit` | `tsx scripts/build-kit.ts` | Assemble `dist/brand-kit/` + `dist/brand-kit.zip` (assumes tokens + assets + site already built) |
-| `build:dist` | `bash scripts/build-dist.sh` | **Meta:** runs `tokens → assets → site → kit` in order; copies kit zip into `dist/site/`. Use this for full publishable build. |
+| `build:assets` | `tsx scripts/export-assets.ts` | Regenerate all rasters + document previews. Slow (Playwright). |
+| `build:site` | `bash scripts/build-site.sh` | Render Brand Site → `dist/site/` |
+| `build:kit` | `tsx scripts/build-kit.ts` | Assemble `dist/brand-kit/` + `dist/brand-kit.zip` |
+| `build:dist` | `bash scripts/build-dist.sh` | **Meta:** tokens → assets → site → kit |
 | `build:skill` | `bash scripts/build-skill.sh` | Package `dist/escape-velocity-brand.skill` |
-| `build:mcp` | `tsc -p tsconfig.mcp.json` | Compile MCP server + core to `dist/` for production use (via `node dist/src/mcp/server.js`). Development uses `tsx` directly via the `mcp` script. |
-| `pdf` | `tsx generators/pdf.ts` | Generate branded PDF from Markdown |
-| `image` | `tsx generators/image.ts` | Generate PNG from HTML/SVG |
-| `carousel` | `tsx generators/carousel.ts` | Generate a LinkedIn carousel from a JSON spec (PDF + per-slide PNGs) |
-| `pres` | `tsx generators/presentation.ts` | Generate slide deck (HTML viewer + PDF + PNGs) from Markdown |
-| `mcp` | `tsx src/mcp/server.ts` | Run the escape-velocity-brand MCP server on stdio. Used directly by Claude Code; see [MCP Server](#mcp-server) below. |
-| `test:mcp` | `tsx tests/mcp/run.ts` | Run the JSON-fixture E2E suite against the MCP server. Writes an HTML report to `tests/mcp/report/index.html`. |
-| `export` | alias of `build:assets` | Kept for muscle memory. |
-
-## Brand Site Workflow (Token Iteration)
-
-When you want to tweak the brand (colors, type, swatches, components, etc.):
-
-1. **Edit** `tokens.ts` (or `site/_data/`, `site/*.njk`, `site/site.css`)
-2. **`npm run dev`** — Brand Site is live at `localhost:3000/brand/` with auto-reload
-3. **Commit + push** the brand repo
-4. **Bump the submodule in `website/`** — see `website/CLAUDE.md` for commands. CI then rebuilds dist and deploys the live `/brand/` page.
-
-The website does **not** copy from `brand/` directly anymore. It pulls via git submodule pinned to a commit. There is no "sync" step — pushing the brand repo and bumping the submodule pointer is the entire publication flow.
-
-## Brand Kit Workflow
-
-The Brand Kit (`dist/brand-kit.zip`) bundles logos, colors, fonts, sample documents and social graphics, the brand guide as PDF, and the press boilerplate for external distribution. It's the **fourth output** of the brand system (alongside Brand Site, Brand Skill, and the website-facing Brand Distribution).
-
-**Source-of-truth chain.** Every asset in the kit derives from existing canonical sources — never duplicated:
-
-| Kit path | Canonical source |
-|----------|------------------|
-| `logos/svg/` | `assets/logos/*.svg` |
-| `logos/png/` | `assets/raster/*-{300,512,1024,2048}.png` (emitted by `build:assets`) |
-| `colors/tokens.json` | `tokens.ts` (via `build:tokens`) |
-| `colors/palette.pdf` | `templates/palette-sheet.html` + `tokens.css` (via `generate-palette-pdf.ts`) |
-| `colors/palette.ase` | `tokens.json` (via `generate-palette-ase.ts`) |
-| `fonts/*.woff2` | `fonts/` |
-| `fonts/LICENSES/` | `fonts/LICENSES/` |
-| `guidelines/brand-guide.pdf` | `dist/site/` printed via Playwright |
-| `social/*` | curated subset of `assets/raster/` |
-| `documents/*.pdf` | `previews/` |
-| `press/boilerplate.{md,pdf}` | `press/boilerplate.md` |
-| `press/photos/` | `press/photos/` |
-| `web/starter.html`, `web/README.md` | `web/` (authored in-repo) |
-| `web/css/{tokens,site,print}.css` | `tokens.css`, `site/site.css`, `site/print.css` |
-| `web/css/fonts/*.woff2` | `fonts/*.woff2` (colocated so `site.css`'s `@font-face` paths resolve) |
-| `web/templates/documents/*.html` | `templates/{letter,offer,invoice,tos,report,_base,_recipient}.html` |
-| `web/templates/social/*.html` | `templates/social/*.html` |
-| `LICENSE.txt` | `press/LICENSE.txt` |
-
-**Update flow:**
-
-1. Edit a canonical source (tokens, logos, boilerplate, license, etc.).
-2. `npm run build:dist` — full chain: tokens → assets → site → kit.
-3. Verify locally: unzip `dist/brand-kit.zip` and inspect; run `npm run dev` and open `/brand/download/`.
-4. Commit + push the brand repo.
-5. Bump the submodule in `website/`. Website CI rebuilds everything and `escapevelocity.consulting/brand/brand-kit.zip` updates.
-
-**Anti-patterns to refuse.** Do not hardcode press copy, license text, or color values in the kit generators. If a value isn't in tokens/press/fonts already, add it there first.
-
-## Brand Site Architecture
-
-- **Engine:** 11ty (Nunjucks)
-- **Output URL prefix:** `/brand/` (via `pathPrefix` in `site/.eleventy.cjs`)
-- **Data-driven parts:** color swatches, font samples, nav — sourced from `tokens.json` via `site/_data/*.cjs`. Editing `tokens.ts` → running `build:tokens` → swatches automatically reflect the new palette.
-- **Hand-authored parts:** page narrative, typography scale table, component examples, voice rules, workflow docs.
-- **Standalone viewable:** `dist/site/` is self-contained (tokens.css, fonts/, assets/, previews/ all colocated). Serve at `/brand/` with any static server.
-
-## Document Templates
-
-`templates/*.html` are for **document generation** (PDFs and social PNGs) — not part of the Brand Site. They use Nunjucks variables (UPPERCASE: `CONTENT`, `RECIPIENT`, `DATE`, `FONTS_URI`, etc.) and inline all styles to work with Playwright's `file://` rendering.
-
-- **Base template:** `templates/_base.html` — `@font-face` declarations, reset
-- **Font loading:** `{{ FONTS_URI }}` resolves to `file://.../brand/fonts/` at render time (generators fall back to `../website/fonts/` if `brand/fonts/` is missing)
-
-## Generators
-
-### pdf.ts — Document Generator
-```bash
-npx tsx generators/pdf.ts <input.md> [options]
-  -o, --output <path>       Output PDF path
-  --type <letter|offer|invoice|tos>  (default: letter)
-  --to <string>             Recipient
-  --date <string>           Date (default: today)
-  --ref <string>            Reference number
-  --subject <string>        Subject (default: first H1)
-  --confidential            Add confidential label
-  --lang <de|en>            (default: de)
-  --template <path>         Direct template override
-  --debug                   Write .debug.html alongside PDF
-```
-
-### image.ts — Raster Export Generator
-```bash
-npx tsx generators/image.ts --input <file> --type <html|svg> -o <output.png>
-  --preset <og|linkedin-banner|linkedin-post|square>
-  --width <px> --height <px>    (alternative to --preset)
-```
-
-Presets: og=1200x630, linkedin-banner=1584x396, linkedin-post=1200x1200, square=1000x1000
-
-### presentation.ts — Slide Deck Generator
-```bash
-npx tsx generators/presentation.ts <input.md> [options]
-  -o, --output <path>      Output directory (default: ./<input-stem>)
-  --pdf                    Also produce <stem>.pdf
-  --png                    Also produce slides/slide-NN.png per slide
-  --ratio <16-9|4-3>       Aspect ratio (default: 16-9 → 1920×1080)
-  --theme <cream|black>    Default background (default: cream)
-  --title <string>         Deck title (default: first H1)
-  --debug                  Write debug.html (all slides vertical)
-```
-
-**Input format:** Markdown with `===` slide separators. Per-slide directives via HTML comment: `<!-- @type: title|section|content|two-col|quote|image|html -->`, `<!-- @bg: cream|black|terracotta -->`. Defaults to `content`. The `html` type passes raw HTML through (use for embedding components like `radar.js`). Two-col splits left/right on `:::`.
-
-**Outputs:** `<out>/index.html` (self-contained viewer with `components/` and `fonts/` copied alongside), optional `<stem>.pdf` and `slides/slide-NN.png`.
-
-**Viewer keys:** `← → / Space / PgUp / PgDn` navigate, `Home/End` jump, `F` fullscreen, `P` switch to print mode. Query params: `?slide=N` deep-link, `?print=1` flatten for PDF.
-
-## MCP Server
-
-The rendering core is exposed as an MCP server with two transports sharing the same tool surface:
-
-- **`src/mcp/server.ts`** — stdio entrypoint. Used for local dev (Claude Code spawns it as a subprocess).
-- **`src/mcp/server-http.ts`** — Streamable HTTP entrypoint. Used for remote deployment (containerized, behind a reverse proxy).
-
-Both call `src/mcp/shared/createServer.ts` to register the same 7 tools. They differ only in their `OutputSink`: stdio writes files to the caller's CWD; HTTP writes to an artifact store and returns signed download URLs.
-
-A single Chromium instance stays warm across calls (~600ms per render vs ~2–3s cold).
-
-### Tools (9)
-
-**Render** (both transports):
-
-| Tool | What it does |
-|------|--------------|
-| `render_template`     | Named template + Nunjucks vars (+ optional markdown body) → PNG or PDF. Output format driven by the template registry (`templates.meta.ts`). |
-| `render_html_to_png`  | Raw HTML string → 1 PNG. Generic primitive for ad-hoc designs / mutated templates. |
-| `render_html_to_pdf`  | Raw HTML string → 1 PDF. Playwright auto-paginates long HTML; supports A4/A3/Letter or custom `{width,height}` pixel dims. |
-| `render_slides`       | N pages → toggleable `{viewer, pdf, pngs}`. Two input modes: `markdown` (presentation-style with `===` separators) or `pages` (carousel-style explicit HTML/template per slide). On HTTP transport, multi-file output is grouped into a bundle (returns `bundleId`). Pass `persist: true` to publish in one step. |
-
-**Publishing** (HTTP transport only — see [§ Publishing](#publishing)):
-
-| Tool | What it does |
-|------|--------------|
-| `publish_artifact`    | Promote a bundleId from the ephemeral artifact store to the persistent published store. Returns the new published ID + stable URL. |
-| `unpublish_artifact`  | Remove a published item by ID. Idempotent. |
-| `list_published`      | List published items, optionally filtered by `type`. Same data as `GET /api/published`. |
-
-**Introspection** (both transports):
-
-| Tool | What it does |
-|------|--------------|
-| `list_templates`      | Returns the full template registry (output format, dims, required vars, tags) sourced from `templates.meta.ts`. Optional `tag` filter. |
-| `get_tokens`          | Parsed `tokens.json`. |
-
-### Tool response shape
-
-All render tools return a `WriteResult`-shaped output that's transport-aware:
-
-```jsonc
-// stdio (LocalOutputSink)
-{ "kind": "path", "path": "C:/.../letter.pdf", "filename": "letter.pdf", "bytes": 138779, "mime": "application/pdf" }
-
-// HTTP (RemoteOutputSink)
-{ "kind": "url",
-  "url": "https://mcp.escapevelocity.consulting/artifacts/<token>",
-  "filename": "letter.pdf",
-  "expiresAt": "2026-05-25T15:30:00Z",
-  "bytes": 138779, "mime": "application/pdf" }
-```
-
-Multi-output tools (`render_slides`) return nested objects of these (`{ viewer, pdf, pngs: [...] }`). `outputPath` is optional in both modes — local mode honors it (treated as the bundle root for multi-output), remote mode treats it as a filename hint for `Content-Disposition`.
-
-### Architecture
-
-- **`src/core/`** — pure-function rendering library. No `process.exit`, no CWD reads, no `console.log`. All FS lookups take an explicit `BrandPaths`. `BrowserPool` is the singleton chromium holder.
-- **`src/mcp/shared/createServer.ts`** — registers all 6 tools onto an `McpServer` given a `ServerContext` (paths + pool + outputSink).
-- **`src/core/render.ts`** — generic `renderHtmlToPng` + `renderHtmlToPdf` primitives. Both auto-inject `FONTS_URI` + `TOKENS_CSS` and use the shared `BrowserPool`. All higher-level render paths delegate here.
-- **`src/core/slides.ts`** — `renderSlides` multi-page orchestrator (markdown-deck mode + carousel-pages mode + output toggles).
-- **`templates.meta.ts`** (brand root) — template registry: each entry declares output format, dims, body slot, required vars, and tags. Single source of truth for `list_templates` + `render_template` dispatching.
-- **`src/mcp/shared/outputSinks.ts`** — `LocalOutputSink` (writeFileSync → path) and `RemoteOutputSink` (artifactStore.write → signed URL).
-- **`src/mcp/shared/artifactStore.ts`** — on-disk store + HMAC-signed token issuer (`signedToken.ts`) + periodic cleanup.
-- **`src/mcp/shared/bearerAuth.ts`** — constant-time bearer check (used by legacy fallback paths only — `jwtAuth.ts` handles `POST /mcp` today).
-- **`src/mcp/shared/jwtAuth.ts`** — JWT issuance + validation. Issues HS256 tokens via `issueAccessToken`; `authenticate()` verifies them, re-checks `sub` against the runtime allowlist, and falls back to the legacy static bearer when present. Logs every auth event.
-- **`src/mcp/shared/refreshTokenStore.ts`** — disk-backed refresh-token store at `<MCP_STATE_DIR>/refresh-tokens.json`. SHA-256-hashed at rest; `consume()` is atomic single-use (rotation). Persists across container restarts AND redeploys when `MCP_STATE_DIR` is wired to a host volume — see [§ Storage](#storage).
-- **`src/mcp/shared/sessionStore.ts`** — disk-backed session-ID store at `<MCP_STATE_DIR>/sessions.json`. Lets sessions survive container restarts and redeploys (when `MCP_STATE_DIR` is host-mounted). On boot, pre-creates `StreamableHTTPServerTransport` instances for every non-expired ID.
-- **`src/mcp/shared/logger.ts`** — structured key=value stderr logger. Used everywhere in `src/mcp/`. See [§ Diagnostic logging](#diagnostic-logging).
-- **`src/mcp/tools/*.ts`** — one file per tool. Each tool: Zod input schema → call core → `ctx.outputSink.write(buffer, opts)` → return result via `runTool` / `successResult`.
-- **`generators/*.ts`** — unchanged CLI behavior; thin shims importing from `src/core/`. Each constructs a local `BrowserPool`, runs once, closes.
-
-### Registering the MCP server
-
-One-time setup per workstation. **The skill assumes the escape-velocity-brand MCP server is registered.** Pick the option matching your client.
-
-#### Claude Desktop — OAuth via UI (recommended)
-
-1. Open **Settings → Connectors → Add custom connector**.
-2. Name: `escape-velocity-brand` (or whatever you prefer locally).
-3. Remote MCP server URL: `https://mcp.escapevelocity.consulting/mcp`
-4. Leave OAuth Client ID and Client Secret fields **blank** — Claude Desktop will self-register via Dynamic Client Registration (RFC 7591).
-5. Click **Add**. Claude Desktop will open a browser tab → Google login → consent → redirect back. The connector becomes available.
-
-Only emails in `MCP_ALLOWED_EMAILS` on the server can log in.
-
-#### Claude Code — OAuth (preferred)
-
-```bash
-claude mcp add --transport http escape-velocity-brand \
-  https://mcp.escapevelocity.consulting/mcp
-```
-
-(No bearer header needed — Claude Code's OAuth helper will discover the AS via the `WWW-Authenticate` response and walk the flow.)
-
-#### Claude Code — legacy static bearer (during OAuth transition)
-
-While `MCP_BEARER_TOKEN` is still active on the server (for the test runner), you can short-circuit with:
-
-```bash
-claude mcp add --transport http escape-velocity-brand \
-  https://mcp.escapevelocity.consulting/mcp \
-  --header "Authorization: Bearer $MCP_BEARER_TOKEN"
-```
-
-This will stop working once O5 removes the legacy bearer.
-
-#### Claude Code — local stdio (dev)
-
-For working against unpushed brand-repo changes:
-
-```json
-{
-  "mcpServers": {
-    "escape-velocity-brand": {
-      "command": "npx",
-      "args": ["tsx", "C:/Users/tommi/business/brand/src/mcp/server.ts"],
-      "env": { "BRAND_DIR": "C:/Users/tommi/business/brand" }
-    }
-  }
-}
-```
-
-For packaged use: `npm run build:mcp` → point at `node dist/src/mcp/server.js`.
-
-### Remote HTTP deployment
-
-`src/mcp/server-http.ts` is a native-Node HTTP server. Routes:
-
-| Route | Auth | Purpose |
-|-------|------|---------|
-| `POST /mcp` | `Authorization: Bearer <JWT-or-legacy-token>` | Streamable HTTP transport (stateful, per-session). |
-| `GET /artifacts/<token>` | signed URL only (HMAC + expiry encoded in token) | Download a rendered artifact. |
-| `GET /health` | none | Liveness probe (`{ "status": "ok" }`). |
-| `GET /.well-known/oauth-protected-resource` | none | RFC 9728 — points clients at the AS. |
-| `GET /.well-known/oauth-authorization-server` | none | RFC 8414 — AS metadata. |
-| `GET /authorize` | none | OAuth code-flow entrypoint. Redirects to Google for user login. |
-| `GET /oauth/google/callback` | none | Google calls back here; we mint our own auth code. |
-| `POST /token` | none (PKCE) | Exchange `grant_type=authorization_code` (auth-code grant) or `grant_type=refresh_token` (rotating refresh) for a JWT access token. |
-| `POST /register` | none | RFC 7591 Dynamic Client Registration. |
-
-#### OAuth (Google-delegated, embedded AS)
-
-The MCP server is **both** the OAuth 2.1 resource server AND the authorization server, but it **delegates the actual user-login step to Google**. Flow:
-
-1. Claude Desktop hits `GET /authorize` with PKCE challenge + Claude's `redirect_uri`.
-2. We redirect the browser to Google's OAuth (`accounts.google.com`).
-3. User signs into Google + consents.
-4. Google redirects to `GET /oauth/google/callback`.
-5. We exchange Google's code for an OIDC ID token, verify the signature against Google's JWKS, extract `email`, and check it against `MCP_ALLOWED_EMAILS`.
-6. If the email is allowed, we issue **our own** auth code and redirect the browser back to Claude's `redirect_uri`.
-7. Claude `POST /token`s with the code + PKCE verifier; we issue a **JWT** access token (HS256, signed with `MCP_JWT_SECRET`, 1h TTL) **plus a rotating refresh token** (opaque `rt_<32 bytes b64url>`, 30d TTL by default).
-8. Claude calls `POST /mcp` with the JWT. We verify the signature, audience, expiry, and re-check the `sub` email against the allowlist on every request.
-9. After ~1h the JWT expires. Claude silently `POST /token`s again with `grant_type=refresh_token`. We look up the refresh token by SHA-256 hash, atomically delete it (rotation = single-use), re-check the `sub` against the allowlist, then issue a fresh access token **and a fresh refresh token**. Claude transparently retries the failed `/mcp` request — the user sees no disconnect.
-
-**Rotation semantics.** Refresh tokens are one-time-use. Each refresh issues a fresh token; the old one is gone. If a consumed refresh token is presented again, it just looks unknown (the record was deleted on consume). The OAuth 2.1 family-revoke-on-reuse pattern is a future hardening — for now, the worst case is one client side-effect of "you'll be forced to re-OAuth," which is fine for a single-tenant server.
-
-Allowlist changes take effect on the next request OR the next refresh — no token revocation list needed.
-
-#### Storage
-
-The deployment platform runs three storage tiers. Knowing which is which avoids the disconnect we hit in May 2026 (sessions + refresh tokens were on tmpfs → every redeploy wiped them → clients forced to re-OAuth).
-
-| Tier | Example paths | Survives restart? | Survives redeploy? | Use for |
-|---|---|---|---|---|
-| **In-container (default)** | anywhere not mounted, e.g. `/app/cache` | ✅ | ❌ | nothing we care about across deploys |
-| **tmpfs `/tmp`** | `/tmp/brand-mcp` (artifacts) | ❌ | ❌ | scratch within one request; short-TTL artifacts that are designed to expire |
-| **Host-mounted volume** | `/app/published`, `/app/state` | ✅ | ✅ | anything we must hand off across deploys |
-
-The `VOLUME` directive in `Dockerfile` is **not** sufficient — it creates an anonymous Docker volume that disappears on container recreation. Persistence only works when the sysadmin wires a host bind mount in `deploy-service brand-mcp` (or wherever the container is launched).
-
-**What lives where in prod:**
-
-| Env var | Container path | Tier | What's inside |
-|---|---|---|---|
-| `MCP_TMP_DIR` | `/tmp/brand-mcp` | tmpfs | Artifact files (PNG/PDF outputs) + bundle manifests. 1h TTL by design — fine to lose on redeploy. |
-| `MCP_STATE_DIR` | `/app/state` | host volume | `sessions.json` + `refresh-tokens.json`. Must survive redeploys so clients don't re-OAuth. |
-| `MCP_PUBLISHED_DIR` | `/app/published` | host volume | Promoted bundles served at stable `/api/published/<id>` URLs. |
-
-**Adding a new persistent path:** before writing any data, ask: must this survive a redeploy? If yes, request a new mount from the sysadmin with the in-container path and the env var you'll read. They wire the bind mount + chown to match the container UID. Don't rely on `VOLUME` in the Dockerfile.
-
-#### Env vars (set on the deployment platform)
-
-| Variable | Required | Default | Purpose |
-|----------|----------|---------|---------|
-| `BRAND_DIR` | yes | — | Absolute path to the brand repo root inside the container. |
-| `MCP_SIGNING_SECRET` | yes | — | HMAC secret for artifact URLs. |
-| `MCP_PUBLIC_BASE_URL` | yes | — | e.g. `https://mcp.escapevelocity.consulting`. Used as JWT iss/aud and for signed-URL building. |
-| `MCP_JWT_SECRET` | yes (for OAuth) | — | HS256 secret for `/mcp` access tokens. Distinct from signing secret. |
-| `MCP_OAUTH_GOOGLE_CLIENT_ID` | yes (for OAuth) | — | Google Cloud OAuth 2.0 Web Application client ID. |
-| `MCP_OAUTH_GOOGLE_CLIENT_SECRET` | yes (for OAuth) | — | Matching client secret from Google Cloud. |
-| `MCP_ALLOWED_EMAILS` | yes (for OAuth) | — | Comma-separated lowercase emails permitted to authenticate. Re-checked on every request. |
-| `MCP_BEARER_TOKEN` | no (legacy / tests) | — | Legacy static bearer for the E2E test runner. Will be removed once OAuth E2E is in place. One of `MCP_JWT_SECRET` or `MCP_BEARER_TOKEN` must be set. |
-| `MCP_PORT` | no | `8080` | Listen port. |
-| `MCP_BIND_HOST` | no | `0.0.0.0` | Listen host. |
-| `MCP_TMP_DIR` | no | `<os.tmpdir>/brand-mcp` | **Ephemeral** artifact store directory (also where bundle manifests live, same TTL). Fine on tmpfs — outputs have 1h TTL by design. |
-| `MCP_STATE_DIR` | no | falls back to `MCP_TMP_DIR` | **Persistent** state directory for `sessions.json` + `refresh-tokens.json`. **Mount a host volume here in production** or sessions and refresh tokens are wiped on every redeploy → clients are forced to re-OAuth. See [§ Storage](#storage). |
-| `MCP_PUBLISHED_DIR` | no | `<os.tmpdir>/brand-mcp-published` (container default: `/app/published`) | **Persistent** published-items directory. **Mount a host volume here in production** — see [§ Publishing](#publishing). |
-| `MCP_ARTIFACT_TTL_SECONDS` | no | `3600` | Signed-URL TTL. |
-| `MCP_CLEANUP_INTERVAL_SECONDS` | no | `300` | Cleanup-loop cadence. |
-| `MCP_ALLOWED_ORIGINS` | no | (empty) | Optional comma-separated browser-Origin allowlist (DNS-rebinding defense). |
-| `MCP_REFRESH_TOKEN_TTL_SECONDS` | no | `2592000` (30 days) | Refresh-token lifetime. Drop lower if you want clients to re-auth more often. |
-| `MCP_LOG_IP` | no | `none` | Controls client-IP logging. `none` = drop IPs (DSGVO-safe default), `truncated` = /16 for IPv4 + /48 for IPv6, `full` = log as-is (opt-in only). |
-
-#### Google Cloud setup
-
-1. Console → APIs & Services → Credentials → **Create OAuth 2.0 Client ID** (type: Web application).
-2. Authorized redirect URI: `https://mcp.escapevelocity.consulting/oauth/google/callback`
-3. Copy the **Client ID** and **Client Secret** → admin sets them as `MCP_OAUTH_GOOGLE_CLIENT_ID` and `MCP_OAUTH_GOOGLE_CLIENT_SECRET` on the container.
-4. Add the owner's email to `MCP_ALLOWED_EMAILS` (comma-separated, lowercase).
-
-#### Container
-
-`Dockerfile` is multi-stage on `mcr.microsoft.com/playwright:v1.50.0-jammy`. Build context excludes everything in `.dockerignore` (tests, site, kit sources, etc.). Image runs as non-root user `appuser`, exposes 8080, includes a HEALTHCHECK on `/health`. `CMD ["node", "dist/src/mcp/server-http.js"]`.
-
-#### Deploy
-
-`.github/workflows/deploy-mcp.yml` triggers on `push` to main when MCP-relevant paths change. Pipeline:
-
-1. **build & push** — Docker build, pushed to `ghcr.io/escape-velocity-consulting/brand-mcp` with tags `:main`, `:prod`, `:sha-<short>`.
-2. **deploy** — gated by repo variable `MCP_DEPLOY_ENABLED == "true"`. SSHes via IAP to the GCP VM and runs `sudo /usr/local/bin/deploy-service brand-mcp` (admin's script). Needs `GCP_SA_KEY` secret.
-
-CVE scanning is **client-side only** (pre-push hook — see [Local Trivy check](#local-trivy-check)). The workflow no longer runs Trivy.
-
-To enable deploy: set repo variable `MCP_DEPLOY_ENABLED` = `true` (Settings → Variables → Actions) once the admin has provisioned the service.
-
-(For client-side registration commands, see [§ Registering the MCP server](#registering-the-mcp-server) above.)
-
-### Diagnostic logging
-
-All MCP-HTTP events are logged to **stderr** in a structured key=value format. The prefix is always `[escape-velocity-brand MCP/http]`; the rest is a sequence of `key=value` pairs. Strings containing whitespace or `=` are double-quoted. Designed for `grep`, not `jq`.
+| `build:mcp` | `tsc -p tsconfig.mcp.json` | Compile MCP server + core to `dist/` |
+| `pdf` | `tsx generators/pdf.ts` | Branded PDF from Markdown |
+| `image` | `tsx generators/image.ts` | PNG from HTML/SVG |
+| `carousel` | `tsx generators/carousel.ts` | LinkedIn carousel from JSON spec |
+| `pres` | `tsx generators/presentation.ts` | Slide deck (HTML viewer + PDF + PNGs) from Markdown |
+| `mcp` | `tsx src/mcp/server.ts` | Run the escape-velocity-brand MCP server on stdio |
+| `test:mcp` | `tsx tests/mcp/run.ts` | E2E suite against the MCP server (stdio). Report at `tests/mcp/report/index.html` |
+| `test:mcp:http` | `tsx tests/mcp/run-http.ts` | E2E suite against the HTTP server |
+| `test:unit` | `tsx tests/unit/run.ts` | Unit tests for `signedToken`, `artifactStore`, `bearerAuth`, `refreshTokenStore` |
+| `export` | alias of `build:assets` | Kept for muscle memory |
+
+### Repository layout
 
 ```
-[escape-velocity-brand MCP/http] evt=oauth_token_issued sub=tommi.enenkel@gmail.com client_id=cli_abcd… expires_in_s=3600 refresh_token_issued=true
-[escape-velocity-brand MCP/http] evt=auth_ok sub=tommi.enenkel@gmail.com legacy=false exp=1735678800 ttl_remaining_s=3559 path=/mcp
-[escape-velocity-brand MCP/http] evt=jwt_reject reason=verify_failed err="\"exp\" claim timestamp check failed" sub_claimed=tommi.enenkel@gmail.com exp_claimed=1735675200 expired=true path=/mcp
+brand/
+├── BRAND_SPEC.md             ← canonical spec (contract; rarely changes)
+├── CLAUDE.md                 ← this file (rules + nav hub)
+├── BRAND_SKILL.md            ← skill sidecar (token table + CSS vars + layout patterns); shipped in the .skill as references/brand-reference.md
+├── VARIANTS.md               ← variant tracking registry
+├── README.md                 ← project entry point
+├── docs/                     ← operational documentation by topic
+│   ├── README.md             ← docs index + lookup tables
+│   ├── architecture.md       ← system diagram + layer model
+│   ├── rules.md              ← all 5 rules in full
+│   ├── mcp-server.md
+│   ├── publishing.md
+│   ├── templates.md
+│   ├── generators.md
+│   ├── brand-site.md
+│   ├── brand-kit.md
+│   ├── skill.md
+│   ├── testing.md
+│   ├── deployment.md
+│   ├── troubleshooting.md
+│   └── glossary.md
+├── templates.meta.ts         ← template registry (output / dims / required vars / prompts / tags)
+├── tokens.ts                 ← token source of truth
+├── tokens.css                ← generated by build:tokens
+├── tokens.json               ← generated by build:tokens (gitignored)
+├── tsconfig.json
+├── package.json
+├── generate_qr.py            ← legacy Python QR generator
+├── SpaceGrotesk.ttf          ← font for generate_qr.py only
+├── fonts/                    ← woff2 fonts (canonical home)
+│   └── LICENSES/             ← OFL + per-family copyrights
+├── press/                    ← canonical press copy
+│   ├── boilerplate.md
+│   ├── LICENSE.txt
+│   └── photos/
+├── assets/
+│   ├── logos/                ← SVG sources
+│   ├── raster/               ← generated PNGs (multi-size)
+│   └── qr/                   ← generated QR codes
+├── previews/                 ← document PDFs + preview PNGs + showcase decks
+├── components/               ← portable JS for HTML slides (e.g. radar.js)
+├── generators/               ← pdf.ts, image.ts, carousel.ts, presentation.ts (CLI shims)
+├── src/
+│   ├── core/                 ← pure-function rendering library
+│   └── mcp/                  ← stdio + HTTP MCP server
+├── tests/
+│   └── mcp/                  ← JSON-fixture E2E suite
+├── templates/                ← document/social/carousel/presentation templates
+├── skill/escape-velocity-brand/  ← deployed skill source
+├── site/                     ← Brand Site source (11ty)
+├── web/                      ← Brand Kit web-bundle authored sources
+├── dist/                     ← Brand Distribution (gitignored)
+└── scripts/                  ← build + export + deploy-helper scripts
 ```
 
-**Read logs from production:**
+---
 
-```bash
-gcloud compute ssh web-server --zone=us-central1-a --tunnel-through-iap \
-  --command="sudo /usr/local/bin/service-logs brand-mcp 500" \
-  --configuration=brand-mcp
-```
+## Adding a new capability — quick checklist
 
-(Setup for the gcloud configuration is in `business/CLAUDE.md` § Server Access — Brand MCP.)
+1. **Read the relevant rule** in [docs/rules.md](docs/rules.md). Most changes touch Spec-First, Doc-Sync, and one of Token-Sourcing / Brand-Site Coverage.
+2. **Check the spec** — if the change updates a contract, update [`BRAND_SPEC.md`](BRAND_SPEC.md) first (with explicit user approval per Spec-First Rule).
+3. **Implement** — code in the right layer (rendering logic → `src/core/`, MCP tool → `src/mcp/tools/`, template → `templates/` + `templates.meta.ts`).
+4. **Update docs** — the topic doc in [`docs/`](docs/), this CLAUDE.md if the nav table needs a new row, skill source + `npm run build:skill` if user-facing.
+5. **Watch CI** — per the CI Monitoring Rule, every push touching MCP-relevant paths needs `gh run watch`.
 
-#### Event vocabulary
+---
 
-| Subsystem | `evt=` | Key fields | When |
-|---|---|---|---|
-| Startup | `startup` | `host`, `port`, `brand_dir`, `store_dir`, `jwt`, `legacy_bearer`, `oauth`, `allowlist_emails`, `refresh_ttl_s`, `log_ip`, `artifact_files`, `artifact_bytes` | HTTP listener bound. |
-| Startup | `shutdown` | `signal` | SIGINT / SIGTERM received. |
-| Sessions | `session_create` | `sid`, `total_sessions` | New session initialized via `/mcp` POST init. |
-| Sessions | `session_close` | `sid`, `total_sessions` | Transport closed (client DELETE or remote disconnect). |
-| Sessions | `session_restore` | `sid` | Persisted session re-created at boot. |
-| Sessions | `session_restore_fail` | `sid`, `err` | Pre-create on boot threw. |
-| Sessions | `startup_sessions_restored` | `count` | Summary at boot. |
-| Sessions | `session_prune` | `pruned`, `live` | Expired session records dropped from disk. |
-| Sessions | `session_persist_fail` | `err`, `file` | Writing sessions.json failed. |
-| Sessions | `session_delete_request` | `sid`, `email` | Client DELETE `/mcp`. |
-| Auth | `auth_missing` | `path`, `method`, `ua`, `ip` | No `Authorization` header. |
-| Auth | `auth_ok` | `sub`, `legacy`, `exp`, `ttl_remaining_s`, `path`, `ip` | JWT or legacy bearer accepted. |
-| Auth | `jwt_reject` | `reason=<missing_sub\|allowlist_miss\|verify_failed>`, `err`, `sub_claimed`, `exp_claimed`, **`expired`**, `path`, `ua`, `ip` | JWT failed. `expired=true` is the smoking gun for the 1h-TTL hypothesis. |
-| Auth | `auth_reject` | `reason=unknown_token`, `looked_like_jwt`, `path`, `ua`, `ip` | Bearer present but not a JWT and not the legacy token. |
-| Auth | `jwt_issue` | `sub`, `ttl_s`, `exp` | Access token minted. |
-| OAuth | `oauth_authorize` | `flow_id`, `client_id`, `redirect_uri_host` | `/authorize` accepted; redirecting to Google. |
-| OAuth | `oauth_authorize_reject` | `reason=<bad_response_type\|missing_client_id\|missing_redirect_uri\|missing_pkce\|bad_pkce_method\|unknown_client\|redirect_uri_mismatch>`, `client_id` | `/authorize` validation failed. |
-| OAuth | `oauth_callback_reject` | `reason=<google_returned_error\|missing_code_or_state\|flow_unknown_or_expired\|google_token_exchange_failed\|google_no_id_token\|google_idtoken_invalid\|missing_email\|email_unverified\|allowlist_miss>`, …context | `/oauth/google/callback` failed. |
-| OAuth | `oauth_code_issued` | `sub`, `flow_id`, `code`, `ttl_s` | Our short-lived auth code minted. |
-| OAuth | `oauth_token_reject` | `reason=<unsupported_grant_type\|invalid_request\|unknown_code\|expired\|redirect_uri_mismatch\|client_id_mismatch\|pkce_fail>`, `grant`, `code`, `sub` | `/token` rejected. |
-| OAuth | `oauth_token_issued` | `sub`, `client_id`, `expires_in_s`, `refresh_token_issued`, `grant?` | Access token returned. |
-| OAuth | `oauth_client_registered` | `client_id`, `client_name`, `redirect_uris_count` | DCR client registered via `/register`. |
-| Refresh | `refresh_issue` | `sub`, `rt_id`, `ttl_s` | Refresh token issued (alongside an access token). |
-| Refresh | `refresh_consume_ok` | `sub`, `old_rt_id`, `new_rt_id` | Refresh accepted; rotated. |
-| Refresh | `refresh_consume_reject` | `reason=<unknown_or_expired\|allowlist_miss>`, `sub`, `rt_claimed_id` | Refresh denied. |
-| Refresh | `refresh_prune` | `pruned`, `live` | Expired refresh tokens dropped from disk on boot. |
-| HTTP | `mcp_request` | `sid`, `email`, `is_init` | POST `/mcp` routed. |
-| HTTP | `mcp_stream_open` | `sid`, `email` | GET `/mcp` SSE stream opened. |
-| HTTP | `mcp_session_404` | `sid_claimed`, `had_header`, `email`, `verb`, `is_init?` | Client presented stale or missing session ID. **Second key diagnostic** — fires even when the JWT is fresh. |
-| HTTP | `http_404` / `http_405` / `http_500` | `path`, `method`, `err?` | Generic failures. |
-| HTTP | `artifact_404` | `token`, `reason` | `/artifacts/<token>` lookup failed. |
+## See also
 
-#### Redaction rules
-
-- **Never logged:** raw tokens (access, refresh, auth code), `Authorization` headers, client secrets, Google ID tokens, `Error.stack` (file paths leak).
-- **`sub` (email) IS logged.** It's the join key for tracing one client through the OAuth flow + JWT validation + session lifecycle. Single-tenant server today — internal data only.
-- **Opaque IDs truncated to 8 chars + `…`** (session IDs, OAuth flow IDs, auth codes, refresh-token hashes). Enough to correlate within a log window, not enough to replay.
-- **IPs default OFF** (`MCP_LOG_IP=none`). Opt-in to `truncated` (/16 IPv4, /48 IPv6) or `full`.
-- **User-Agent truncated to 80 chars.**
-
-#### Example: healthy OAuth + first /mcp call
-
-```
-[escape-velocity-brand MCP/http] evt=oauth_authorize flow_id=a1b2c3d4… client_id=cli_xyz1… redirect_uri_host=claude.ai
-[escape-velocity-brand MCP/http] evt=oauth_code_issued sub=tommi.enenkel@gmail.com flow_id=a1b2c3d4… code=q9w8e7r6… ttl_s=60
-[escape-velocity-brand MCP/http] evt=jwt_issue sub=tommi.enenkel@gmail.com ttl_s=3600 exp=1735682400
-[escape-velocity-brand MCP/http] evt=refresh_issue sub=tommi.enenkel@gmail.com rt_id=h4a5s6h7… ttl_s=2592000
-[escape-velocity-brand MCP/http] evt=oauth_token_issued sub=tommi.enenkel@gmail.com client_id=cli_xyz1… expires_in_s=3600 refresh_token_issued=true
-[escape-velocity-brand MCP/http] evt=auth_ok sub=tommi.enenkel@gmail.com legacy=false exp=1735682400 ttl_remaining_s=3598 path=/mcp
-[escape-velocity-brand MCP/http] evt=mcp_request email=tommi.enenkel@gmail.com is_init=true
-[escape-velocity-brand MCP/http] evt=session_create sid=af020fb6… total_sessions=1
-```
-
-#### Example: expired-token + silent refresh
-
-```
-[escape-velocity-brand MCP/http] evt=jwt_reject reason=verify_failed err="\"exp\" claim timestamp check failed" sub_claimed=tommi.enenkel@gmail.com exp_claimed=1735678800 expired=true path=/mcp
-[escape-velocity-brand MCP/http] evt=refresh_consume_ok sub=tommi.enenkel@gmail.com old_rt_id=h4a5s6h7… new_rt_id=k1l2m3n4…
-[escape-velocity-brand MCP/http] evt=refresh_issue sub=tommi.enenkel@gmail.com rt_id=k1l2m3n4… ttl_s=2592000
-[escape-velocity-brand MCP/http] evt=jwt_issue sub=tommi.enenkel@gmail.com ttl_s=3600 exp=1735686000
-[escape-velocity-brand MCP/http] evt=oauth_token_issued sub=tommi.enenkel@gmail.com client_id=cli_xyz1… expires_in_s=3600 refresh_token_issued=true grant=refresh_token
-[escape-velocity-brand MCP/http] evt=auth_ok sub=tommi.enenkel@gmail.com legacy=false exp=1735686000 ttl_remaining_s=3599 path=/mcp
-```
-
-If you see `jwt_reject expired=true` without a subsequent `refresh_consume_ok` (or with `refresh_consume_reject`), the client never tried to refresh — that's the broken case to debug.
-
-### Tests
-
-Two suites — same JSON fixtures, two transports:
-
-- **`npm run test:mcp`** — spawns `src/mcp/server.ts` via stdio. ~6s. Report at `tests/mcp/report/index.html`.
-- **`npm run test:mcp:http`** — spawns `src/mcp/server-http.ts` on a free port with test secrets, connects via `StreamableHTTPClientTransport`, downloads every signed URL into `tests/mcp/report-http/artifacts/`. ~6s. Report at `tests/mcp/report-http/index.html`.
-- **`npm run test:unit`** — unit tests for `signedToken`, `artifactStore`, `bearerAuth`, and `refreshTokenStore` (issue/consume/rotate/revoke/prune + disk-persistence + hash-not-raw-token-at-rest).
-
-Run the HTTP suite against an already-running server (e.g. production):
-
-```bash
-MCP_HTTP_URL=https://mcp.escapevelocity.consulting/mcp \
-MCP_HTTP_BEARER_TOKEN=<prod token> \
-  npm run test:mcp:http
-```
-
-Add a test: drop a JSON file in `tests/mcp/fixtures/` matching the schema in `tests/mcp/README.md`.
-
-### Status
-
-The skill bundled at `skill/escape-velocity-brand/` is **not** updated yet to call the MCP tools — that's a separate follow-up. Until then the skill (stdio) and the MCP server (stdio + HTTP) are parallel paths into the same core.
-
-## Publishing
-
-The brand MCP server has two output paths for rendered files:
-
-1. **Ephemeral artifact store** (default). Every render writes through `RemoteOutputSink` → `ArtifactStore`. Each file gets an HMAC-signed download URL with a **1h TTL**. Designed for "show me the render, I'll decide what to do with it" — fine for previews, drafts, throwaway one-offs.
-2. **Persistent published store** (opt-in). The `publish_artifact` tool copies a freshly-rendered *bundle* (deck = viewer + PDF + per-slide PNGs; carousel = PDF + PNGs; etc.) into a host-mounted persistent directory. Published items get a stable URL, no expiry, and surface on the Brand Site at `/brand/decks/` (and eventually other type sections).
-
-### Why two paths
-
-Conversation-driven renders should evaporate by default — the user explicitly opts something into permanence. This avoids the failure mode where every test render clutters the public site, while keeping the publish step trivial ("publish this", or `persist: true` on the render call).
-
-### Bundle abstraction
-
-Render tools that produce more than one file (today: `render_slides`) wrap their writes in a *bundle scope* on the OutputSink. At end-of-scope a manifest (`<bundleId>.bundle.json`) is written into the artifact store with the same TTL as the artifacts it references. The render response includes `bundleId` — that's the handle the user references for `publish_artifact`.
-
-If the bundle's TTL expires before publish, the publish call fails loudly. Re-render and try again.
-
-### Tool surface
-
-```
-publish_artifact({ bundleId, title?, type? })
-  → moves an ephemeral bundle into MCP_PUBLISHED_DIR/<id>/
-  → returns { id, type, title, publishedAt, primaryUrl, thumbnailUrl, files }
-
-unpublish_artifact({ id })
-  → removes MCP_PUBLISHED_DIR/<id>/  (idempotent)
-  → returns { id, removed }
-
-list_published({ type? })
-  → reads meta.json from every subdir of MCP_PUBLISHED_DIR
-  → returns { items, count } sorted by publishedAt desc
-
-render_slides({ ..., persist: true })
-  → renders + publishes in one step
-  → response includes both the per-file URLs (ephemeral) AND the `published` field (stable)
-```
-
-### REST routes (public, no auth)
-
-| Route | Purpose |
-|-------|---------|
-| `GET /api/published[?type=<bundle-type>]` | List published items. CORS: `*`. |
-| `GET /api/published/<id>` | Single item metadata. |
-| `GET /published/<id>/<relativeName>` | Serve a published file (path-traversal guarded). |
-
-Published data is public by design — no auth on the read side. Auth lives on the *write* side (the MCP tools require the same OAuth allowlist as render).
-
-### Storage layout
-
-```
-<MCP_PUBLISHED_DIR>/
-  <id>/                     ← ~10-char base64 ID
-    meta.json               ← serialized PublishedItem (no URLs — computed at read time from publicBaseUrl)
-    index.html              ← (deck) the viewer
-    <slug>.pdf              ← the PDF
-    slides/slide-01.png     ← per-slide PNGs (deck)
-    ...
-```
-
-### Brand Site integration
-
-`/brand/decks/` is a client-side-fetched page: on load it `fetch`es `https://mcp.escapevelocity.consulting/api/published?type=deck` and renders cards. Updates appear immediately on refresh — no site rebuild needed. Each card shows:
-
-- The short ID as a copy-to-clipboard chip (user references it in chat for `unpublish_artifact`)
-- The publish timestamp
-- A 4-up thumbnail strip from `slides/slide-01.png` … `slide-04.png`
-- "Open Viewer" + "Download PDF" actions
-
-If the MCP is unreachable the page shows an empty state with the error. The website's Caddyfile must include `mcp.escapevelocity.consulting` in `connect-src` and `img-src` CSP directives.
-
-### Infrastructure dependency — REQUIRED before publishing survives a redeploy
-
-The default `MCP_PUBLISHED_DIR` inside the container is `/app/published`, which is **container-ephemeral**. To persist published items across container restarts the admin's `deploy-service brand-mcp` script must mount a host directory there:
-
-```bash
-docker run -v /data/brand-mcp-published:/app/published \
-           -e MCP_PUBLISHED_DIR=/app/published \
-           ... ghcr.io/escape-velocity-consulting/brand-mcp:prod
-```
-
-The host directory needs to be owned by the container's `appuser` UID (or world-writable, less ideal). The `Dockerfile` declares `VOLUME ["/app/published"]` to document the contract.
-
-Until the host volume is mounted, published items still work *during* the container's lifetime — they just disappear on redeploy. Document this clearly to the user when shipping the feature.
-
-### Anti-patterns
-
-- ❌ Embedding URLs in `meta.json`. The `publicBaseUrl` can change (dev vs prod); compute URLs at read time via `publishedItemToApi`.
-- ❌ Adding new artifact-bearing routes without CORS headers. The Brand Site fetches cross-origin.
-- ❌ Publishing single-file outputs without going through `beginBundle/endBundle`. The publish flow expects a bundle manifest; one-file renders must still create a one-entry bundle. (V1 only wires this for `render_slides`. Other render tools' `persist: true` is a follow-up.)
-
-### Local Trivy check
-
-CVE scanning runs **client-side** via a `pre-push` hook on the brand repo. CI no longer runs Trivy — if you can push, the scan has either passed or been explicitly skipped.
-
-**Run manually:** `npm run scan:fs` — invokes `trivy fs` with the same severity (`HIGH,CRITICAL`), `--ignore-unfixed`, and `.trivyignore` settings the workflow used to use.
-
-**Hook wiring:** `simple-git-hooks` (declared in `package.json`) installs `scripts/hooks/pre-push.sh` into `.git/hooks/` on `npm install` via the `prepare` script. The hook:
-- Detects MCP-relevant changes in the pushed range (same path globs as `deploy-mcp.yml` triggers); skips silently otherwise.
-- Calls `scripts/hooks/trivy-fs.sh` which exits 1 on findings.
-- Honors `SKIP_TRIVY=1` env var as an escape hatch (prints a warning).
-- Fails with an install hint if `trivy` is missing — `scoop install trivy` or `winget install AquaSecurity.Trivy`.
-
-**Tradeoff:** `trivy fs` scans dependencies (`package-lock.json`), not the built image. Base-image CVEs from `mcr.microsoft.com/playwright:v1.50.0-jammy` are not covered. **When bumping the Playwright base in `Dockerfile`, manually run `trivy image` against a local build** (requires Docker) or accept the risk and rely on monitoring after deploy.
-
-## Adding or Modifying a Template
-
-The whole template surface — the `render_template` MCP tool, `list_templates`, the skill's catalog + routing map, the Brand Site showcase — derives from **two files**:
-
-1. `templates/<key>.html` — the template itself
-2. `templates.meta.ts` — the registry entry (output, dims, vars, **prompts**, tags)
-
-Edit those two files, run `npm run build:skill`, and every downstream surface picks it up automatically. The propagation chain is:
-
-```
-templates.meta.ts (+ templates/<key>.html)
-       │
-       ├─→ MCP tools (live import — listTemplates.ts, renderTemplate.ts)
-       │
-       ├─→ Skill catalog + routing  (auto-regenerated by scripts/build-skill-catalog.ts
-       │                              into skill/escape-velocity-brand/SKILL.md
-       │                              every time build:skill runs)
-       │
-       └─→ Brand Site /brand/social  (auto-discovered from templates/social/*.html
-                                       via site/_data/social.cjs filesystem scan)
-```
-
-**Never hand-edit SKILL.md to reference templates** — the catalog + routing blocks are between `AUTO-GENERATED:CATALOG` / `AUTO-GENERATED:ROUTING` markers and get rewritten on every build. Edit the registry instead.
-
-### Adding a new template — step by step
-
-1. **Create `templates/<key>.html`.** Source tokens via `{{ TOKENS_CSS | safe }}` (mandatory — see [§ Token-Sourcing Rule](#token-sourcing-rule)). Use Nunjucks vars (UPPERCASE convention: `HEADLINE`, `BODY`, etc.). Pattern-match an existing template — `templates/social/announcement.html` is a good reference for content-flexible PNG templates.
-
-2. **Register in `templates.meta.ts`.** Add an entry keyed by the path (without `.html`):
-
-   ```typescript
-   'social/linkedin-post-portrait': {
-     output: 'png',
-     description: 'LinkedIn portrait feed post (1080×1350). Content-flexible: eyebrow + headline + body + CTA.',
-     dims: { width: 1080, height: 1350 },
-     optional: ['EYEBROW', 'HEADLINE', 'BODY', 'CTA'],
-     tags: ['social', 'linkedin', 'feed-post'],
-     prompts: ['LinkedIn post', 'LinkedIn shareable', 'LinkedIn portrait', /* ... */],
-   },
-   ```
-
-   **`prompts` is the single most common omission.** Without it the template is invisible to the skill's routing map — the LLM won't know to choose it, and the regression we just diagnosed (custom HTML when a template existed) recurs.
-
-3. **Run `npm run build:skill`.** This regenerates the catalog + routing blocks in SKILL.md from the registry (via `scripts/build-skill-catalog.ts`), then packages the `.skill` zip. Commit the resulting SKILL.md diff alongside your registry change — the diff is the proof that propagation worked.
-
-4. **Add Brand Site coverage.** Per the [§ Brand Site Coverage Rule](#brand-site-coverage-rule), every new template MUST appear on the Brand Site. For social templates: add a `SOCIAL_META` entry (title / size / cmd copy) to `site/_data/social.cjs` keyed by the template slug. The `.njk` page auto-discovers via filesystem scan, and `SOCIAL_META` provides the human-readable metadata. Then run `npm run build:assets` to regenerate the showcase raster into `assets/raster/<slug>.png` (or `<slug>-sample.png`).
-
-5. **Smoke test.** Render a sample via the CLI shim:
-   ```bash
-   npx tsx generators/image.ts --input templates/social/<key>.html --type html --width <w> --height <h> --var "HEADLINE=Test" -o /tmp/test.png
-   ```
-   Inspect the PNG. Or add a fixture to `tests/mcp/fixtures/` and run `npm run test:mcp`.
-
-### Modifying an existing template
-
-- Visual change → edit `templates/<key>.html`. No registry change needed.
-- New var, dimension change, new prompt phrasing the LLM should match on → edit `templates.meta.ts`, then `npm run build:skill`.
-
-### Anti-patterns
-
-- ❌ **Hand-editing SKILL.md** to add a template name or routing row. The next `build:skill` overwrites the marker blocks. Edit the registry; the skill picks it up automatically.
-- ❌ **Adding a template without `prompts`.** It will be callable via `render_template` (which still works by template key) but **invisible to the skill's routing table** — the LLM will fall back to custom HTML. This is exactly how the LinkedIn-post regression slipped in.
-- ❌ **Adding a template without Brand Site coverage.** Future humans (including you in 3 months) won't find it.
-- ❌ **Adding the same conceptual asset under multiple keys** (e.g. `social/linkedin-post` + `social/li-post-portrait`). Pick one canonical key per (output, dims, intent) tuple.
-
-## Skill Workflow
-
-The brand skill is packaged from `skill/escape-velocity-brand/`. **Never edit the deployed copy** at `.claude/skills/escape-velocity-brand/` — it gets overwritten on reinstall.
-
-**Phase 3 redesign:** the skill is now **thin guidance-only** (~8KB). It no longer ships generators, templates, fonts, tokens, or a `setup.sh` bootstrap. All rendering is delegated to the escape-velocity-brand MCP server (see [§ Registering the MCP server](#registering-the-mcp-server)). The skill teaches Claude the design system + routing logic; the MCP does the pixel work.
-
-**Bundle contents:**
-- `SKILL.md` — mental model, tool reference, routing decision tree, HTML authoring rules, examples
-- `references/brand-reference.md` — token table + design patterns (sourced from `BRAND_SKILL.md`)
-
-**Edit flow:** Edit source in `brand/` → `npm run build:skill` → reinstall the `.skill` file.
-
-| What changed | Edit | Then |
-|--------------|------|------|
-| Skill instructions | `skill/escape-velocity-brand/SKILL.md` | `npm run build:skill` → reinstall |
-| Brand reference sidecar | `BRAND_SKILL.md` | `npm run build:skill` (copied to `references/brand-reference.md` at staging) |
-
-**Graceful degradation:** the skill explicitly handles the "escape-velocity-brand not registered" case — Claude can still author on-brand HTML using token vars and hand it back to the user, who can register the MCP later for pixel-perfect rendering.
-
-## Legacy
-
-- `generate_qr.py` — Python QR generator. Still active. Will be replaced by `generators/qr.ts` in a future step.
-- `svg.ts` (infographic generator) — defined in spec §11.2, not yet implemented.
+- [`BRAND_SPEC.md`](BRAND_SPEC.md) — canonical contract (what the system is)
+- [`BRAND_SKILL.md`](BRAND_SKILL.md) — sidecar for the deployed skill (token table + CSS vars + layout patterns)
+- [`VARIANTS.md`](VARIANTS.md) — variant tracking registry
+- [`docs/`](docs/) — full operational documentation

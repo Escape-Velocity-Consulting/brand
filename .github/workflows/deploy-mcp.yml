@@ -57,7 +57,7 @@ jobs:
             type=sha,prefix=sha-,format=short
 
       # Vulnerability scanning runs client-side via the brand repo's pre-push
-      # hook (scripts/hooks/pre-push.sh → trivy fs). See brand/CLAUDE.md.
+      # hook (scripts/hooks/pre-push.sh → trivy fs). See brand/docs/deployment.md.
       - id: push
         name: Build and push to GHCR
         uses: docker/build-push-action@v5

@@ -51,7 +51,7 @@ import { SessionStore } from './shared/sessionStore.js'
  *   GET    /artifacts/:token — Download a rendered artifact. HMAC-signed URL.
  *   GET    /health           — Liveness probe.
  *
- * Environment variables: see brand/CLAUDE.md § MCP Server → Env vars.
+ * Environment variables: see brand/docs/mcp-server.md § Env vars.
  */
 function requireEnv(name: string): string {
   const v = process.env[name]
@@ -114,7 +114,7 @@ async function main() {
   // and restarts, otherwise clients are forced to re-OAuth every time we push
   // a new image. In prod this is a host-mounted volume; in dev/test it
   // defaults to storeDir (tmpfs is fine when we don't care about persistence).
-  // See brand/CLAUDE.md § Storage for the three-tier model.
+  // See brand/docs/deployment.md § Storage tiers for the three-tier model.
   const stateDir = process.env.MCP_STATE_DIR ?? storeDir
   const ttlSeconds = optEnvInt('MCP_ARTIFACT_TTL_SECONDS', 3600)
   const cleanupIntervalSeconds = optEnvInt('MCP_CLEANUP_INTERVAL_SECONDS', 300)

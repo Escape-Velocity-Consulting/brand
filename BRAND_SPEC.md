@@ -458,7 +458,7 @@ Three consumers wrap the core:
 
 1. **CLI shims** in `generators/{pdf,image,carousel,presentation}.ts` — parse argv, construct a local `BrowserPool`, call the core, write the buffer to disk, close. Behavior on the CLI is byte-identical to the pre-refactor version; the sections below remain the canonical CLI reference.
 2. **MCP stdio server** in `src/mcp/server.ts` — local subprocess entrypoint for Claude Code dev. Exposes the render + introspection tools with a single long-lived `BrowserPool` and a `LocalOutputSink` that writes files to the caller's CWD.
-3. **MCP HTTP server** in `src/mcp/server-http.ts` — remote/containerized entrypoint. Same render + introspection tools, plus the **publish-flow tools** (`publish_artifact`, `unpublish_artifact`, `list_published`) that require persistent storage. Same `BrowserPool`. `RemoteOutputSink` writes through `ArtifactStore` and returns HMAC-signed download URLs; a parallel `PublishedStore` handles persistent published items at unauthenticated stable URLs. Routes: `POST /mcp` (bearer/JWT-gated), `GET /artifacts/<token>` (HMAC-gated), `GET /published/<id>/<file>` + `GET /api/published[/<id>]` (public), `GET /health`. Containerized via `Dockerfile` (declares `VOLUME /app/published` for persistent published items), deployed via `.github/workflows/deploy-mcp.yml` to a GHCR image consumed by the server admin's GCP VM. See `brand/CLAUDE.md` § MCP Server + § Publishing for the full tool table, env-var contract, Claude Code registration, persistence semantics, and the JSON-fixture E2E suites at `tests/mcp/` (stdio + HTTP).
+3. **MCP HTTP server** in `src/mcp/server-http.ts` — remote/containerized entrypoint. Same render + introspection tools, plus the **publish-flow tools** (`publish_artifact`, `unpublish_artifact`, `list_published`) that require persistent storage. Same `BrowserPool`. `RemoteOutputSink` writes through `ArtifactStore` and returns HMAC-signed download URLs; a parallel `PublishedStore` handles persistent published items at unauthenticated stable URLs. Routes: `POST /mcp` (bearer/JWT-gated), `GET /artifacts/<token>` (HMAC-gated), `GET /published/<id>/<file>` + `GET /api/published[/<id>]` (public), `GET /health`. Containerized via `Dockerfile` (declares `VOLUME /app/published` for persistent published items), deployed via `.github/workflows/deploy-mcp.yml` to a GHCR image consumed by the server admin's GCP VM. See `brand/docs/mcp-server.md` + `brand/docs/publishing.md` for the full tool table, env-var contract, Claude Code registration, persistence semantics, and the JSON-fixture E2E suites at `tests/mcp/` (stdio + HTTP) — also documented in `brand/docs/testing.md`.
 
 All three share the same tool surface via `src/mcp/shared/createServer.ts`. The only per-transport difference is the injected `OutputSink` (and on HTTP, the additional `PublishedStore`). The publish-flow tools only register when `publishedStore` is present on `ServerContext`, so stdio mode silently omits them. When you add a new generator, do it in `src/core/` first, then add all three wrappers. Don't put render logic in `generators/*.ts` or in MCP tool files.
 
@@ -1009,16 +1009,18 @@ The Claude skill (`brand/BRAND_SKILL.md`) is a terse, agent-readable brief that 
 
 ## 17. Documentation
 
-The agent-facing surface has two layers (see `brand/CLAUDE.md` for the current operational reference; this section captures the principles).
+The agent-facing surface has multiple layers, each with a distinct audience and a distinct rate-of-change. The [Documentation-Sync Rule](../brand/docs/rules.md#documentation-sync-rule) requires keeping all relevant layers in sync on every system change.
 
 ### 17.1 Layers
 
-| Layer | File | Audience |
+| Layer | File / dir | Audience |
 |-------|------|----------|
+| **Spec** | `BRAND_SPEC.md` (this file) | Designers + maintainers: normative design rules, history, rationale. **Source of truth.** |
+| **Rules + nav hub** | `CLAUDE.md` | Agents picking up brand tasks: the 5 mandates + a "where to find what" table. Slim. |
+| **Operational docs** | `docs/*.md` | Anyone debugging, deploying, or extending the system: architecture, MCP server, publishing flow, templates, generators, Brand Site, Brand Kit, skill, testing, deployment, troubleshooting, glossary. |
 | **Skill** | `skill/escape-velocity-brand/SKILL.md` | Claude: workflow routing + tool reference. Thin guidance, ~8KB. |
 | **Brand reference** | `BRAND_SKILL.md` (shipped in the .skill as `references/brand-reference.md`) | Claude: token table, CSS vars, layout patterns, voice rules. Authoring reference only — no workflow. |
-| **Spec** | `BRAND_SPEC.md` (this file) | Designers + maintainers: normative design rules, history, rationale. |
-| **Operational** | `CLAUDE.md` | Repo maintainers: where things live, npm scripts, MCP tool surface, CI/CD, registration. |
+| **Automations** | `.github/workflows/*.yml`, `scripts/hooks/*.sh` | CI + pre-push hooks — declarative behavior; must stay in sync when path globs / triggers change. |
 
 The MCP `list_templates` + `get_tokens` tools are runtime sources — agents can query the live registry instead of reading static docs.
 
@@ -1179,7 +1181,7 @@ This runs `scripts/build-skill.sh` which:
 
 ### Phase 3 redesign (current)
 
-The skill **does not** ship generators, templates, fonts, tokens, or a `setup.sh` bootstrap. All rendering is delegated to the escape-velocity-brand MCP server (see §11 for the tool surface and `CLAUDE.md` for registration). The skill teaches the design system + routing; the MCP renders.
+The skill **does not** ship generators, templates, fonts, tokens, or a `setup.sh` bootstrap. All rendering is delegated to the escape-velocity-brand MCP server (see §11 for the tool surface and `docs/mcp-server.md` for registration). The skill teaches the design system + routing; the MCP renders. See `docs/skill.md` for the full skill workflow.
 
 ### Installation
 
@@ -1199,7 +1201,7 @@ Separate concerns: the **Brand Site** is reference documentation (consumed in-br
 
 ### Layout (inside the zip)
 
-This is the contract — what the kit must contain. For the derivation chain (which canonical source produces each entry), see `CLAUDE.md` § "Brand Kit Workflow" — that table is the single source of truth and `scripts/build-kit.ts` is its authoritative implementation.
+This is the contract — what the kit must contain. For the derivation chain (which canonical source produces each entry), see `docs/brand-kit.md` § Source-of-truth chain — that table is the single source of truth and `scripts/build-kit.ts` is its authoritative implementation.
 
 ```
 escape-velocity-brand-kit/
@@ -1239,7 +1241,7 @@ escape-velocity-brand-kit/
 
 ### Source-of-truth contract
 
-Every asset in the kit derives from an existing canonical source — never duplicated, never hardcoded. Adding a new asset class means: (1) add or identify the canonical source, (2) wire it in `scripts/build-kit.ts`, (3) update the table in `CLAUDE.md` § "Brand Kit Workflow". Never paste copy or values into the kit pipeline.
+Every asset in the kit derives from an existing canonical source — never duplicated, never hardcoded. Adding a new asset class means: (1) add or identify the canonical source, (2) wire it in `scripts/build-kit.ts`, (3) update the table in `docs/brand-kit.md` § Source-of-truth chain. Never paste copy or values into the kit pipeline.
 
 ### Build pipeline
 
