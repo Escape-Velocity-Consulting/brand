@@ -12,7 +12,7 @@
  *   MCP_HTTP_BEARER_TOKEN         — bearer for that server. Required with MCP_HTTP_URL.
  */
 import { spawn, type ChildProcess } from 'node:child_process'
-import { mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 import { randomBytes } from 'node:crypto'
 import { createServer } from 'node:net'
 import { dirname, resolve } from 'node:path'
@@ -26,6 +26,7 @@ import { writeReport, type CapturedResult } from './report.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const BRAND_DIR = resolve(__dirname, '..', '..')
 const FIXTURES_DIR = resolve(__dirname, 'fixtures')
+const FIXTURES_HTTP_DIR = resolve(__dirname, 'fixtures-http')
 const REPORT_DIR = resolve(__dirname, 'report-http')
 
 async function findFreePort(): Promise<number> {
@@ -104,7 +105,9 @@ async function main() {
   const args = process.argv.slice(2)
   const verbose = args.includes('--verbose') || args.includes('-v')
   const filter = args.find((a) => !a.startsWith('-'))
-  const fixtures = loadFixtures(FIXTURES_DIR, filter)
+  const sharedFixtures = loadFixtures(FIXTURES_DIR, filter)
+  const httpFixtures = existsSync(FIXTURES_HTTP_DIR) ? loadFixtures(FIXTURES_HTTP_DIR, filter) : []
+  const fixtures = [...sharedFixtures, ...httpFixtures]
   if (fixtures.length === 0) {
     console.error('No fixtures found.')
     process.exit(1)

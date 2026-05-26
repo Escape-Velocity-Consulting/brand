@@ -20,6 +20,8 @@ import { renderHtmlToPng, renderHtmlToPdf } from '../../core/render.js'
 import { GeneratorError } from '../../core/errors.js'
 import { TEMPLATE_REGISTRY, getTemplateMeta } from '../../../templates.meta.js'
 import { runTool, successResult } from '../shared/toolResult.js'
+import { publishedItemToApi } from '../shared/publishedApi.js'
+import type { BundleType } from '../shared/bundleStore.js'
 
 const RecipientSchema = z.object({
   name: z.string().optional(),
@@ -71,8 +73,24 @@ export function registerRenderTemplate(server: McpServer, ctx: ServerContext) {
       height: z.number().int().positive().optional().describe('Override the template\'s default height (PNG templates) or custom PDF page height in px.'),
       format: z.enum(['A4', 'A3', 'Letter', 'Legal']).optional().describe('Override page format for PDF templates. Width+height takes priority.'),
       outputPath: z.string().optional().describe('Local mode: output path. Remote mode: filename hint.'),
+      title: z.string().optional().describe('Title for the published artifact (remote mode with persist: true).'),
+      persist: z.boolean().optional().default(false).describe('Remote mode only: publish immediately and return a stable URL.'),
     },
   }, async (args) => runTool(async () => {
+    const openBundle = (type: BundleType, primaryFile: string, thumbnailFile?: string) => {
+      if (ctx.outputSink.kind !== 'remote') return ''
+      const bundleTitle = args.title ?? args.subject ?? args.template
+      return ctx.outputSink.beginBundle({ type, title: bundleTitle, primaryFile, thumbnailFile })
+    }
+    const closeAndPublish = (bundleId: string, type: BundleType) => {
+      if (bundleId) ctx.outputSink.endBundle()
+      if (args.persist && bundleId && ctx.publishedStore && ctx.publicBaseUrl) {
+        const item = ctx.publishedStore.publish(bundleId, { title: args.title ?? args.subject ?? args.template, type })
+        return publishedItemToApi(item, ctx.publicBaseUrl)
+      }
+      return undefined
+    }
+
     const meta = (() => {
       try { return getTemplateMeta(args.template) }
       catch (err) { throw new GeneratorError('UNKNOWN_TEMPLATE', (err as Error).message) }
@@ -109,12 +127,15 @@ export function registerRenderTemplate(server: McpServer, ctx: ServerContext) {
       )
 
       const suggested = `${basename(args.template)}.png`
+      const bundleId = openBundle('image', suggested, suggested)
       const result = await ctx.outputSink.write(buffer, {
         mime: 'image/png',
         suggestedName: suggested,
         requestedPath: args.outputPath,
+        bundleRelativeName: suggested,
       })
-      return successResult({ ...result, template: args.template, width, height })
+      const published = closeAndPublish(bundleId, 'image')
+      return successResult({ ...result, template: args.template, width, height, bundleId: bundleId || undefined, published })
     }
 
     // ── PDF templates ──────────────────────────────────────────────────────
@@ -166,16 +187,21 @@ export function registerRenderTemplate(server: McpServer, ctx: ServerContext) {
           pdfBuffer = Buffer.from(merged)
         }
 
+        const bundleId = openBundle('document', derivedFilename)
         const result = await ctx.outputSink.write(pdfBuffer, {
           mime: 'application/pdf',
           suggestedName: derivedFilename,
           requestedPath: args.outputPath,
+          bundleRelativeName: derivedFilename,
         })
+        const published = closeAndPublish(bundleId, 'document')
         return successResult({
           ...result,
           template: args.template,
           subject: subject ?? null,
           date: dateStr,
+          bundleId: bundleId || undefined,
+          published,
         })
       }
 
@@ -217,12 +243,15 @@ export function registerRenderTemplate(server: McpServer, ctx: ServerContext) {
       )
 
       const suggested = `${basename(args.template)}.pdf`
+      const bundleId = openBundle('document', suggested)
       const result = await ctx.outputSink.write(buffer, {
         mime: 'application/pdf',
         suggestedName: suggested,
         requestedPath: args.outputPath,
+        bundleRelativeName: suggested,
       })
-      return successResult({ ...result, template: args.template })
+      const published = closeAndPublish(bundleId, 'document')
+      return successResult({ ...result, template: args.template, bundleId: bundleId || undefined, published })
     }
 
     throw new GeneratorError('UNKNOWN_OUTPUT', `Template "${args.template}" has unknown output type: ${meta.output}`)

@@ -3,6 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ServerContext } from '../shared/createServer.js'
 import { renderHtmlToPdf } from '../../core/render.js'
 import { runTool, successResult } from '../shared/toolResult.js'
+import { publishedItemToApi } from '../shared/publishedApi.js'
 
 /**
  * Raw HTML → PDF generic primitive. Mirrors `render_html_to_png` (formerly
@@ -37,6 +38,8 @@ export function registerRenderHtmlToPdf(server: McpServer, ctx: ServerContext) {
       landscape: z.boolean().optional().default(false),
       vars: z.record(z.string(), z.string()).optional().describe('Additional Nunjucks variables substituted into the HTML.'),
       outputPath: z.string().optional().describe('Local mode: where to write the PDF. Remote mode: filename hint for the download.'),
+      title: z.string().optional().describe('Title for the published artifact (remote mode with persist: true).'),
+      persist: z.boolean().optional().default(false).describe('Remote mode only: publish immediately and return a stable URL.'),
     },
   }, async (args) => runTool(async () => {
     let format: 'A4' | 'A3' | 'Letter' | 'Legal' | { width: number; height: number } | undefined
@@ -57,12 +60,31 @@ export function registerRenderHtmlToPdf(server: McpServer, ctx: ServerContext) {
       ctx.pool,
     )
 
+    const primaryFile = 'document.pdf'
+    let bundleId = ''
+    if (ctx.outputSink.kind === 'remote') {
+      bundleId = ctx.outputSink.beginBundle({
+        type: 'html-pdf',
+        title: args.title ?? 'document',
+        primaryFile,
+      })
+    }
+
     const result = await ctx.outputSink.write(buffer, {
       mime: 'application/pdf',
-      suggestedName: 'document.pdf',
+      suggestedName: primaryFile,
       requestedPath: args.outputPath,
+      bundleRelativeName: primaryFile,
     })
 
-    return successResult(result)
+    if (bundleId) ctx.outputSink.endBundle()
+
+    let published: ReturnType<typeof publishedItemToApi> | undefined
+    if (args.persist && bundleId && ctx.publishedStore && ctx.publicBaseUrl) {
+      const item = ctx.publishedStore.publish(bundleId, { title: args.title, type: 'html-pdf' })
+      published = publishedItemToApi(item, ctx.publicBaseUrl)
+    }
+
+    return successResult({ ...result, bundleId: bundleId || undefined, published })
   }))
 }

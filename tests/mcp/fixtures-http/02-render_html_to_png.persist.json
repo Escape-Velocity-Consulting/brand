@@ -1,0 +1,23 @@
+{
+  "name": "persist: true → stable published URL",
+  "tool": "render_html_to_png",
+  "args": {
+    "html": "<!doctype html><html><body style=\"background:#1a1a1a;color:#fff;padding:40px\"><h1>Persist test</h1></body></html>",
+    "width": 1200,
+    "height": 630,
+    "title": "E2E Persist PNG",
+    "persist": true
+  },
+  "expect": {
+    "structured": {
+      "mime": "image/png",
+      "bytes": { "min": 1000 },
+      "bundleId": { "isString": true },
+      "published": {
+        "primaryUrl": { "matches": "^https?://" },
+        "type": "html-png",
+        "title": "E2E Persist PNG"
+      }
+    }
+  }
+}

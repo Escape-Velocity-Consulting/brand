@@ -1,0 +1,22 @@
+{
+  "name": "persist: true → stable published URL",
+  "tool": "render_html_to_pdf",
+  "args": {
+    "html": "<!doctype html><html><body><h1>Persist test</h1></body></html>",
+    "format": "A4",
+    "title": "E2E Persist PDF",
+    "persist": true
+  },
+  "expect": {
+    "structured": {
+      "mime": "application/pdf",
+      "bytes": { "min": 1000 },
+      "bundleId": { "isString": true },
+      "published": {
+        "primaryUrl": { "matches": "^https?://" },
+        "type": "html-pdf",
+        "title": "E2E Persist PDF"
+      }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "document template persist: true → stable published URL",
+  "tool": "render_template",
+  "args": {
+    "template": "letter",
+    "markdown": "# E2E Persist Letter\n\nThis is a test letter rendered with persist: true.",
+    "subject": "E2E Persist Test",
+    "title": "E2E Persist Letter",
+    "persist": true
+  },
+  "expect": {
+    "structured": {
+      "mime": "application/pdf",
+      "bytes": { "min": 1000 },
+      "bundleId": { "isString": true },
+      "published": {
+        "primaryUrl": { "matches": "^https?://" },
+        "type": "document"
+      }
+    }
+  }
+}
