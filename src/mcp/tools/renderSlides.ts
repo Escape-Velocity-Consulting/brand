@@ -152,6 +152,14 @@ export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
       }))
     }
 
+    if (args.markdown) {
+      await writeBundleEntry(ctx.outputSink, Buffer.from(args.markdown, 'utf-8'), {
+        relativeName: 'source.md',
+        mime: 'text/markdown',
+        bundleDir,
+      })
+    }
+
     if (bundleId) {
       ctx.outputSink.endBundle()
     }

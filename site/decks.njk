@@ -76,6 +76,10 @@ subtitle: Published slide decks. Fetched live from the brand MCP server.
     return item.files.find(function (f) { return f.mime === 'application/pdf'; });
   }
 
+  function mdFile(item) {
+    return item.files.find(function (f) { return f.mime === 'text/markdown'; });
+  }
+
   function renderCard(item) {
     var card = el('div', { class: 'deck-card' });
 
@@ -130,6 +134,12 @@ subtitle: Published slide decks. Fetched live from the brand MCP server.
       var pdfBtn = el('a', { class: 'btn-secondary-light', href: pdf.url, target: '_blank', rel: 'noopener' });
       pdfBtn.textContent = 'Download PDF';
       actions.appendChild(pdfBtn);
+    }
+    var md = mdFile(item);
+    if (md) {
+      var mdBtn = el('a', { class: 'btn-secondary-light', href: md.url, download: md.filename, rel: 'noopener' });
+      mdBtn.textContent = 'Download MD';
+      actions.appendChild(mdBtn);
     }
     meta.appendChild(actions);
 
