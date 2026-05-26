@@ -6,6 +6,7 @@ module.exports = [
   { slug: "documents", label: "Documents",  description: "Letter, offer, invoice, ToS templates with previews" },
   { slug: "presentations", label: "Presentations", description: "Slide-deck templates and the viewer pipeline" },
   { slug: "decks",     label: "Decks",      description: "Rendered slide decks (auto-discovered)" },
+  { slug: "published", label: "Published",  description: "All published outputs — decks, images, documents, carousels" },
   { slug: "social",    label: "Social",     description: "LinkedIn banner, logo variants, QR codes" },
   { slug: "workflow",  label: "Workflow",   description: "Pipeline overview, generators, token workflow" },
   { slug: "tooling",   label: "Tooling",    description: "Claude skill + MCP server — tools, templates, quick-connect" },

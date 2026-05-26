@@ -1,0 +1,226 @@
+---
+layout: base.njk
+title: Published
+permalink: /published/
+navSlug: published
+subtitle: All published brand outputs — decks, images, documents, and more.
+---
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Published</div>
+    <h2>Published Outputs</h2>
+    <p class="lede">
+      All artifacts published through the brand MCP server, grouped by type.
+      Each card shows the ID — say <em>"unpublish &lt;id&gt;"</em> in chat to remove it.
+      Use <code>persist: true</code> on any render call, or call <code>publish_artifact</code> with a <code>bundleId</code>.
+    </p>
+
+    <div id="published-container">
+      <p class="deck-empty" style="padding:20px">Loading…</p>
+    </div>
+
+    <p class="footnote">
+      Source of truth: <code>GET /api/published</code> on the brand MCP server. Updates appear immediately on refresh — no site rebuild needed.
+    </p>
+  </div>
+</section>
+
+<script>
+(function () {
+  var container = document.getElementById('published-container');
+  if (!container) return;
+
+  var TYPE_ORDER = ['deck', 'carousel', 'document', 'image', 'html-png', 'html-pdf'];
+  var TYPE_LABELS = { deck: 'Decks', carousel: 'Carousels', document: 'Documents', image: 'Images', 'html-png': 'HTML PNGs', 'html-pdf': 'HTML PDFs' };
+  var PRIMARY_LABEL = { deck: 'Open Viewer →', carousel: 'Open PDF →', document: 'Open PDF →', image: 'View Image →', 'html-png': 'View Image →', 'html-pdf': 'Open PDF →' };
+
+  function el(tag, attrs, children) {
+    var node = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        if (k === 'class') node.className = attrs[k];
+        else if (k === 'text') node.textContent = attrs[k];
+        else node.setAttribute(k, attrs[k]);
+      });
+    }
+    if (children) children.forEach(function (c) { if (c) node.appendChild(c); });
+    return node;
+  }
+
+  function fmtDate(iso) {
+    try {
+      var d = new Date(iso);
+      var p = function (n) { return n < 10 ? '0' + n : '' + n; };
+      return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+    } catch (e) { return iso; }
+  }
+
+  function slideFiles(item) {
+    var slides = item.files.filter(function (f) {
+      return f.relativeName.indexOf('slides/slide-') === 0 && f.mime === 'image/png';
+    });
+    slides.sort(function (a, b) { return a.relativeName.localeCompare(b.relativeName); });
+    return slides;
+  }
+
+  function renderThumbnail(item) {
+    var type = item.type;
+
+    if (type === 'deck') {
+      var strip = el('a', { class: 'deck-thumbs', href: item.primaryUrl || '#', target: '_blank', rel: 'noopener' });
+      slideFiles(item).slice(0, 4).forEach(function (f) {
+        strip.appendChild(el('img', { class: 'deck-thumb', src: f.url, alt: item.title + ' slide', loading: 'lazy' }));
+      });
+      return strip;
+    }
+
+    if (type === 'carousel') {
+      var slides = slideFiles(item);
+      if (slides.length > 0) {
+        var wrap = el('a', { class: 'deck-thumbs', href: item.primaryUrl || '#', target: '_blank', rel: 'noopener' });
+        wrap.appendChild(el('img', { class: 'deck-thumb', src: slides[0].url, alt: item.title, loading: 'lazy', style: 'grid-column: 1 / -1' }));
+        return wrap;
+      }
+    }
+
+    if ((type === 'image' || type === 'html-png') && item.thumbnailUrl) {
+      var a = el('a', { href: item.primaryUrl || item.thumbnailUrl, target: '_blank', rel: 'noopener', style: 'display:block;overflow:hidden;border-bottom:1px solid rgba(0,0,0,0.06);background:var(--color-light)' });
+      var img = el('img', { src: item.thumbnailUrl, alt: item.title, loading: 'lazy', style: 'width:100%;aspect-ratio:16/9;object-fit:contain;display:block' });
+      a.appendChild(img);
+      return a;
+    }
+
+    // PDF placeholder
+    var placeholder = el('div', { style: 'display:flex;align-items:center;justify-content:center;padding:32px 12px;background:var(--color-light);border-bottom:1px solid rgba(0,0,0,0.06);gap:8px;font-family:var(--font-ui);font-size:12px;color:var(--color-subtle)' });
+    placeholder.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>';
+    placeholder.appendChild(document.createTextNode('PDF'));
+    return placeholder;
+  }
+
+  function renderCard(item) {
+    var card = el('div', { class: 'deck-card' });
+
+    card.appendChild(renderThumbnail(item));
+
+    var meta = el('div', { class: 'deck-meta' });
+
+    // Title + type badge
+    var titlerow = el('div', { class: 'deck-titlerow' });
+    titlerow.appendChild(el('h3', { text: item.title }));
+    titlerow.appendChild(el('span', { class: 'deck-badge', text: TYPE_LABELS[item.type] || item.type }));
+    meta.appendChild(titlerow);
+
+    // ID chip + date
+    var idrow = el('div', { class: 'deck-idrow' });
+    var chip = el('button', { class: 'deck-id-chip', type: 'button', title: 'Click to copy ID', text: item.id });
+    chip.addEventListener('click', function () {
+      navigator.clipboard.writeText(item.id).then(function () {
+        var prev = chip.textContent;
+        chip.textContent = 'Copied';
+        setTimeout(function () { chip.textContent = prev; }, 900);
+      });
+    });
+    idrow.appendChild(chip);
+    idrow.appendChild(el('span', { class: 'deck-published-at', text: 'Published ' + fmtDate(item.publishedAt) }));
+    meta.appendChild(idrow);
+
+    // Actions
+    var actions = el('div', { class: 'deck-actions' });
+
+    if (item.primaryUrl) {
+      var label = PRIMARY_LABEL[item.type] || 'Open →';
+      var primary = el('a', { class: 'btn-primary', href: item.primaryUrl, target: '_blank', rel: 'noopener' });
+      primary.textContent = label;
+      actions.appendChild(primary);
+    }
+
+    // Secondary PDF download (only if primary isn't already the PDF or if primary is viewer)
+    if (item.type === 'deck' || item.type === 'carousel') {
+      var pdf = item.files.find(function (f) { return f.mime === 'application/pdf'; });
+      if (pdf) {
+        var pdfBtn = el('a', { class: 'btn-secondary-light', href: pdf.url, target: '_blank', rel: 'noopener' });
+        pdfBtn.textContent = 'Download PDF';
+        actions.appendChild(pdfBtn);
+      }
+    }
+
+    // Markdown source (decks only)
+    var md = item.files.find(function (f) { return f.mime === 'text/markdown'; });
+    if (md) {
+      var mdBtn = el('a', { class: 'btn-secondary-light', href: md.url, download: md.filename, rel: 'noopener' });
+      mdBtn.textContent = 'Download MD';
+      actions.appendChild(mdBtn);
+    }
+
+    meta.appendChild(actions);
+    card.appendChild(meta);
+    return card;
+  }
+
+  function renderEmpty() {
+    var box = el('div', { class: 'deck-empty' });
+    box.appendChild(el('p', { text: 'No published artifacts yet.' }));
+    box.appendChild(el('p', { text: 'Use persist: true on any render call, or call publish_artifact with a bundleId.' }));
+    return box;
+  }
+
+  function renderError(err) {
+    var box = el('div', { class: 'deck-empty' });
+    box.appendChild(el('p', { text: 'Could not load published outputs.' }));
+    box.appendChild(el('p', { class: 'footnote', text: String(err) }));
+    return box;
+  }
+
+  fetch('https://mcp.escapevelocity.consulting/api/published', { headers: { 'Accept': 'application/json' } })
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function (data) {
+      container.innerHTML = '';
+      var items = (data && data.items) || [];
+      if (items.length === 0) {
+        container.appendChild(renderEmpty());
+        return;
+      }
+
+      // Group by type
+      var groups = {};
+      items.forEach(function (item) {
+        if (!groups[item.type]) groups[item.type] = [];
+        groups[item.type].push(item);
+      });
+
+      // Render known types in order
+      TYPE_ORDER.forEach(function (type) {
+        var group = groups[type];
+        if (!group || group.length === 0) return;
+        var section = el('div', { style: 'margin-bottom:48px' });
+        var heading = el('h2', { text: TYPE_LABELS[type] || type, style: 'margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--color-terracotta)' });
+        section.appendChild(heading);
+        var grid = el('div', { class: 'decks-grid' });
+        group.forEach(function (item) { grid.appendChild(renderCard(item)); });
+        section.appendChild(grid);
+        container.appendChild(section);
+        delete groups[type];
+      });
+
+      // Any remaining unknown types
+      Object.keys(groups).forEach(function (type) {
+        var group = groups[type];
+        if (!group || group.length === 0) return;
+        var section = el('div', { style: 'margin-bottom:48px' });
+        section.appendChild(el('h2', { text: type, style: 'margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--color-terracotta)' }));
+        var grid = el('div', { class: 'decks-grid' });
+        group.forEach(function (item) { grid.appendChild(renderCard(item)); });
+        section.appendChild(grid);
+        container.appendChild(section);
+      });
+    })
+    .catch(function (err) {
+      container.innerHTML = '';
+      container.appendChild(renderError(err && err.message ? err.message : err));
+    });
+})();
+</script>
