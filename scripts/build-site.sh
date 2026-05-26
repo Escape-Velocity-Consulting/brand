@@ -47,4 +47,10 @@ if [ -f "$BRAND_DIR/dist/brand-kit.zip" ]; then
   cp "$BRAND_DIR/dist/brand-kit.zip" "$DIST_SITE/brand-kit.zip"
 fi
 
+# Claude skill (so the /brand/escape-velocity-brand.skill download link works).
+# build:skill regenerates this; shadow-copy if it exists.
+if [ -f "$BRAND_DIR/dist/escape-velocity-brand.skill" ]; then
+  cp "$BRAND_DIR/dist/escape-velocity-brand.skill" "$DIST_SITE/escape-velocity-brand.skill"
+fi
+
 echo "Built: $DIST_SITE/"

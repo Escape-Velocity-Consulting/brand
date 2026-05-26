@@ -30,7 +30,7 @@ subtitle: "Brand system for Escape Velocity — tokens, templates, and tooling."
         <p>Documents, presentations, and graphics — templates and previews for every output type.</p>
       </a>
       <a href="{{ '/tooling/' | url }}" class="nav-card">
-        <h4>Connect Claude</h4>
+        <h4>AI Tools</h4>
         <p>Claude skill, MCP server setup, and the full template catalog reference.</p>
       </a>
     </div>
@@ -42,26 +42,35 @@ subtitle: "Brand system for Escape Velocity — tokens, templates, and tooling."
   <div class="container">
     <div class="eyebrow">Resources</div>
     <h2>Downloads &amp; Connections</h2>
-    <div class="overview-resources">
 
-      <div class="overview-resource">
-        <div class="overview-resource-label">Brand Kit</div>
-        <p>Logos, fonts, color tokens, document templates, social samples, and press boilerplate — everything a designer, partner, or journalist needs. Current version: <code>brand@{{ version.sha }}</code>.</p>
-        <a class="btn btn-primary" href="{{ '/brand-kit.zip' | url }}" download>Download brand-kit.zip</a>
+    <div class="overview-chapters">
+
+      <div class="overview-chapter">
+        <div class="overview-chapter-label">Brand Kit</div>
+        <div class="overview-chapter-body">
+          <p>Logos, fonts, color tokens, document templates, social samples, and press boilerplate — everything a designer, partner, or journalist needs. Current version: <code>brand@{{ version.sha }}</code>.</p>
+          <a class="btn btn-primary" href="{{ '/brand-kit.zip' | url }}" download>Download brand-kit.zip</a>
+        </div>
       </div>
 
-      <div class="overview-resource">
-        <div class="overview-resource-label">Claude Skill</div>
-        <p>The <code>escape-velocity-brand</code> skill teaches Claude the design system — templates, tokens, fonts, and logos. Authors on-brand HTML and hands it back. Works in any Claude client without the MCP server. Included in the brand kit.</p>
-        <p style="margin-top: 8px;"><code style="font-size: 12px;">claude skills install escape-velocity-brand.skill</code></p>
+      <div class="overview-chapter">
+        <div class="overview-chapter-label">Claude Skill</div>
+        <div class="overview-chapter-body">
+          <p>The <code>escape-velocity-brand</code> skill teaches Claude the design system — templates, tokens, fonts, and logos. Authors on-brand HTML and hands it back. Works in any Claude client without the MCP server.</p>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
+            <a class="btn btn-primary" href="{{ '/escape-velocity-brand.skill' | url }}" download>Download .skill</a>
+          </div>
+          <pre><code>claude skills install escape-velocity-brand.skill</code></pre>
+        </div>
       </div>
 
-      <div class="overview-resource">
-        <div class="overview-resource-label">MCP Server</div>
-        <p>Headless rendering (PNG/PDF via Playwright), publishing to the Brand Site, and signed download URLs. OAuth 2.1 + Google login.</p>
-        <p style="margin: 12px 0 4px;"><code class="overview-mcp-url">https://mcp.escapevelocity.consulting/mcp</code></p>
-        <pre style="margin: 0;"><code>claude mcp add --transport http escape-velocity-brand \
+      <div class="overview-chapter">
+        <div class="overview-chapter-label">MCP Server</div>
+        <div class="overview-chapter-body">
+          <p>Headless rendering (PNG/PDF via Playwright), publishing to the Brand Site, and signed download URLs. OAuth 2.1 + Google login. <a href="{{ '/tooling/setup/' | url }}">Full setup guide →</a></p>
+          <pre><code>claude mcp add --transport http escape-velocity-brand \
   https://mcp.escapevelocity.consulting/mcp</code></pre>
+        </div>
       </div>
 
     </div>
