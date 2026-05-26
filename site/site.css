@@ -262,6 +262,12 @@ table td code { font-size: 12px; background: rgba(0,0,0,0.04); padding: 2px 6px;
 .deck-badge { font-family: var(--font-ui); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 8px; background: rgba(212,120,74,0.08); color: var(--color-terracotta); border-radius: 4px; white-space: nowrap; }
 .deck-slug { font-family: var(--font-mono); font-size: 11px; color: var(--color-subtle); background: rgba(0,0,0,0.04); padding: 1px 5px; border-radius: 3px; display: inline-block; margin-bottom: 14px; }
 
+/* Published-deck card extras: ID chip (copy-to-clipboard) + timestamp row. */
+.deck-idrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.deck-id-chip { font-family: var(--font-mono); font-size: 11px; color: var(--color-terracotta); background: rgba(212,120,74,0.08); border: 1px solid rgba(212,120,74,0.18); padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: background 0.12s, color 0.12s; }
+.deck-id-chip:hover { background: var(--color-terracotta); color: white; }
+.deck-published-at { font-family: var(--font-ui); font-size: 11px; color: var(--color-subtle); }
+
 .deck-actions { display: flex; gap: 12px; flex-wrap: wrap; }
 .deck-actions .btn-primary { padding: 10px 20px; font-size: 14px; }
 .btn-secondary-light { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: transparent; color: var(--color-terracotta); border: 1px solid var(--color-terracotta); border-radius: 8px; font-family: var(--font-ui); font-weight: 600; font-size: 14px; text-decoration: none; }

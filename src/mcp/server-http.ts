@@ -11,6 +11,9 @@ import { resolveBrandPaths } from '../core/paths.js'
 import { createServer, type ServerContext } from './shared/createServer.js'
 import { RemoteOutputSink } from './shared/outputSinks.js'
 import { ArtifactStore, summarizeStore } from './shared/artifactStore.js'
+import { BundleStore } from './shared/bundleStore.js'
+import { PublishedStore } from './shared/publishedStore.js'
+import { publishedItemToApi } from './shared/publishedApi.js'
 import { authenticate, type AuthConfig } from './shared/jwtAuth.js'
 import { log, truncId } from './shared/logger.js'
 import {
@@ -106,6 +109,7 @@ async function main() {
   const port = optEnvInt('MCP_PORT', 8080)
   const host = process.env.MCP_BIND_HOST ?? '0.0.0.0'
   const storeDir = process.env.MCP_TMP_DIR ?? resolve(tmpdir(), 'brand-mcp')
+  const publishedDir = process.env.MCP_PUBLISHED_DIR ?? resolve(tmpdir(), 'brand-mcp-published')
   const ttlSeconds = optEnvInt('MCP_ARTIFACT_TTL_SECONDS', 3600)
   const cleanupIntervalSeconds = optEnvInt('MCP_CLEANUP_INTERVAL_SECONDS', 300)
   const allowedOrigins = (process.env.MCP_ALLOWED_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean)
@@ -136,15 +140,34 @@ async function main() {
   })
   store.startCleanup(cleanupIntervalSeconds)
 
+  // Bundle + published stores for the publish/unpublish flow. Bundle manifests
+  // live alongside artifacts in `storeDir` (same TTL cleanup). Published items
+  // live in `publishedDir` (persistent — host volume in prod).
+  const bundleStore = new BundleStore(storeDir)
+  const publishedStore = new PublishedStore({
+    publishedDir,
+    artifactStoreDir: storeDir,
+    bundleStore,
+  })
+
   // Shared across sessions: BrowserPool (warm Chromium) and the OutputSink
   // (just an artifact-store adapter). Cheap to share — no per-session state.
   const pool = new BrowserPool()
-  const sink = new RemoteOutputSink(async (buffer, opts) => {
-    const r = await store.write(buffer, { mime: opts.mime, filename: opts.filename })
-    return { url: r.url, expiresAt: r.expiresAt }
-  })
+  const sink = new RemoteOutputSink(
+    async (buffer, opts) => {
+      const r = await store.write(buffer, { mime: opts.mime, filename: opts.filename })
+      return { url: r.url, expiresAt: r.expiresAt, uuid: r.uuid }
+    },
+    bundleStore,
+  )
 
-  const ctx: ServerContext = { paths, pool, outputSink: sink }
+  const ctx: ServerContext = {
+    paths,
+    pool,
+    outputSink: sink,
+    publishedStore,
+    publicBaseUrl,
+  }
 
   // Per-session transports. Each MCP client connection gets one.
   const transports = new Map<string, StreamableHTTPServerTransport>()
@@ -193,7 +216,7 @@ async function main() {
 
   const httpServer = createHttpServer(async (req, res) => {
     try {
-      await route(req, res, transports, createSessionTransport, store, authConfig, oauthConfig, oauthEnabled)
+      await route(req, res, transports, createSessionTransport, store, publishedStore, publicBaseUrl, authConfig, oauthConfig, oauthEnabled)
     } catch (err) {
       log('http_500', {
         path: (req.url ?? '/').split('?')[0],
@@ -250,6 +273,7 @@ async function main() {
       port,
       brand_dir: brandDir,
       store_dir: storeDir,
+      published_dir: publishedDir,
       jwt: jwtSecret ? 'on' : 'off',
       legacy_bearer: legacyBearerToken ? 'on' : 'off',
       oauth: oauthEnabled ? 'on' : 'off',
@@ -268,6 +292,8 @@ async function route(
   transports: Map<string, StreamableHTTPServerTransport>,
   createSessionTransport: () => Promise<StreamableHTTPServerTransport>,
   store: ArtifactStore,
+  publishedStore: PublishedStore,
+  publicBaseUrl: string,
   authConfig: AuthConfig,
   oauthConfig: OAuthConfig,
   oauthEnabled: boolean,
@@ -345,6 +371,96 @@ async function route(
       return
     }
     await handleRegister(req, res, oauthConfig)
+    return
+  }
+
+  // --- Published items (persistent, public) ---
+  //
+  // Published items are public by definition — no auth on the read side. CORS
+  // is wide-open since the data is meant to be embeddable on the Brand Site
+  // (and anywhere else).
+
+  if (path === '/api/published' && method === 'OPTIONS') {
+    res.writeHead(204, corsHeaders())
+    res.end()
+    return
+  }
+
+  if (path === '/api/published' && method === 'GET') {
+    const url = new URL(req.url ?? '/', 'http://placeholder')
+    const typeFilter = url.searchParams.get('type') ?? undefined
+    const items = publishedStore.list(typeFilter ? { type: typeFilter as any } : {})
+    const apiItems = items.map((i) => publishedItemToApi(i, publicBaseUrl))
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
+      ...corsHeaders(),
+    })
+    res.end(JSON.stringify({ items: apiItems, count: apiItems.length }))
+    return
+  }
+
+  if (path.startsWith('/api/published/') && method === 'GET') {
+    const id = path.slice('/api/published/'.length)
+    if (!id) {
+      res.writeHead(404, { 'Content-Type': 'application/json', ...corsHeaders() })
+      res.end(JSON.stringify({ error: 'not_found' }))
+      return
+    }
+    const item = publishedStore.get(id)
+    if (!item) {
+      res.writeHead(404, { 'Content-Type': 'application/json', ...corsHeaders() })
+      res.end(JSON.stringify({ error: 'not_found' }))
+      return
+    }
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
+      ...corsHeaders(),
+    })
+    res.end(JSON.stringify(publishedItemToApi(item, publicBaseUrl)))
+    return
+  }
+
+  if (path.startsWith('/published/') && method === 'GET') {
+    // Parse: /published/<id>/<relativeName...>
+    const rest = path.slice('/published/'.length)
+    const slash = rest.indexOf('/')
+    if (slash <= 0) {
+      log('http_404', { path, method })
+      res.writeHead(404, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: 'not_found' }))
+      return
+    }
+    const id = rest.slice(0, slash)
+    const relativeNameRaw = rest.slice(slash + 1)
+    // Decode and reject any decoded path that starts with '/' or contains '..' segments.
+    let relativeName: string
+    try {
+      relativeName = relativeNameRaw.split('/').map(decodeURIComponent).join('/')
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: 'bad_path' }))
+      return
+    }
+    if (relativeName.includes('..') || relativeName.startsWith('/')) {
+      res.writeHead(400, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: 'bad_path' }))
+      return
+    }
+    const resolved = publishedStore.resolveFile(id, relativeName)
+    if (!resolved) {
+      log('http_404', { path, method })
+      res.writeHead(404, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: 'not_found' }))
+      return
+    }
+    res.writeHead(200, {
+      'Content-Type': resolved.mime,
+      'Content-Disposition': `inline; filename="${sanitizeFilename(resolved.filename)}"`,
+      'Cache-Control': 'public, max-age=300',
+    })
+    createReadStream(resolved.absPath).pipe(res)
     return
   }
 
@@ -453,6 +569,15 @@ async function route(
   log('http_404', { path, method })
   res.writeHead(404, { 'Content-Type': 'application/json' })
   res.end(JSON.stringify({ error: 'not_found' }))
+}
+
+function corsHeaders(): Record<string, string> {
+  // Published data is public by design. Allow any origin to read.
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Max-Age': '3600',
+  }
 }
 
 function sanitizeFilename(name: string): string {

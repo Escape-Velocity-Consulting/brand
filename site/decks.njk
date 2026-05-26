@@ -3,53 +3,177 @@ layout: base.njk
 title: Decks
 permalink: /decks/
 navSlug: decks
-subtitle: Rendered slide decks. Auto-discovered from previews/decks/.
+subtitle: Published slide decks. Fetched live from the brand MCP server.
 ---
 
 <section>
   <div class="container">
     <div class="eyebrow">Decks</div>
-    <h2>Rendered Decks</h2>
+    <h2>Published Decks</h2>
     <p class="lede">
-      Every deck under <code>brand/previews/decks/*/</code> appears here automatically.
-      Click <strong>Open Viewer</strong> for the interactive HTML deck (arrow keys to navigate, F for fullscreen)
-      or <strong>Download PDF</strong> for an offline copy.
+      Decks rendered through the brand MCP server and explicitly <strong>published</strong>.
+      Each card shows the ID — say <em>"unpublish &lt;id&gt;"</em> in chat to remove it.
+      Generate a new deck with <code>render_slides</code> + <code>persist: true</code>, or call <code>publish_artifact</code> with a returned bundleId.
     </p>
 
-    {% if decks.length == 0 %}
-      <div class="deck-empty">
-        <p>No decks yet. Generate one with:</p>
-        <pre><code>npm run pres -- previews/decks/my-deck.md -o previews/decks/my-deck --pdf --png</code></pre>
+    <div class="decks-grid" id="decks-grid"
+         data-api="https://mcp.escapevelocity.consulting/api/published?type=deck">
+      <div class="deck-empty" id="decks-loading">
+        <p>Loading…</p>
       </div>
-    {% else %}
-      <div class="decks-grid">
-        {% for d in decks %}
-          <div class="deck-card">
-            <a class="deck-thumbs" href="{{ d.viewerUrl | url }}" target="_blank">
-              {% for thumb in d.slideThumbs %}
-                <img class="deck-thumb" src="{{ thumb | url }}" alt="{{ d.title }} slide thumbnail">
-              {% endfor %}
-            </a>
-            <div class="deck-meta">
-              <div class="deck-titlerow">
-                <h3>{{ d.title }}</h3>
-                <span class="deck-badge">{{ d.slidesCount }} Slides</span>
-              </div>
-              <code class="deck-slug">{{ d.slug }}</code>
-              <div class="deck-actions">
-                <a class="btn-primary" href="{{ d.viewerUrl | url }}" target="_blank">Open Viewer →</a>
-                {% if d.pdfUrl %}
-                  <a class="btn-secondary-light" href="{{ d.pdfUrl | url }}" target="_blank">Download PDF</a>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    {% endif %}
+    </div>
 
     <p class="footnote">
-      Auto-discovered via <code>site/_data/decks.cjs</code>. The viewer assets are copied into <code>dist/site/previews/</code> by <code>scripts/build-site.sh</code>.
+      Source of truth: <code>GET /api/published?type=deck</code> on the brand MCP server. Updates appear immediately on refresh — no site rebuild needed.
     </p>
   </div>
 </section>
+
+<script>
+(function () {
+  var grid = document.getElementById('decks-grid');
+  if (!grid) return;
+  var apiUrl = grid.getAttribute('data-api');
+
+  function el(tag, attrs, children) {
+    var node = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        if (k === 'class') node.className = attrs[k];
+        else if (k === 'text') node.textContent = attrs[k];
+        else node.setAttribute(k, attrs[k]);
+      });
+    }
+    if (children) children.forEach(function (c) { if (c) node.appendChild(c); });
+    return node;
+  }
+
+  function fmtDate(iso) {
+    try {
+      var d = new Date(iso);
+      var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+      return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+        + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    } catch (e) { return iso; }
+  }
+
+  function thumbnails(item) {
+    // Surface the first 4 slide PNGs from item.files for the strip.
+    var slides = item.files.filter(function (f) {
+      return f.relativeName.indexOf('slides/slide-') === 0 && f.mime === 'image/png';
+    });
+    slides.sort(function (a, b) { return a.relativeName.localeCompare(b.relativeName); });
+    return slides.slice(0, 4);
+  }
+
+  function slideCount(item) {
+    return item.files.filter(function (f) {
+      return f.relativeName.indexOf('slides/slide-') === 0 && f.mime === 'image/png';
+    }).length;
+  }
+
+  function pdfFile(item) {
+    return item.files.find(function (f) { return f.mime === 'application/pdf'; });
+  }
+
+  function renderCard(item) {
+    var card = el('div', { class: 'deck-card' });
+
+    var thumbs = thumbnails(item);
+    var thumbsAnchor = el('a', {
+      class: 'deck-thumbs',
+      href: item.primaryUrl || '#',
+      target: '_blank',
+      rel: 'noopener',
+    });
+    thumbs.forEach(function (t) {
+      thumbsAnchor.appendChild(el('img', {
+        class: 'deck-thumb',
+        src: t.url,
+        alt: item.title + ' slide thumbnail',
+        loading: 'lazy',
+      }));
+    });
+    card.appendChild(thumbsAnchor);
+
+    var meta = el('div', { class: 'deck-meta' });
+
+    var titlerow = el('div', { class: 'deck-titlerow' });
+    titlerow.appendChild(el('h3', { text: item.title }));
+    var count = slideCount(item);
+    if (count > 0) {
+      titlerow.appendChild(el('span', { class: 'deck-badge', text: count + ' Slides' }));
+    }
+    meta.appendChild(titlerow);
+
+    var idrow = el('div', { class: 'deck-idrow' });
+    var idChip = el('button', { class: 'deck-id-chip', type: 'button', title: 'Click to copy ID', text: item.id });
+    idChip.addEventListener('click', function () {
+      navigator.clipboard.writeText(item.id).then(function () {
+        var prev = idChip.textContent;
+        idChip.textContent = 'Copied';
+        setTimeout(function () { idChip.textContent = prev; }, 900);
+      });
+    });
+    idrow.appendChild(idChip);
+    idrow.appendChild(el('span', { class: 'deck-published-at', text: 'Published ' + fmtDate(item.publishedAt) }));
+    meta.appendChild(idrow);
+
+    var actions = el('div', { class: 'deck-actions' });
+    if (item.primaryUrl) {
+      var openBtn = el('a', { class: 'btn-primary', href: item.primaryUrl, target: '_blank', rel: 'noopener' });
+      openBtn.textContent = 'Open Viewer →';
+      actions.appendChild(openBtn);
+    }
+    var pdf = pdfFile(item);
+    if (pdf) {
+      var pdfBtn = el('a', { class: 'btn-secondary-light', href: pdf.url, target: '_blank', rel: 'noopener' });
+      pdfBtn.textContent = 'Download PDF';
+      actions.appendChild(pdfBtn);
+    }
+    meta.appendChild(actions);
+
+    card.appendChild(meta);
+    return card;
+  }
+
+  function renderEmpty(msg) {
+    var empty = el('div', { class: 'deck-empty' });
+    empty.appendChild(el('p', { text: msg }));
+    var hint = el('p', null, [
+      document.createTextNode('Render and publish a deck via the MCP: '),
+      el('code', { text: 'render_slides({ markdown, dimensions: "slide-16-9", outputs: { viewer: true, pdf: true, pngs: true }, persist: true, title: "..." })' }),
+    ]);
+    empty.appendChild(hint);
+    return empty;
+  }
+
+  function renderError(err) {
+    var box = el('div', { class: 'deck-empty' });
+    box.appendChild(el('p', { text: 'Could not load published decks.' }));
+    box.appendChild(el('p', { class: 'footnote', text: String(err) }));
+    return box;
+  }
+
+  fetch(apiUrl, { headers: { 'Accept': 'application/json' } })
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function (data) {
+      grid.innerHTML = '';
+      var items = (data && data.items) || [];
+      if (items.length === 0) {
+        grid.appendChild(renderEmpty('No published decks yet.'));
+        return;
+      }
+      items.forEach(function (item) {
+        grid.appendChild(renderCard(item));
+      });
+    })
+    .catch(function (err) {
+      grid.innerHTML = '';
+      grid.appendChild(renderError(err && err.message ? err.message : err));
+    });
+})();
+</script>

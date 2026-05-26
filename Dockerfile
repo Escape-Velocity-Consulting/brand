@@ -58,8 +58,14 @@ COPY templates                      ./templates
 COPY fonts                          ./fonts
 COPY components                     ./components
 
-# Artifact store directory (matches MCP_TMP_DIR default below).
-RUN mkdir -p /tmp/brand-mcp && chown -R appuser:appgroup /app /tmp/brand-mcp
+# Artifact store directory (matches MCP_TMP_DIR default below) + published
+# store directory. Both are owned by appuser. /app/published is declared as a
+# VOLUME so production runs can mount a persistent host directory there
+# (without a mount, published items survive process restarts inside the
+# container but are wiped on redeploy).
+RUN mkdir -p /tmp/brand-mcp /app/published && chown -R appuser:appgroup /app /tmp/brand-mcp
+
+VOLUME ["/app/published"]
 
 USER appuser
 
@@ -72,10 +78,16 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 ENV NODE_ENV=production \
     MCP_PORT=8080 \
     MCP_BIND_HOST=0.0.0.0 \
-    MCP_TMP_DIR=/tmp/brand-mcp
+    MCP_TMP_DIR=/tmp/brand-mcp \
+    MCP_PUBLISHED_DIR=/app/published
 
 # Container expects these env vars at runtime (injected by the platform):
 #   MCP_BEARER_TOKEN, MCP_SIGNING_SECRET, MCP_PUBLIC_BASE_URL
 # Optional: MCP_ARTIFACT_TTL_SECONDS, MCP_CLEANUP_INTERVAL_SECONDS, MCP_ALLOWED_ORIGINS.
+#
+# For published items to survive container redeploy, mount a host volume at
+# /app/published:
+#   docker run -v /data/brand-mcp-published:/app/published ...
+# The admin's `deploy-service brand-mcp` script owns this mount.
 
 CMD ["node", "dist/src/mcp/server-http.js"]

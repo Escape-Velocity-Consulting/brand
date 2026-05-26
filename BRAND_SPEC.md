@@ -457,10 +457,24 @@ All render logic lives in `src/core/` as pure async functions (`renderDocumentHt
 Three consumers wrap the core:
 
 1. **CLI shims** in `generators/{pdf,image,carousel,presentation}.ts` — parse argv, construct a local `BrowserPool`, call the core, write the buffer to disk, close. Behavior on the CLI is byte-identical to the pre-refactor version; the sections below remain the canonical CLI reference.
-2. **MCP stdio server** in `src/mcp/server.ts` — local subprocess entrypoint for Claude Code dev. Exposes 7 tools with a single long-lived `BrowserPool` and a `LocalOutputSink` that writes files to the caller's CWD.
-3. **MCP HTTP server** in `src/mcp/server-http.ts` — remote/containerized entrypoint. Same 7 tools, same `BrowserPool`, but a `RemoteOutputSink` that writes through `ArtifactStore` and returns HMAC-signed download URLs. Routes: `POST /mcp` (bearer-gated), `GET /artifacts/<token>` (HMAC-gated), `GET /health`. Containerized via `Dockerfile`, deployed via `.github/workflows/deploy-mcp.yml` to a GHCR image consumed by the server admin's GCP VM. See `brand/CLAUDE.md` § MCP Server for the full tool table, env-var contract, Claude Code registration, and the JSON-fixture E2E suites at `tests/mcp/` (stdio + HTTP).
+2. **MCP stdio server** in `src/mcp/server.ts` — local subprocess entrypoint for Claude Code dev. Exposes the render + introspection tools with a single long-lived `BrowserPool` and a `LocalOutputSink` that writes files to the caller's CWD.
+3. **MCP HTTP server** in `src/mcp/server-http.ts` — remote/containerized entrypoint. Same render + introspection tools, plus the **publish-flow tools** (`publish_artifact`, `unpublish_artifact`, `list_published`) that require persistent storage. Same `BrowserPool`. `RemoteOutputSink` writes through `ArtifactStore` and returns HMAC-signed download URLs; a parallel `PublishedStore` handles persistent published items at unauthenticated stable URLs. Routes: `POST /mcp` (bearer/JWT-gated), `GET /artifacts/<token>` (HMAC-gated), `GET /published/<id>/<file>` + `GET /api/published[/<id>]` (public), `GET /health`. Containerized via `Dockerfile` (declares `VOLUME /app/published` for persistent published items), deployed via `.github/workflows/deploy-mcp.yml` to a GHCR image consumed by the server admin's GCP VM. See `brand/CLAUDE.md` § MCP Server + § Publishing for the full tool table, env-var contract, Claude Code registration, persistence semantics, and the JSON-fixture E2E suites at `tests/mcp/` (stdio + HTTP).
 
-All three share the same tool surface via `src/mcp/shared/createServer.ts`. The only per-transport difference is the injected `OutputSink`. When you add a new generator, do it in `src/core/` first, then add all three wrappers. Don't put render logic in `generators/*.ts` or in MCP tool files.
+All three share the same tool surface via `src/mcp/shared/createServer.ts`. The only per-transport difference is the injected `OutputSink` (and on HTTP, the additional `PublishedStore`). The publish-flow tools only register when `publishedStore` is present on `ServerContext`, so stdio mode silently omits them. When you add a new generator, do it in `src/core/` first, then add all three wrappers. Don't put render logic in `generators/*.ts` or in MCP tool files.
+
+### 11.0a Publishing semantics
+
+Render outputs default to **ephemeral** — 1h TTL signed URLs from the artifact store. Conversation-driven renders evaporate by default; the user explicitly opts something into permanence.
+
+For multi-file renders (decks today; documents and carousels follow), the HTTP transport groups all writes for a single tool call into a **bundle** with a short base64 ID. The bundle manifest is persisted with the same TTL as the artifacts it references. The render response includes `bundleId`.
+
+To **publish** a bundle: call `publish_artifact({ bundleId })` (or render with `persist: true`). Files are copied from the artifact store into `MCP_PUBLISHED_DIR/<id>/` and served at stable, unauthenticated URLs. The Brand Site at `/brand/decks/` fetches the public listing live via `GET /api/published?type=deck`.
+
+To **unpublish**: call `unpublish_artifact({ id })`. IDs are visible on the Brand Site cards as copy-to-clipboard chips.
+
+Auth lives on the **write** side only (publish/unpublish tools require the same OAuth allowlist as render). Published files are public reads.
+
+Persistence requires a host-volume mount at `/app/published` on the container — without it, published items survive process restarts inside the container but are wiped on redeploy.
 
 ### 11.1 `pdf.ts` — Document Generator
 
@@ -1150,7 +1164,7 @@ description: [triggering description — see SKILL.md for current wording]
 ---
 ```
 
-Body: mental model, 6-tool reference, routing decision tree, HTML authoring rules, examples. The skill assumes the escape-velocity-brand MCP server is registered; if not, the skill still works for HTML authoring (graceful degradation).
+Body: mental model, 9-tool reference (6 render+introspection + 3 publish-flow), routing decision tree, HTML authoring rules, examples. The skill assumes the escape-velocity-brand MCP server is registered; if not, the skill still works for HTML authoring (graceful degradation).
 
 ### Compilation
 

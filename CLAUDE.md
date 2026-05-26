@@ -32,6 +32,28 @@ Do not declare a push "done" until the build job passes (or explicitly confirm w
 
 Never silently deviate from the spec. If a conflict arises, flag it.
 
+## Documentation-Sync Rule
+
+The brand system has six surfaces that *describe* it: `BRAND_SPEC.md` (truth), `CLAUDE.md` (operational reference for agents), `BRAND_SKILL.md` (skill cheatsheet), the deployed skill bundle at `skill/escape-velocity-brand/`, `AGENT_GUIDE.md` (lookup tables), and the automations under `.github/workflows/` + `scripts/hooks/`. **Any change to a system capability — new tool, new env var, new rule, new file layout, removed feature — MUST update every relevant surface in the same change.**
+
+A change that lands in code but not in docs is broken on arrival. The next agent (or you in three weeks) will silently call the wrong tool, miss the new flag, or rely on a removed file. The Documentation-Sync Rule prevents that.
+
+### Checklist before declaring a system change complete
+
+1. **Spec updated** (`BRAND_SPEC.md`) if the contract changed.
+2. **`CLAUDE.md` reflects the new surface** — tool table, env table, route table, rule, file layout.
+3. **Skill source updated** — `SKILL.md` + `BRAND_SKILL.md`; `npm run build:skill` ran; the new `.skill` reinstalled.
+4. **`AGENT_GUIDE.md` lookup tables current.**
+5. **CI/automation aware of the change** — new path globs in `deploy-mcp.yml`, new hook checks, new build steps.
+6. **User-facing surface mentions the new capability** — nav entry, help text, README, Brand Site page.
+
+### Anti-patterns to refuse
+
+- ❌ "I'll update docs in a follow-up PR." Follow-ups rot.
+- ❌ Updating only one of the parallel skill files (source vs reference sidecar vs deployed copy).
+- ❌ Adding an MCP tool without registering it in the SKILL routing block. (For template additions, that block is auto-generated from `templates.meta.ts` — so the registry edit *is* the doc update.)
+- ❌ Bumping a tool count or env list without grepping for the previous count/list across the repo.
+
 ## Token-Sourcing Rule
 
 **`tokens.ts` is the single source of truth for color, type, and spacing values. Never duplicate them in templates.**
@@ -80,7 +102,9 @@ A `site/<plural>.njk` page that lists every rendered output of that type via a `
 
 Use this when outputs are **non-sensitive and worth re-finding** (e.g. slide decks the user has produced). Skip it when outputs are confidential (client letters, invoices, contracts) or noisy (one-off social PNGs).
 
-Reference implementation: `site/decks.njk` + `site/_data/decks.cjs`.
+Reference implementations:
+- **Filesystem-scan (legacy pattern, simpler):** `site/social.njk` + `site/_data/social.cjs`.
+- **Live API fetch (current pattern for user-published artifacts):** `site/decks.njk` reads from `GET /api/published?type=deck` on the brand MCP. See [§ Publishing](#publishing).
 
 ### Always
 
@@ -101,7 +125,7 @@ Reference implementation: `site/decks.njk` + `site/_data/decks.cjs`.
 | **Documents** (letter/offer/invoice/tos/report) | ✅ `documents.njk` — auto-discovered from `previews/*-preview.png` via `site/_data/documents.cjs` (with colocated `DOCS_META` for title/blurb/cmd copy). | ❌ Correct — client docs are sensitive. |
 | **Components** (UI patterns) | ✅ `components.njk` | N/A |
 | **Social** (LinkedIn banner / cards / OG) | ✅ `social.njk` — auto-discovered from `templates/social/*.html` via `site/_data/social.cjs` (with colocated `SOCIAL_META` for title/size/cmd copy). | ❌ Consider adding when next touched. |
-| **Presentations / decks** | ✅ `presentations.njk` — auto-regenerated showcase. **Reference implementation.** | ✅ `decks.njk` — auto-discovered. **Reference implementation.** |
+| **Presentations / decks** | ✅ `presentations.njk` — auto-regenerated showcase. **Reference implementation.** | ✅ `decks.njk` — **client-side fetched from `GET /api/published?type=deck`**. Updates appear on refresh. See [§ Publishing](#publishing). |
 | **Carousel** (LinkedIn carousels) | ❌ — known gap, add when carousel templates next touched. | ❌ |
 
 ## Terminology
@@ -118,7 +142,7 @@ Use these terms consistently — they have specific meanings in this repo:
 | **Brand Templates** | `templates/*.html` — document/social templates rendered by generators. Not the same as Brand Site templates. |
 | **Brand Generators** | `generators/` — `pdf.ts`, `image.ts`, `carousel.ts`, `presentation.ts`. Thin CLI shims over the rendering core. |
 | **Rendering Core** | `src/core/` — pure-function library (no `process.exit`, no CWD assumptions, shared `BrowserPool`). The single source of truth for render logic, used by both CLI shims and the MCP server. |
-| **Brand MCP** | `src/mcp/` — stdio + HTTP MCP server wrapping the rendering core. Exposes 6 tools (`render_template`, `render_html_to_png`, `render_html_to_pdf`, `render_slides`, `list_templates`, `get_tokens`) with a warm Chromium across calls. Public endpoint: `https://mcp.escapevelocity.consulting/mcp` (Google-OAuth gated). |
+| **Brand MCP** | `src/mcp/` — stdio + HTTP MCP server wrapping the rendering core. Exposes 9 tools (`render_template`, `render_html_to_png`, `render_html_to_pdf`, `render_slides`, `list_templates`, `get_tokens`, `publish_artifact`, `unpublish_artifact`, `list_published`) with a warm Chromium across calls. Public endpoint: `https://mcp.escapevelocity.consulting/mcp` (Google-OAuth gated). The three publish-flow tools only register on the HTTP transport (they need persistent storage). |
 | **Brand Tokens** | `tokens.ts` → `tokens.css` + `tokens.json`. Single source of truth for color, type, spacing. |
 
 ## Repository Layout
@@ -323,14 +347,29 @@ Both call `src/mcp/shared/createServer.ts` to register the same 7 tools. They di
 
 A single Chromium instance stays warm across calls (~600ms per render vs ~2–3s cold).
 
-### Tools (6 — Phase 3 consolidated surface)
+### Tools (9)
+
+**Render** (both transports):
 
 | Tool | What it does |
 |------|--------------|
-| `render_template`     | Named template + Nunjucks vars (+ optional markdown body) → PNG or PDF. Output format driven by the template registry (`templates.meta.ts`). Replaces the old `render_image` + `render_document`. |
-| `render_html_to_png`  | Raw HTML string → 1 PNG. Generic primitive for ad-hoc designs / mutated templates. Was `render_image_html`. |
+| `render_template`     | Named template + Nunjucks vars (+ optional markdown body) → PNG or PDF. Output format driven by the template registry (`templates.meta.ts`). |
+| `render_html_to_png`  | Raw HTML string → 1 PNG. Generic primitive for ad-hoc designs / mutated templates. |
 | `render_html_to_pdf`  | Raw HTML string → 1 PDF. Playwright auto-paginates long HTML; supports A4/A3/Letter or custom `{width,height}` pixel dims. |
-| `render_slides`       | N pages → toggleable `{viewer, pdf, pngs}`. Two input modes: `markdown` (presentation-style with `===` separators) or `pages` (carousel-style explicit HTML/template per slide). Replaces the old `render_carousel` + `render_presentation`. |
+| `render_slides`       | N pages → toggleable `{viewer, pdf, pngs}`. Two input modes: `markdown` (presentation-style with `===` separators) or `pages` (carousel-style explicit HTML/template per slide). On HTTP transport, multi-file output is grouped into a bundle (returns `bundleId`). Pass `persist: true` to publish in one step. |
+
+**Publishing** (HTTP transport only — see [§ Publishing](#publishing)):
+
+| Tool | What it does |
+|------|--------------|
+| `publish_artifact`    | Promote a bundleId from the ephemeral artifact store to the persistent published store. Returns the new published ID + stable URL. |
+| `unpublish_artifact`  | Remove a published item by ID. Idempotent. |
+| `list_published`      | List published items, optionally filtered by `type`. Same data as `GET /api/published`. |
+
+**Introspection** (both transports):
+
+| Tool | What it does |
+|------|--------------|
 | `list_templates`      | Returns the full template registry (output format, dims, required vars, tags) sourced from `templates.meta.ts`. Optional `tag` filter. |
 | `get_tokens`          | Parsed `tokens.json`. |
 
@@ -470,7 +509,8 @@ Allowlist changes take effect on the next request OR the next refresh — no tok
 | `MCP_BEARER_TOKEN` | no (legacy / tests) | — | Legacy static bearer for the E2E test runner. Will be removed once OAuth E2E is in place. One of `MCP_JWT_SECRET` or `MCP_BEARER_TOKEN` must be set. |
 | `MCP_PORT` | no | `8080` | Listen port. |
 | `MCP_BIND_HOST` | no | `0.0.0.0` | Listen host. |
-| `MCP_TMP_DIR` | no | `<os.tmpdir>/brand-mcp` | Artifact store directory. |
+| `MCP_TMP_DIR` | no | `<os.tmpdir>/brand-mcp` | Artifact store directory (also where bundle manifests live, same TTL). |
+| `MCP_PUBLISHED_DIR` | no | `<os.tmpdir>/brand-mcp-published` (container default: `/app/published`) | Persistent published-items directory. **Mount a host volume here in production** — see [§ Publishing](#publishing). |
 | `MCP_ARTIFACT_TTL_SECONDS` | no | `3600` | Signed-URL TTL. |
 | `MCP_CLEANUP_INTERVAL_SECONDS` | no | `300` | Cleanup-loop cadence. |
 | `MCP_ALLOWED_ORIGINS` | no | (empty) | Optional comma-separated browser-Origin allowlist (DNS-rebinding defense). |
@@ -612,6 +652,96 @@ Add a test: drop a JSON file in `tests/mcp/fixtures/` matching the schema in `te
 ### Status
 
 The skill bundled at `skill/escape-velocity-brand/` is **not** updated yet to call the MCP tools — that's a separate follow-up. Until then the skill (stdio) and the MCP server (stdio + HTTP) are parallel paths into the same core.
+
+## Publishing
+
+The brand MCP server has two output paths for rendered files:
+
+1. **Ephemeral artifact store** (default). Every render writes through `RemoteOutputSink` → `ArtifactStore`. Each file gets an HMAC-signed download URL with a **1h TTL**. Designed for "show me the render, I'll decide what to do with it" — fine for previews, drafts, throwaway one-offs.
+2. **Persistent published store** (opt-in). The `publish_artifact` tool copies a freshly-rendered *bundle* (deck = viewer + PDF + per-slide PNGs; carousel = PDF + PNGs; etc.) into a host-mounted persistent directory. Published items get a stable URL, no expiry, and surface on the Brand Site at `/brand/decks/` (and eventually other type sections).
+
+### Why two paths
+
+Conversation-driven renders should evaporate by default — the user explicitly opts something into permanence. This avoids the failure mode where every test render clutters the public site, while keeping the publish step trivial ("publish this", or `persist: true` on the render call).
+
+### Bundle abstraction
+
+Render tools that produce more than one file (today: `render_slides`) wrap their writes in a *bundle scope* on the OutputSink. At end-of-scope a manifest (`<bundleId>.bundle.json`) is written into the artifact store with the same TTL as the artifacts it references. The render response includes `bundleId` — that's the handle the user references for `publish_artifact`.
+
+If the bundle's TTL expires before publish, the publish call fails loudly. Re-render and try again.
+
+### Tool surface
+
+```
+publish_artifact({ bundleId, title?, type? })
+  → moves an ephemeral bundle into MCP_PUBLISHED_DIR/<id>/
+  → returns { id, type, title, publishedAt, primaryUrl, thumbnailUrl, files }
+
+unpublish_artifact({ id })
+  → removes MCP_PUBLISHED_DIR/<id>/  (idempotent)
+  → returns { id, removed }
+
+list_published({ type? })
+  → reads meta.json from every subdir of MCP_PUBLISHED_DIR
+  → returns { items, count } sorted by publishedAt desc
+
+render_slides({ ..., persist: true })
+  → renders + publishes in one step
+  → response includes both the per-file URLs (ephemeral) AND the `published` field (stable)
+```
+
+### REST routes (public, no auth)
+
+| Route | Purpose |
+|-------|---------|
+| `GET /api/published[?type=<bundle-type>]` | List published items. CORS: `*`. |
+| `GET /api/published/<id>` | Single item metadata. |
+| `GET /published/<id>/<relativeName>` | Serve a published file (path-traversal guarded). |
+
+Published data is public by design — no auth on the read side. Auth lives on the *write* side (the MCP tools require the same OAuth allowlist as render).
+
+### Storage layout
+
+```
+<MCP_PUBLISHED_DIR>/
+  <id>/                     ← ~10-char base64 ID
+    meta.json               ← serialized PublishedItem (no URLs — computed at read time from publicBaseUrl)
+    index.html              ← (deck) the viewer
+    <slug>.pdf              ← the PDF
+    slides/slide-01.png     ← per-slide PNGs (deck)
+    ...
+```
+
+### Brand Site integration
+
+`/brand/decks/` is a client-side-fetched page: on load it `fetch`es `https://mcp.escapevelocity.consulting/api/published?type=deck` and renders cards. Updates appear immediately on refresh — no site rebuild needed. Each card shows:
+
+- The short ID as a copy-to-clipboard chip (user references it in chat for `unpublish_artifact`)
+- The publish timestamp
+- A 4-up thumbnail strip from `slides/slide-01.png` … `slide-04.png`
+- "Open Viewer" + "Download PDF" actions
+
+If the MCP is unreachable the page shows an empty state with the error. The website's Caddyfile must include `mcp.escapevelocity.consulting` in `connect-src` and `img-src` CSP directives.
+
+### Infrastructure dependency — REQUIRED before publishing survives a redeploy
+
+The default `MCP_PUBLISHED_DIR` inside the container is `/app/published`, which is **container-ephemeral**. To persist published items across container restarts the admin's `deploy-service brand-mcp` script must mount a host directory there:
+
+```bash
+docker run -v /data/brand-mcp-published:/app/published \
+           -e MCP_PUBLISHED_DIR=/app/published \
+           ... ghcr.io/escape-velocity-consulting/brand-mcp:prod
+```
+
+The host directory needs to be owned by the container's `appuser` UID (or world-writable, less ideal). The `Dockerfile` declares `VOLUME ["/app/published"]` to document the contract.
+
+Until the host volume is mounted, published items still work *during* the container's lifetime — they just disappear on redeploy. Document this clearly to the user when shipping the feature.
+
+### Anti-patterns
+
+- ❌ Embedding URLs in `meta.json`. The `publicBaseUrl` can change (dev vs prod); compute URLs at read time via `publishedItemToApi`.
+- ❌ Adding new artifact-bearing routes without CORS headers. The Brand Site fetches cross-origin.
+- ❌ Publishing single-file outputs without going through `beginBundle/endBundle`. The publish flow expects a bundle manifest; one-file renders must still create a one-entry bundle. (V1 only wires this for `render_slides`. Other render tools' `persist: true` is a follow-up.)
 
 ### Local Trivy check
 

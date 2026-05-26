@@ -23,16 +23,41 @@ If escape-velocity-brand is **not** registered, the skill still works — author
 using brand CSS vars and return it to the user. They can paste it into a
 browser or register the MCP later to get rendered artifacts.
 
-## The 6 tools (when escape-velocity-brand is registered)
+## The 9 tools (when escape-velocity-brand is registered)
+
+**Render** (both transports):
 
 | Tool | Use when |
 |------|----------|
 | **`render_template`**     | You want a standard branded asset (letter, OG image, invoice, carousel slide). Pick a template key, fill `vars`, optionally pass a markdown body. Output format is driven by the template registry. |
-| **`render_slides`**       | You have N discrete pages → want a viewer / combined PDF / per-page PNGs / any combination. Two input modes: `markdown` (presentation-style with `===` separators) or `pages` (carousel-style explicit HTML/template per page). |
+| **`render_slides`**       | You have N discrete pages → want a viewer / combined PDF / per-page PNGs / any combination. Two input modes: `markdown` (presentation-style with `===` separators) or `pages` (carousel-style explicit HTML/template per page). Pass `persist: true` to also publish in one step (HTTP transport only). |
 | **`render_html_to_png`**  | You wrote custom HTML — want a single PNG screenshot. **Last-resort tool.** |
 | **`render_html_to_pdf`**  | You wrote custom HTML — want a PDF. Playwright auto-paginates long HTML. **Last-resort tool.** |
+
+**Publishing** (HTTP transport only — promotes ephemeral renders to a permanent, public URL on the Brand Site):
+
+| Tool | Use when |
+|------|----------|
+| **`publish_artifact`**    | The user says **"publish this"** after a `render_slides` call. Pass the `bundleId` from the render response. Returns the stable ID + URL. The deck appears on `escapevelocity.consulting/brand/decks/` immediately. |
+| **`unpublish_artifact`**  | The user says **"unpublish &lt;id&gt;"** with an ID they read from the Brand Site card. Pass the ID. Idempotent. |
+| **`list_published`**      | The user wants to see what's currently published. Optional `type` filter (`deck`, `document`, `image`, `carousel`). |
+
+**Introspection** (both transports):
+
+| Tool | Use when |
+|------|----------|
 | **`list_templates`**      | Discover which templates exist + their metadata (output format, dims, required vars, tags). |
 | **`get_tokens`**          | Get the parsed `tokens.json` (colors, type, spacing values). |
+
+### When to publish
+
+The publish flow exists because conversation-driven renders are ephemeral by default — they expire in 1h and don't appear on the Brand Site. Publishing is a deliberate second step:
+
+- **User says "publish this" / "make it permanent" / "put it on the site"** → call `publish_artifact({ bundleId })` with the bundleId from the previous render response. Or re-render with `persist: true`.
+- **User says "unpublish &lt;id&gt;"** → call `unpublish_artifact({ id })`. The ID is the short base64 chip on the deck card.
+- **User wants to browse what's already there** → call `list_published()` or point them at `escapevelocity.consulting/brand/decks/`.
+
+Only `render_slides` supports `persist: true` today. Other render tools (`render_template`, `render_html_to_png`, `render_html_to_pdf`) don't have a publish path yet — file a follow-up if the user asks.
 
 <!-- AUTO-GENERATED:CATALOG — edit templates.meta.ts and run `npm run build:skill` -->
 

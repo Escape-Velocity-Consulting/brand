@@ -1,9 +1,11 @@
-import { basename, resolve, join } from 'node:path'
+import { resolve, join } from 'node:path'
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ServerContext } from '../shared/createServer.js'
 import { renderSlides, SLIDE_DIMENSIONS, type DimensionsInput } from '../../core/slides.js'
 import { writeBundleEntry, type WriteResult } from '../shared/outputSinks.js'
+import type { BundleType } from '../shared/bundleStore.js'
+import { publishedItemToApi } from '../shared/publishedApi.js'
 import { runTool, successResult } from '../shared/toolResult.js'
 
 const PageSchema = z.object({
@@ -23,6 +25,14 @@ const DimensionsSchema = z.union([
  * Two input modes:
  * - `markdown` (presentation-style, === -separated)  → supports viewer + pdf + pngs
  * - `pages`    (carousel-style, full-HTML per slide) → supports pdf + pngs (no viewer)
+ *
+ * On the HTTP transport, all writes for a single call are grouped into a
+ * bundle (manifest persisted with the same 1h TTL as the artifacts themselves).
+ * The response includes `bundleId` — pass that to `publish_artifact` to
+ * promote the bundle to the persistent published store.
+ *
+ * Shortcut: pass `persist: true` to publish in one step. The response then
+ * also includes the `published` field (canonical URL + ID).
  */
 export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
   server.registerTool('render_slides', {
@@ -31,7 +41,9 @@ export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
       'Render N slides → any combination of {viewer HTML, combined PDF, per-slide PNGs}. ' +
       'Use `markdown` (with === separators + @type/@bg directives) for presentation-style decks (supports viewer). ' +
       'Use `pages` (array of full-HTML pages or template+vars) for carousel-style multi-output (no viewer support). ' +
-      `Dimension presets: ${Object.keys(SLIDE_DIMENSIONS).join(', ')}, or custom {width,height}.`,
+      `Dimension presets: ${Object.keys(SLIDE_DIMENSIONS).join(', ')}, or custom {width,height}. ` +
+      'On HTTP transport, multi-file output is grouped into a bundle (returns `bundleId`). ' +
+      'Pass `persist: true` to publish the result in one step (returns `published` with stable URL).',
     inputSchema: {
       markdown: z.string().optional().describe('Deck markdown with === slide separators. Mutually exclusive with pages.'),
       pages: z.array(PageSchema).optional().describe('Explicit pages (full-HTML or template+vars). Mutually exclusive with markdown.'),
@@ -41,9 +53,10 @@ export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
         pdf: z.boolean().optional().default(true).describe('Combined PDF.'),
         pngs: z.boolean().optional().default(false).describe('Per-slide PNGs.'),
       }),
-      title: z.string().optional().describe('Deck title (used in viewer + as filename stem).'),
+      title: z.string().optional().describe('Deck title (used in viewer + as filename stem + as the published-item title).'),
       theme: z.string().optional().default('cream'),
       outputPath: z.string().optional().describe('Local mode: base filename / directory for outputs. Remote mode: filename hint.'),
+      persist: z.boolean().optional().default(false).describe('HTTP transport only: also promote the resulting bundle to the persistent published store and return the stable URL.'),
     },
   }, async (args) => runTool(async () => {
     const dims = args.dimensions as DimensionsInput
@@ -68,6 +81,38 @@ export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
       bundleDir = resolve(process.cwd(), stem)
     }
 
+    // Decide whether this render produces a bundle worth tracking. A bundle
+    // exists when there's more than one output file (viewer + pdf, viewer + pngs,
+    // pdf + pngs, etc.). For HTTP transport we open a bundle scope so the publish
+    // flow can promote the whole set later.
+    const outputCount =
+      (result.viewer ? 1 : 0) + (result.pdf ? 1 : 0) + result.pngs.length
+    const isBundle = outputCount > 1 || result.pngs.length > 1 || !!result.viewer
+
+    // Bundle metadata: deck for markdown mode, carousel for pages mode.
+    const bundleType: BundleType = args.pages ? 'carousel' : 'deck'
+    const pdfName = `${stem}.pdf`
+    const primaryFile = result.viewer
+      ? 'index.html'
+      : result.pdf
+        ? pdfName
+        : result.pngs.length > 0
+          ? join('slides', 'slide-01.png')
+          : undefined
+    const thumbnailFile = result.pngs.length > 0
+      ? join('slides', 'slide-01.png')
+      : undefined
+
+    let bundleId = ''
+    if (isBundle && ctx.outputSink.kind === 'remote') {
+      bundleId = ctx.outputSink.beginBundle({
+        type: bundleType,
+        title: args.title ?? stem,
+        primaryFile,
+        thumbnailFile,
+      })
+    }
+
     let viewer: WriteResult | null = null
     if (result.viewer) {
       viewer = await writeBundleEntry(ctx.outputSink, Buffer.from(result.viewer.html, 'utf-8'), {
@@ -79,7 +124,6 @@ export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
 
     let pdf: WriteResult | null = null
     if (result.pdf) {
-      const pdfName = `${stem}.pdf`
       // For a multi-file bundle, route the PDF as a bundle entry. For pdf-only
       // (no pngs/viewer), treat it as the primary output.
       const isStandalone = !result.viewer && result.pngs.length === 0
@@ -108,6 +152,21 @@ export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
       }))
     }
 
+    if (bundleId) {
+      ctx.outputSink.endBundle()
+    }
+
+    // One-shot publish: skip the second round-trip when the caller already
+    // knows they want the result persisted.
+    let published: ReturnType<typeof publishedItemToApi> | undefined
+    if (args.persist && bundleId && ctx.publishedStore && ctx.publicBaseUrl) {
+      const item = ctx.publishedStore.publish(bundleId, {
+        title: args.title,
+        type: bundleType,
+      })
+      published = publishedItemToApi(item, ctx.publicBaseUrl)
+    }
+
     return successResult({
       viewer,
       pdf,
@@ -115,6 +174,8 @@ export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
       slideCount: result.slideCount,
       width: result.width,
       height: result.height,
+      bundleId: bundleId || undefined,
+      published,
     })
   }))
 }
