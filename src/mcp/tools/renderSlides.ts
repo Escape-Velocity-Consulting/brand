@@ -51,7 +51,7 @@ export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
       outputs: z.object({
         viewer: z.boolean().optional().default(false).describe('Self-contained HTML viewer (markdown mode only).'),
         pdf: z.boolean().optional().default(true).describe('Combined PDF.'),
-        pngs: z.boolean().optional().default(false).describe('Per-slide PNGs.'),
+        pngs: z.boolean().optional().default(true).describe('Per-slide PNGs (default: true).'),
       }),
       title: z.string().optional().describe('Deck title (used in viewer + as filename stem + as the published-item title).'),
       theme: z.string().optional().default('cream'),
@@ -60,16 +60,11 @@ export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
     },
   }, async (args) => runTool(async () => {
     const dims = args.dimensions as DimensionsInput
-    // Auto-enable pngs when persisting — thumbnails are required for the published card.
-    const effectiveOutputs = {
-      ...args.outputs,
-      pngs: args.outputs.pngs || args.persist === true,
-    }
     const result = await renderSlides({
       markdown: args.markdown,
       pages: args.pages,
       dimensions: dims,
-      outputs: effectiveOutputs,
+      outputs: args.outputs,
       title: args.title,
       theme: args.theme,
     }, ctx.paths, ctx.pool)
