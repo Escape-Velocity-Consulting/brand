@@ -308,7 +308,7 @@ async function renderFromMarkdown(
   const renderedFragments = parsed.map((f) => renderFragment(f, mdDir))
 
   // Build viewer HTML (used for ALL three outputs in this mode)
-  const tokensCss = loadTokensCss(paths)
+  const tokensCss = loadTokensCss(paths, './fonts')
   const env = getTemplateEnv(paths.templatesDir)
   const viewerHtml = env.render('presentation.html', {
     TITLE: title,
@@ -423,7 +423,7 @@ async function renderFromPages(
       }
       const raw = readFileSync(templatePath, 'utf-8')
       const fontsUri = pathToFileURL(paths.fontsDir).href
-      const tokensCss = loadTokensCss(paths)
+      const tokensCss = loadTokensCss(paths, fontsUri)
       html = renderStringTemplate(dirname(templatePath), raw, {
         FONTS_URI: fontsUri,
         TOKENS_CSS: tokensCss,
