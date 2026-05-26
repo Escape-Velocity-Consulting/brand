@@ -81,30 +81,40 @@ subtitle: All published brand outputs — decks, images, documents, and more.
     return thumbs;
   }
 
+  var SLIDE_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>';
+  var PDF_ICON   = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+
+  function deckPlaceholder(href) {
+    var ph = el('a', {
+      href: href, target: '_blank', rel: 'noopener',
+      style: 'display:flex;align-items:center;justify-content:center;gap:10px;min-height:90px;background:var(--color-light);border-bottom:1px solid rgba(0,0,0,0.06);text-decoration:none;color:var(--color-subtle);font-family:var(--font-ui);font-size:13px;font-weight:600;letter-spacing:0.02em'
+    });
+    ph.innerHTML = SLIDE_ICON + 'View Details →';
+    return ph;
+  }
+
   function renderThumbnail(item) {
     var type = item.type;
 
-    if (type === 'deck') {
-      // Link the strip to the detail page; viewer is still reachable via the action button.
+    if (type === 'deck' || type === 'carousel') {
       var detailUrl = MCP_BASE + '/published/' + item.id;
+      var imgs = thumbFiles(item);
+      if (imgs.length === 0) imgs = slideFiles(item);
+
+      if (imgs.length === 0) {
+        // No thumbnails yet — show a placeholder that still links to the detail page.
+        return deckPlaceholder(detailUrl);
+      }
+
       var strip = el('a', { class: 'deck-thumbs', href: detailUrl, target: '_blank', rel: 'noopener' });
-      var imgSources = thumbFiles(item);
-      if (imgSources.length === 0) imgSources = slideFiles(item);
-      imgSources.slice(0, 4).forEach(function (f) {
-        strip.appendChild(el('img', { class: 'deck-thumb', src: f.url, alt: item.title + ' slide', loading: 'lazy' }));
+      var limit = type === 'carousel' ? 1 : 4;
+      var styleOverride = type === 'carousel' ? 'grid-column: 1 / -1' : '';
+      imgs.slice(0, limit).forEach(function (f) {
+        var imgEl = el('img', { class: 'deck-thumb', src: f.url, alt: item.title + ' slide', loading: 'lazy' });
+        if (styleOverride) imgEl.style.cssText = styleOverride;
+        strip.appendChild(imgEl);
       });
       return strip;
-    }
-
-    if (type === 'carousel') {
-      var detailUrl = MCP_BASE + '/published/' + item.id;
-      var imgSources = thumbFiles(item);
-      if (imgSources.length === 0) imgSources = slideFiles(item);
-      if (imgSources.length > 0) {
-        var wrap = el('a', { class: 'deck-thumbs', href: detailUrl, target: '_blank', rel: 'noopener' });
-        wrap.appendChild(el('img', { class: 'deck-thumb', src: imgSources[0].url, alt: item.title, loading: 'lazy', style: 'grid-column: 1 / -1' }));
-        return wrap;
-      }
     }
 
     if ((type === 'image' || type === 'html-png') && item.thumbnailUrl) {
@@ -114,9 +124,9 @@ subtitle: All published brand outputs — decks, images, documents, and more.
       return a;
     }
 
-    var placeholder = el('div', { style: 'display:flex;align-items:center;justify-content:center;padding:32px 12px;background:var(--color-light);border-bottom:1px solid rgba(0,0,0,0.06);gap:8px;font-family:var(--font-ui);font-size:12px;color:var(--color-subtle)' });
-    placeholder.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>';
-    placeholder.appendChild(document.createTextNode('PDF'));
+    // PDF / document / generic fallback — non-visual placeholder.
+    var placeholder = el('div', { style: 'display:flex;align-items:center;justify-content:center;gap:10px;min-height:90px;background:var(--color-light);border-bottom:1px solid rgba(0,0,0,0.06);color:var(--color-subtle);font-family:var(--font-ui);font-size:13px;font-weight:600' });
+    placeholder.innerHTML = PDF_ICON + 'PDF Document';
     return placeholder;
   }
 
@@ -143,24 +153,35 @@ subtitle: All published brand outputs — decks, images, documents, and more.
     meta.appendChild(idrow);
 
     var actions = el('div', { class: 'deck-actions' });
-    if (item.primaryUrl) {
+    if (item.type === 'deck' || item.type === 'carousel') {
+      // Always show a "Details" link — this is the primary navigational entry point.
+      var detailLink = el('a', { class: 'btn-primary', href: MCP_BASE + '/published/' + item.id, target: '_blank', rel: 'noopener' });
+      detailLink.textContent = 'Details →';
+      actions.appendChild(detailLink);
+    }
+    if (item.primaryUrl && item.type !== 'deck' && item.type !== 'carousel') {
       var label = PRIMARY_LABEL[item.type] || 'Open →';
       var primary = el('a', { class: 'btn-primary', href: item.primaryUrl, target: '_blank', rel: 'noopener' });
       primary.textContent = label;
       actions.appendChild(primary);
     }
     if (item.type === 'deck' || item.type === 'carousel') {
+      if (item.primaryUrl) {
+        var viewerBtn = el('a', { class: 'btn-secondary-light', href: item.primaryUrl, target: '_blank', rel: 'noopener' });
+        viewerBtn.textContent = 'Open Viewer';
+        actions.appendChild(viewerBtn);
+      }
       var pdf = item.files.find(function (f) { return f.mime === 'application/pdf'; });
       if (pdf) {
         var pdfBtn = el('a', { class: 'btn-secondary-light', href: pdf.url, target: '_blank', rel: 'noopener' });
-        pdfBtn.textContent = 'Download PDF';
+        pdfBtn.textContent = 'PDF';
         actions.appendChild(pdfBtn);
       }
     }
     var md = item.files.find(function (f) { return f.mime === 'text/markdown'; });
     if (md) {
       var mdBtn = el('a', { class: 'btn-secondary-light', href: md.url, download: md.filename, rel: 'noopener' });
-      mdBtn.textContent = 'Download MD';
+      mdBtn.textContent = 'MD';
       actions.appendChild(mdBtn);
     }
     meta.appendChild(actions);
