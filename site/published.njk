@@ -105,10 +105,9 @@ subtitle: All published brand outputs — decks, images, documents, and more.
 
     var meta = el('div', { class: 'deck-meta' });
 
-    // Title + type badge
+    // Title
     var titlerow = el('div', { class: 'deck-titlerow' });
     titlerow.appendChild(el('h3', { text: item.title }));
-    titlerow.appendChild(el('span', { class: 'deck-badge', text: TYPE_LABELS[item.type] || item.type }));
     meta.appendChild(titlerow);
 
     // ID chip + date
