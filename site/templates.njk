@@ -1,0 +1,74 @@
+---
+layout: base.njk
+title: Templates
+permalink: /templates/
+navSlug: templates
+subtitle: "All brand templates — documents, graphics, and presentations."
+---
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Documents</div>
+    <h2><a href="{{ '/documents/' | url }}" style="color:inherit;text-decoration:none;">Documents →</a></h2>
+    <div class="tooling-templates-grid">
+      {% for d in documents %}
+      <div class="tooling-tmpl-card">
+        {% if d.previewUrl %}
+        <div class="tooling-tmpl-preview">
+          <img src="{{ d.previewUrl | url }}" alt="{{ d.title }} preview" loading="lazy">
+        </div>
+        {% endif %}
+        <div class="tooling-tmpl-header">
+          <code class="tooling-tmpl-key">{{ d.slug }}</code>
+          <span class="output-badge output-pdf">PDF</span>
+        </div>
+        <p class="tooling-tmpl-desc">{{ d.blurb or d.title }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Graphics</div>
+    <h2><a href="{{ '/graphics/' | url }}" style="color:inherit;text-decoration:none;">Graphics →</a></h2>
+    <div class="tooling-templates-grid">
+      {% for s in social %}
+      <div class="tooling-tmpl-card">
+        {% if s.rasterUrl %}
+        <div class="tooling-tmpl-preview">
+          <img src="{{ s.rasterUrl | url }}" alt="{{ s.title }} preview" loading="lazy">
+        </div>
+        {% endif %}
+        <div class="tooling-tmpl-header">
+          <code class="tooling-tmpl-key">{{ s.slug }}</code>
+          <span class="output-badge output-png">PNG</span>
+        </div>
+        <p class="tooling-tmpl-desc">{{ s.title }}{% if s.size %} — {{ s.size }}{% endif %}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Presentations</div>
+    <h2><a href="{{ '/presentations/' | url }}" style="color:inherit;text-decoration:none;">Presentations →</a></h2>
+    <div class="tooling-templates-grid">
+      {% for s in slideTypes %}
+      <div class="tooling-tmpl-card">
+        <div class="tooling-tmpl-preview">
+          <img src="{{ ('/previews/showcase/slide-types/slides/slide-0' + s.slideIndex + '.png') | url }}" alt="{{ s.label }} preview" loading="lazy">
+        </div>
+        <div class="tooling-tmpl-header">
+          <code class="tooling-tmpl-key">@type: {{ s.type }}</code>
+          <span class="output-badge output-slide">Slide</span>
+        </div>
+        <p class="tooling-tmpl-desc">{{ s.description }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>

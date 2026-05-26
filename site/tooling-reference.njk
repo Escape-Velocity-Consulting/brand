@@ -1,0 +1,102 @@
+---
+layout: base.njk
+title: Reference
+permalink: /tooling/reference/
+navSlug: tooling-reference
+parentSlug: tooling
+subtitle: "MCP tools, template catalog, REST API, and source documentation."
+---
+
+<section>
+  <div class="container">
+    <div class="eyebrow">MCP</div>
+    <h2>Tools ({{ tooling.totalTools }})</h2>
+
+    {% for group in tooling.toolGroups %}
+    <h3>{{ group.label }} <span class="tooling-note">— {{ group.note }}</span></h3>
+    <table>
+      <thead>
+        <tr><th>Tool</th><th>Description</th><th>Transport</th></tr>
+      </thead>
+      <tbody>
+        {% for tool in group.tools %}
+        <tr>
+          <td><code>{{ tool.name }}</code></td>
+          <td>{{ tool.description }}</td>
+          <td class="tooling-transports">
+            {% for t in tool.transports %}
+            <span class="transport-badge transport-{{ t }}">{{ t }}</span>
+            {% endfor %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endfor %}
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Templates</div>
+    <h2>Template Catalog ({{ tooling.totalTemplates }})</h2>
+    <p style="font-size:14px; color:var(--color-body); margin-bottom:32px;">Auto-generated from <code>templates.meta.ts</code>. Pass the key to <code>render_template</code>.</p>
+
+    {% for group in tooling.templateGroups %}
+    <h3>{{ group.label }}</h3>
+    <div class="tooling-templates-grid">
+      {% for tmpl in group.templates %}
+      <div class="tooling-tmpl-card">
+        <div class="tooling-tmpl-header">
+          <code class="tooling-tmpl-key">{{ tmpl.key }}</code>
+          <span class="output-badge output-{{ tmpl.output }}">{{ tmpl.output | upper }}</span>
+        </div>
+        <p class="tooling-tmpl-desc">{{ tmpl.description }}</p>
+        {% if tmpl.dims %}<div class="tooling-tmpl-dims">{{ tmpl.dims }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">HTTP Transport</div>
+    <h2>REST API</h2>
+    <p style="font-size:14px; color:var(--color-body); margin-bottom:24px;">Base URL: <code>https://mcp.escapevelocity.consulting</code></p>
+
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Path</th><th>Auth</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        {% for route in tooling.routes %}
+        <tr>
+          <td><span class="method-badge method-{{ route.method | lower }}">{{ route.method }}</span></td>
+          <td><code>{{ route.path }}</code></td>
+          <td><span class="auth-tag">{{ route.auth }}</span></td>
+          <td>{{ route.purpose }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <h3>Reference</h3>
+    <ul class="links-list">
+      <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/BRAND_SPEC.md" target="_blank">BRAND_SPEC.md</a> — Canonical brand specification (source of truth)</li>
+      <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/docs/mcp-server.md" target="_blank">docs/mcp-server.md</a> — Full MCP server reference (routes, auth, env vars, architecture)</li>
+      <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/docs/README.md" target="_blank">docs/</a> — Operational documentation (architecture, rules, MCP, publishing, templates, troubleshooting, glossary)</li>
+      <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/templates.meta.ts" target="_blank">templates.meta.ts</a> — Template registry source (descriptions, dims, required vars)</li>
+      <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/docs/publishing.md" target="_blank">docs/publishing.md</a> — Publish / unpublish flow and bundle abstraction</li>
+      <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/BRAND_SKILL.md" target="_blank">BRAND_SKILL.md</a> — Agent cheatsheet for brand system (token table + CSS vars + layout patterns)</li>
+      <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/tokens.ts" target="_blank">tokens.ts</a> — Token source of truth (colors, fonts, spacing)</li>
+      <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/tokens.css" target="_blank">tokens.css</a> — Generated CSS custom properties</li>
+      <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/skill/escape-velocity-brand/SKILL.md" target="_blank">skill/SKILL.md</a> — Deployed skill source (template catalog + routing map)</li>
+    </ul>
+  </div>
+</section>

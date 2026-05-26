@@ -3,227 +3,26 @@ layout: base.njk
 title: Identity
 permalink: /identity/
 navSlug: identity
-subtitle: "The complete brand reference — colors, typography, logos, voice, and press."
+subtitle: "The brand — colors, typography, logos, voice, press, and system."
 ---
-
-<div class="identity-anchors">
-  <a href="#colors">Colors</a>
-  <a href="#typography">Typography</a>
-  <a href="#spacing">Spacing</a>
-  <a href="#logos">Logos</a>
-  <a href="#voice">Voice &amp; Copy</a>
-  <a href="#press">Press</a>
-</div>
-
-<section id="colors">
-  <div class="container">
-    <div class="eyebrow">Colors</div>
-    <h2>Color Palette</h2>
-
-    <h3>Primary</h3>
-    {% set colors = palette.primary.slice(0, 5) %}
-    {% include "partials/swatches.njk" %}
-    <div style="margin-top: 16px;">
-      {% set colors = palette.primary.slice(5) %}
-      {% include "partials/swatches.njk" %}
-    </div>
-
-    <h3>Secondary</h3>
-    {% set colors = palette.secondary %}
-    {% set columns = 2 %}
-    {% include "partials/swatches.njk" %}
-    {% set columns = null %}
-
-    <h3>Usage Rules</h3>
-    <ul class="rules-list">
-      <li>On cream: text headings, body copy, terracotta accents</li>
-      <li>On black: light headings, muted copy, terracotta/accent accents</li>
-      <li>Never pure #000 or #fff</li>
-      <li>Max 2 accent colors per asset</li>
-    </ul>
-  </div>
-</section>
-
-<section id="typography">
-  <div class="container">
-    <div class="eyebrow">Typography</div>
-    <h2>Typography Scale</h2>
-
-    <table class="type-table">
-      <thead>
-        <tr>
-          <th>Role</th><th>Font</th><th>Weight</th><th>Size</th><th>Line Height</th><th>Color</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td class="role-name">Hero H1</td><td class="font-name">Space Grotesk</td><td>700</td><td>54–72px</td><td>1.08</td><td><span class="color-dot" style="background: var(--color-light); border: 1px solid rgba(0,0,0,0.1);"></span>light (on dark)</td></tr>
-        <tr><td class="role-name">Card Title / H3</td><td class="font-name">Space Grotesk</td><td>600</td><td>20px</td><td>1.3</td><td><span class="color-dot" style="background: var(--color-text);"></span>text</td></tr>
-        <tr><td class="role-name">Document H1</td><td class="font-name">Space Grotesk</td><td>700</td><td>22px</td><td>1.25</td><td><span class="color-dot" style="background: var(--color-text);"></span>text</td></tr>
-        <tr><td class="role-name">Document H2</td><td class="font-name">Space Grotesk</td><td>700</td><td>17px</td><td>1.3</td><td><span class="color-dot" style="background: var(--color-terracotta);"></span>terracotta</td></tr>
-        <tr><td class="role-name">Document H3</td><td class="font-name">Space Grotesk</td><td>600</td><td>14px</td><td>1.35</td><td><span class="color-dot" style="background: var(--color-text);"></span>text</td></tr>
-        <tr><td class="role-name">Newsletter H2</td><td class="font-name">Manrope</td><td>700</td><td>22–23px</td><td>1.3</td><td><span class="color-dot" style="background: var(--color-text);"></span>text</td></tr>
-        <tr><td class="role-name">Eyebrow</td><td class="font-name">Manrope</td><td>600</td><td>13px</td><td>—</td><td><span class="color-dot" style="background: var(--color-terracotta);"></span>terracotta (uppercase, 2px tracking)</td></tr>
-        <tr><td class="role-name">Badge / Tag</td><td class="font-name">Manrope</td><td>600</td><td>11px</td><td>—</td><td><span class="color-dot" style="background: var(--color-subtle);"></span>varies (uppercase, 1px tracking)</td></tr>
-        <tr><td class="role-name">CTA Button</td><td class="font-name">Manrope</td><td>600</td><td>15–16px</td><td>—</td><td><span class="color-dot" style="background: white; border: 1px solid rgba(0,0,0,0.1);"></span>white</td></tr>
-        <tr><td class="role-name">Website Body</td><td class="font-name">Inter</td><td>400</td><td>15px</td><td>1.7</td><td><span class="color-dot" style="background: var(--color-body);"></span>body</td></tr>
-        <tr><td class="role-name">Newsletter Body</td><td class="font-name">Manrope</td><td>400–500</td><td>14–15px</td><td>1.7</td><td><span class="color-dot" style="background: var(--color-body);"></span>body</td></tr>
-        <tr><td class="role-name">Document Body</td><td class="font-name">Inter</td><td>400</td><td>13px</td><td>1.75</td><td><span class="color-dot" style="background: #3D3A36;"></span>#3D3A36</td></tr>
-        <tr><td class="role-name">Stat Value</td><td class="font-name">Space Grotesk</td><td>700</td><td>28px</td><td>—</td><td><span class="color-dot" style="background: var(--color-terracotta);"></span>terracotta</td></tr>
-        <tr><td class="role-name">Logo</td><td class="font-name">Space Grotesk</td><td>700</td><td>20–22px</td><td>—</td><td><span class="color-dot" style="background: var(--color-text);"></span>text + <span class="color-dot" style="background: var(--color-terracotta);"></span>terracotta</td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section id="spacing">
-  <div class="container">
-    <div class="eyebrow">Spacing</div>
-    <h2>Spacing &amp; Layout</h2>
-
-    <h3>Container Widths</h3>
-    <table class="spec-table">
-      <thead>
-        <tr><th>Context</th><th>Max Width</th><th>Horizontal Padding</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Default</td><td><code>1100px</code></td><td><code>40px</code></td></tr>
-        <tr><td>Narrow (documents)</td><td><code>620–900px</code></td><td><code>40px</code></td></tr>
-        <tr><td>Tablet (≤768px)</td><td>fluid</td><td><code>24px</code></td></tr>
-        <tr><td>Mobile (≤480px)</td><td>fluid</td><td><code>16px</code></td></tr>
-      </tbody>
-    </table>
-
-    <h3>Border Radius</h3>
-    <table class="spec-table">
-      <thead>
-        <tr><th>Element</th><th>Radius</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Cards, wrappers</td><td><code>12px</code></td></tr>
-        <tr><td>Buttons</td><td><code>8px</code> (web), <code>6px</code> (email)</td></tr>
-        <tr><td>Badges / tags</td><td><code>4px</code></td></tr>
-        <tr><td>Code blocks</td><td><code>6px</code></td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-{%- set logoGroups = [
-  { heading: "Dark Background", bg: "dark", items: [
-    { svg: "ev-wordmark.svg",       png: "ev-wordmark-300.png",       width: 150, height: 150, caption: "EV Wordmark — Square monogram, dark bg" },
-    { svg: "logo-dark.svg",         png: "logo-dark-300.png",         width: 250, height: 125, caption: "Full Wordmark — Wide, dark bg" },
-    { svg: "logo-dark-square.svg",  png: "logo-dark-square-300.png",  width: 150, height: 150, caption: "Full Wordmark — Square, dark bg" }
-  ]},
-  { heading: "Light Background", bg: "", items: [
-    { svg: "ev-wordmark-light.svg",       png: "ev-wordmark-light-300.png",       width: 150, height: 150, caption: "EV Wordmark — Square monogram, light bg" },
-    { svg: "logo-light.svg",              png: "logo-light-300.png",              width: 250, height: 125, caption: "Full Wordmark — Wide, light bg" },
-    { svg: "logo-light-square.svg",       png: "logo-light-square-300.png",       width: 150, height: 150, caption: "Full Wordmark — Square, light bg" }
-  ]},
-  { heading: "Transparent", bg: "transparent", items: [
-    { svg: "ev-wordmark-transparent.svg",  png: "ev-wordmark-transparent-300.png",  width: 150, height: 150, caption: "EV Wordmark — Square monogram, transparent" },
-    { svg: "logo-transparent.svg",         png: "logo-transparent-300.png",         width: 250, height: 125, caption: "Full Wordmark — Wide, transparent" }
-  ]}
-] -%}
-
-<section id="logos">
-  <div class="container">
-    <div class="eyebrow">Logos</div>
-    <h2>Logo Variants</h2>
-
-    {% for group in logoGroups %}
-      <h3>{{ group.heading }}</h3>
-      <div class="previews-grid">
-        {% for item in group.items %}
-          <div>
-            <div class="logo-preview-box{% if group.bg %} {{ group.bg }}{% endif %}">
-              <img src="{{ ('/assets/logos/' + item.svg) | url }}" alt="{{ item.caption }}" width="{{ item.width }}" height="{{ item.height }}">
-            </div>
-            <div class="preview-caption">{{ item.caption }}</div>
-            <div class="action-bar">
-              <a href="{{ ('/assets/logos/' + item.svg) | url }}">SVG →</a>
-              <a href="{{ ('/assets/raster/' + item.png) | url }}">PNG →</a>
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    {% endfor %}
-  </div>
-</section>
-
-<section id="voice">
-  <div class="container">
-    <div class="eyebrow">Voice</div>
-    <h2>Voice &amp; Copy</h2>
-
-    <h3>Dos</h3>
-    <div class="voice-card voice-dos">
-      <ul>
-        <li>Konkret vor abstrakt — lead with outcome</li>
-        <li>Active voice, short sentences</li>
-        <li>Numbers when possible ("6 Wochen", "17 Jahre")</li>
-        <li>"Sie" form (formal, not stiff)</li>
-        <li>Dry wit welcome; forced enthusiasm not</li>
-      </ul>
-    </div>
-
-    <h3>Don'ts</h3>
-    <div class="voice-card voice-donts">
-      <ul>
-        <li>No "revolutionieren", "disruptiv", "game-changer"</li>
-        <li>No excessive exclamation marks</li>
-        <li>No "Wir freuen uns..." opener</li>
-        <li>No filler: "In diesem Zusammenhang..."</li>
-        <li>No AI-forward positioning as headline</li>
-      </ul>
-    </div>
-
-    <h3>Copy Patterns</h3>
-    <div class="voice-card voice-patterns">
-      <ul>
-        <li>Eyebrows: TRANSFORMATION &amp; AUTOMATION — uppercase, 2–4 words</li>
-        <li>CTAs: imperative + arrow — Erstgespräch buchen →</li>
-        <li>Logo: always "Velocity" in terracotta</li>
-        <li>Tagline: "Digitalisierung &amp; Prozessoptimierung" (DE)</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<section id="press">
-  <div class="container">
-    <div class="eyebrow">Press</div>
-    <h2>Copy &amp; Bio</h2>
-    <div class="prose">
-      {{ press.html | safe }}
-    </div>
-    <p style="margin-top: 1.5rem;">
-      <a class="btn btn-primary" href="{{ '/press/boilerplate.md' | url }}" download>Download boilerplate.md</a>
-    </p>
-  </div>
-</section>
 
 <section>
   <div class="container">
-    <div class="eyebrow">Photos</div>
-    <h2>Founder Photos</h2>
-    <div class="photo-grid">
-      {% for p in press.photos %}
-      <figure class="photo">
-        <a href="{{ ('/press/photos/' + p.file) | url }}" download>
-          <img src="{{ ('/press/photos/' + p.file) | url }}" alt="{{ p.alt }}" loading="lazy">
-        </a>
-        <figcaption>
-          <span>{{ p.alt }}</span>
-          <a href="{{ ('/press/photos/' + p.file) | url }}" download>Download</a>
-        </figcaption>
-      </figure>
-      {% endfor %}
+    <div class="eyebrow">Overview</div>
+    <h2>Brand Identity</h2>
+    <div class="nav-cards">
+      <a href="{{ '/identity/foundations/' | url }}" class="nav-card">
+        <h4>Foundations</h4>
+        <p>Color palette, typography scale, spacing rules, and all logo variants.</p>
+      </a>
+      <a href="{{ '/identity/voice/' | url }}" class="nav-card">
+        <h4>Voice &amp; Press</h4>
+        <p>Copy rules, dos and don'ts, press boilerplate, and founder photos.</p>
+      </a>
+      <a href="{{ '/identity/system/' | url }}" class="nav-card">
+        <h4>System</h4>
+        <p>Architecture diagram, build scripts, and the token update workflow.</p>
+      </a>
     </div>
-    <p style="margin-top: 1rem; color: var(--color-subtle); font-size: 0.9rem;">
-      Photos available for editorial use under the kit license. Higher resolution available on request.
-    </p>
-    <p style="margin-top: 1rem;">
-      Full press kit including logos, fonts, and templates: <a href="{{ '/download/' | url }}">Download Brand Kit →</a>
-    </p>
   </div>
 </section>

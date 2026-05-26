@@ -6,6 +6,13 @@ navSlug: publications
 subtitle: All published brand outputs — decks, images, documents, and more.
 ---
 
+<div class="identity-anchors">
+  <a href="#decks">Decks</a>
+  <a href="#carousels">Carousels</a>
+  <a href="#documents">Documents</a>
+  <a href="#images">Images</a>
+</div>
+
 <section>
   <div class="container">
     <div class="eyebrow">Published</div>
@@ -33,6 +40,7 @@ subtitle: All published brand outputs — decks, images, documents, and more.
 
   var TYPE_ORDER = ['deck', 'carousel', 'document', 'image', 'html-png', 'html-pdf'];
   var TYPE_LABELS = { deck: 'Decks', carousel: 'Carousels', document: 'Documents', image: 'Images', 'html-png': 'HTML PNGs', 'html-pdf': 'HTML PDFs' };
+  var TYPE_IDS    = { deck: 'decks', carousel: 'carousels', document: 'documents', image: 'images', 'html-png': 'html-pngs', 'html-pdf': 'html-pdfs' };
   var PRIMARY_LABEL = { deck: 'Open Viewer →', carousel: 'Open PDF →', document: 'Open PDF →', image: 'View Image →', 'html-png': 'View Image →', 'html-pdf': 'Open PDF →' };
 
   function el(tag, attrs, children) {
@@ -91,7 +99,6 @@ subtitle: All published brand outputs — decks, images, documents, and more.
       return a;
     }
 
-    // PDF placeholder
     var placeholder = el('div', { style: 'display:flex;align-items:center;justify-content:center;padding:32px 12px;background:var(--color-light);border-bottom:1px solid rgba(0,0,0,0.06);gap:8px;font-family:var(--font-ui);font-size:12px;color:var(--color-subtle)' });
     placeholder.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>';
     placeholder.appendChild(document.createTextNode('PDF'));
@@ -100,11 +107,9 @@ subtitle: All published brand outputs — decks, images, documents, and more.
 
   function renderCard(item) {
     var card = el('div', { class: 'deck-card' });
-
     card.appendChild(renderThumbnail(item));
 
     var meta = el('div', { class: 'deck-meta' });
-
     var titlerow = el('div', { class: 'deck-titlerow' });
     titlerow.appendChild(el('h3', { text: item.title }));
     meta.appendChild(titlerow);
@@ -123,14 +128,12 @@ subtitle: All published brand outputs — decks, images, documents, and more.
     meta.appendChild(idrow);
 
     var actions = el('div', { class: 'deck-actions' });
-
     if (item.primaryUrl) {
       var label = PRIMARY_LABEL[item.type] || 'Open →';
       var primary = el('a', { class: 'btn-primary', href: item.primaryUrl, target: '_blank', rel: 'noopener' });
       primary.textContent = label;
       actions.appendChild(primary);
     }
-
     if (item.type === 'deck' || item.type === 'carousel') {
       var pdf = item.files.find(function (f) { return f.mime === 'application/pdf'; });
       if (pdf) {
@@ -139,14 +142,12 @@ subtitle: All published brand outputs — decks, images, documents, and more.
         actions.appendChild(pdfBtn);
       }
     }
-
     var md = item.files.find(function (f) { return f.mime === 'text/markdown'; });
     if (md) {
       var mdBtn = el('a', { class: 'btn-secondary-light', href: md.url, download: md.filename, rel: 'noopener' });
       mdBtn.textContent = 'Download MD';
       actions.appendChild(mdBtn);
     }
-
     meta.appendChild(actions);
     card.appendChild(meta);
     return card;
@@ -188,7 +189,7 @@ subtitle: All published brand outputs — decks, images, documents, and more.
       TYPE_ORDER.forEach(function (type) {
         var group = groups[type];
         if (!group || group.length === 0) return;
-        var section = el('div', { style: 'margin-bottom:48px' });
+        var section = el('div', { id: TYPE_IDS[type] || type, style: 'margin-bottom:48px' });
         var heading = el('h2', { text: TYPE_LABELS[type] || type, style: 'margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--color-terracotta)' });
         section.appendChild(heading);
         var grid = el('div', { class: 'decks-grid' });
@@ -201,7 +202,7 @@ subtitle: All published brand outputs — decks, images, documents, and more.
       Object.keys(groups).forEach(function (type) {
         var group = groups[type];
         if (!group || group.length === 0) return;
-        var section = el('div', { style: 'margin-bottom:48px' });
+        var section = el('div', { id: type, style: 'margin-bottom:48px' });
         section.appendChild(el('h2', { text: type, style: 'margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--color-terracotta)' }));
         var grid = el('div', { class: 'decks-grid' });
         group.forEach(function (item) { grid.appendChild(renderCard(item)); });

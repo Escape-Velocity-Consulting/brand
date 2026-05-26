@@ -1,0 +1,79 @@
+---
+layout: base.njk
+title: Setup
+permalink: /tooling/setup/
+navSlug: tooling-setup
+parentSlug: tooling
+subtitle: "Connect Claude to the brand system — skill, MCP server, quick connect."
+---
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Agent Integration</div>
+    <h2>Skill &amp; MCP Server</h2>
+    <p class="lede">The <code>escape-velocity-brand</code> Claude skill authors on-brand assets — documents, social images, slide decks — using bundled templates, tokens, fonts, and logos. The optional MCP server extends it with headless rendering (PNG/PDF via Playwright) and publishing to the Brand Site.</p>
+
+    <div class="tooling-matrix">
+      <div class="tooling-col">
+        <div class="tooling-col-label">Skill alone</div>
+        <ul class="rules-list">
+          <li>Authors HTML from named templates</li>
+          <li>Substitutes Nunjucks variables</li>
+          <li>Reads brand tokens, fonts, and logos</li>
+          <li>Hands finished HTML back to user</li>
+          <li>Works in any Claude client, no setup</li>
+        </ul>
+      </div>
+      <div class="tooling-col">
+        <div class="tooling-col-label">+ MCP server</div>
+        <ul class="rules-list">
+          <li>Renders HTML → PNG or PDF (Playwright)</li>
+          <li>Publishes decks &amp; documents to Brand Site</li>
+          <li>Returns signed download URLs (1 h TTL)</li>
+          <li>Warm Chromium pool (~600 ms/render)</li>
+          <li>OAuth 2.1 + Google login (HTTP transport)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Setup</div>
+    <h2>Quick Connect</h2>
+
+    <h3>Claude Code — OAuth (recommended)</h3>
+<pre><code>claude mcp add --transport http escape-velocity-brand \
+  https://mcp.escapevelocity.consulting/mcp</code></pre>
+
+    <h3>Claude Desktop</h3>
+    <div class="step">
+      <div class="step-number">1</div>
+      <p>Open <strong>Settings → Connectors → Add custom connector</strong></p>
+    </div>
+    <div class="step">
+      <div class="step-number">2</div>
+      <p>Name: <code>escape-velocity-brand</code> &nbsp;·&nbsp; Remote MCP URL: <code>https://mcp.escapevelocity.consulting/mcp</code></p>
+    </div>
+    <div class="step">
+      <div class="step-number">3</div>
+      <p>Leave OAuth Client ID and Secret fields <strong>blank</strong> — Claude Desktop self-registers via <a href="https://www.rfc-editor.org/rfc/rfc7591" target="_blank">RFC 7591</a>.</p>
+    </div>
+    <div class="step">
+      <div class="step-number">4</div>
+      <p>Click <strong>Add</strong>. A Google login browser tab opens → sign in → the connector becomes available. Only emails in <code>MCP_ALLOWED_EMAILS</code> on the server can authenticate.</p>
+    </div>
+
+    <h3>Claude Code — local stdio (dev)</h3>
+<pre><code>{
+  "mcpServers": {
+    "escape-velocity-brand": {
+      "command": "npx",
+      "args": ["tsx", "/path/to/brand/src/mcp/server.ts"],
+      "env": { "BRAND_DIR": "/path/to/brand" }
+    }
+  }
+}</code></pre>
+  </div>
+</section>

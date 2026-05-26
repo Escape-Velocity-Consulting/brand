@@ -1,0 +1,92 @@
+---
+layout: base.njk
+title: Voice & Press
+permalink: /identity/voice/
+navSlug: identity-voice
+parentSlug: identity
+subtitle: "Copy rules, press boilerplate, and founder photos."
+---
+
+<div class="identity-anchors">
+  <a href="#voice">Voice &amp; Copy</a>
+  <a href="#press">Press</a>
+  <a href="#photos">Photos</a>
+</div>
+
+<section id="voice">
+  <div class="container">
+    <div class="eyebrow">Voice</div>
+    <h2>Voice &amp; Copy</h2>
+
+    <h3>Dos</h3>
+    <div class="voice-card voice-dos">
+      <ul>
+        <li>Konkret vor abstrakt — lead with outcome</li>
+        <li>Active voice, short sentences</li>
+        <li>Numbers when possible ("6 Wochen", "17 Jahre")</li>
+        <li>"Sie" form (formal, not stiff)</li>
+        <li>Dry wit welcome; forced enthusiasm not</li>
+      </ul>
+    </div>
+
+    <h3>Don'ts</h3>
+    <div class="voice-card voice-donts">
+      <ul>
+        <li>No "revolutionieren", "disruptiv", "game-changer"</li>
+        <li>No excessive exclamation marks</li>
+        <li>No "Wir freuen uns..." opener</li>
+        <li>No filler: "In diesem Zusammenhang..."</li>
+        <li>No AI-forward positioning as headline</li>
+      </ul>
+    </div>
+
+    <h3>Copy Patterns</h3>
+    <div class="voice-card voice-patterns">
+      <ul>
+        <li>Eyebrows: TRANSFORMATION &amp; AUTOMATION — uppercase, 2–4 words</li>
+        <li>CTAs: imperative + arrow — Erstgespräch buchen →</li>
+        <li>Logo: always "Velocity" in terracotta</li>
+        <li>Tagline: "Digitalisierung &amp; Prozessoptimierung" (DE)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="press">
+  <div class="container">
+    <div class="eyebrow">Press</div>
+    <h2>Copy &amp; Bio</h2>
+    <div class="prose">
+      {{ press.html | safe }}
+    </div>
+    <p style="margin-top: 1.5rem;">
+      <a class="btn btn-primary" href="{{ '/press/boilerplate.md' | url }}" download>Download boilerplate.md</a>
+    </p>
+  </div>
+</section>
+
+<section id="photos">
+  <div class="container">
+    <div class="eyebrow">Photos</div>
+    <h2>Founder Photos</h2>
+    <div class="photo-grid">
+      {% for p in press.photos %}
+      <figure class="photo">
+        <a href="{{ ('/press/photos/' + p.file) | url }}" download>
+          <img src="{{ ('/press/photos/' + p.file) | url }}" alt="{{ p.alt }}" loading="lazy">
+        </a>
+        <figcaption>
+          <span>{{ p.alt }}</span>
+          <a href="{{ ('/press/photos/' + p.file) | url }}" download>Download</a>
+        </figcaption>
+      </figure>
+      {% endfor %}
+    </div>
+    <p style="margin-top: 1rem; color: var(--color-subtle); font-size: 0.9rem;">
+      Photos available for editorial use under the kit license. Higher resolution available on request.
+    </p>
+    <p style="margin-top: 1rem;">
+      Full press kit including logos, fonts, and templates: <a href="{{ '/' | url }}">Download Brand Kit →</a>
+    </p>
+  </div>
+</section>
