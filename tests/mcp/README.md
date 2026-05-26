@@ -96,3 +96,11 @@ For each key in `expect.structured`:
 
 The runner does not clean up generated files in `{{TMP}}` — useful for visually
 inspecting renders after a test run.
+
+## Sibling: unit tests
+
+OAuth / auth / refresh-token logic is exercised by the unit suite at
+`tests/unit/run.ts`, not by these tool-call fixtures. Run with `npm run
+test:unit`. Covers `signedToken`, `artifactStore`, `bearerAuth`, and
+`refreshTokenStore` (issue/consume/rotate/revoke/prune, disk persistence,
+no-raw-tokens-at-rest).

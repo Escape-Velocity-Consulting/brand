@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { log } from './logger.js'
 
 /**
  * File-backed store for MCP session IDs.
@@ -51,6 +52,7 @@ export class SessionStore {
     const records = this.load()
     const live = records.filter((r) => r.expiresAt > now)
     if (live.length < records.length) {
+      log('session_prune', { pruned: records.length - live.length, live: live.length })
       this.save(live)
     }
     return live.map((r) => r.id)
@@ -71,7 +73,7 @@ export class SessionStore {
     try {
       writeFileSync(this.filePath, JSON.stringify({ sessions: records }, null, 2), 'utf-8')
     } catch (err) {
-      console.error('[SessionStore] failed to write sessions file:', err)
+      log('session_persist_fail', { err: err instanceof Error ? err : String(err), file: this.filePath })
     }
   }
 }

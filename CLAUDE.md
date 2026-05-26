@@ -361,7 +361,11 @@ Multi-output tools (`render_slides`) return nested objects of these (`{ viewer, 
 - **`templates.meta.ts`** (brand root) — template registry: each entry declares output format, dims, body slot, required vars, and tags. Single source of truth for `list_templates` + `render_template` dispatching.
 - **`src/mcp/shared/outputSinks.ts`** — `LocalOutputSink` (writeFileSync → path) and `RemoteOutputSink` (artifactStore.write → signed URL).
 - **`src/mcp/shared/artifactStore.ts`** — on-disk store + HMAC-signed token issuer (`signedToken.ts`) + periodic cleanup.
-- **`src/mcp/shared/bearerAuth.ts`** — constant-time bearer check for `POST /mcp`.
+- **`src/mcp/shared/bearerAuth.ts`** — constant-time bearer check (used by legacy fallback paths only — `jwtAuth.ts` handles `POST /mcp` today).
+- **`src/mcp/shared/jwtAuth.ts`** — JWT issuance + validation. Issues HS256 tokens via `issueAccessToken`; `authenticate()` verifies them, re-checks `sub` against the runtime allowlist, and falls back to the legacy static bearer when present. Logs every auth event.
+- **`src/mcp/shared/refreshTokenStore.ts`** — disk-backed refresh-token store at `<MCP_TMP_DIR>/refresh-tokens.json`. SHA-256-hashed at rest; `consume()` is atomic single-use (rotation). Persists across container restarts.
+- **`src/mcp/shared/sessionStore.ts`** — disk-backed session-ID store at `<MCP_TMP_DIR>/sessions.json`. Lets sessions survive container restarts — on boot, pre-creates `StreamableHTTPServerTransport` instances for every non-expired ID.
+- **`src/mcp/shared/logger.ts`** — structured key=value stderr logger. Used everywhere in `src/mcp/`. See [§ Diagnostic logging](#diagnostic-logging).
 - **`src/mcp/tools/*.ts`** — one file per tool. Each tool: Zod input schema → call core → `ctx.outputSink.write(buffer, opts)` → return result via `runTool` / `successResult`.
 - **`generators/*.ts`** — unchanged CLI behavior; thin shims importing from `src/core/`. Each constructs a local `BrowserPool`, runs once, closes.
 
@@ -431,7 +435,7 @@ For packaged use: `npm run build:mcp` → point at `node dist/src/mcp/server.js`
 | `GET /.well-known/oauth-authorization-server` | none | RFC 8414 — AS metadata. |
 | `GET /authorize` | none | OAuth code-flow entrypoint. Redirects to Google for user login. |
 | `GET /oauth/google/callback` | none | Google calls back here; we mint our own auth code. |
-| `POST /token` | none (PKCE) | Exchange auth code for JWT access token. |
+| `POST /token` | none (PKCE) | Exchange `grant_type=authorization_code` (auth-code grant) or `grant_type=refresh_token` (rotating refresh) for a JWT access token. |
 | `POST /register` | none | RFC 7591 Dynamic Client Registration. |
 
 #### OAuth (Google-delegated, embedded AS)
@@ -444,10 +448,13 @@ The MCP server is **both** the OAuth 2.1 resource server AND the authorization s
 4. Google redirects to `GET /oauth/google/callback`.
 5. We exchange Google's code for an OIDC ID token, verify the signature against Google's JWKS, extract `email`, and check it against `MCP_ALLOWED_EMAILS`.
 6. If the email is allowed, we issue **our own** auth code and redirect the browser back to Claude's `redirect_uri`.
-7. Claude `POST /token`s with the code + PKCE verifier; we issue a **JWT** access token (HS256, signed with `MCP_JWT_SECRET`).
-8. Claude calls `POST /mcp` with that JWT. We verify the signature, audience, expiry, and re-check the `sub` email against the allowlist on every request.
+7. Claude `POST /token`s with the code + PKCE verifier; we issue a **JWT** access token (HS256, signed with `MCP_JWT_SECRET`, 1h TTL) **plus a rotating refresh token** (opaque `rt_<32 bytes b64url>`, 30d TTL by default).
+8. Claude calls `POST /mcp` with the JWT. We verify the signature, audience, expiry, and re-check the `sub` email against the allowlist on every request.
+9. After ~1h the JWT expires. Claude silently `POST /token`s again with `grant_type=refresh_token`. We look up the refresh token by SHA-256 hash, atomically delete it (rotation = single-use), re-check the `sub` against the allowlist, then issue a fresh access token **and a fresh refresh token**. Claude transparently retries the failed `/mcp` request — the user sees no disconnect.
 
-Allowlist changes take effect on the next request — no token revocation list needed.
+**Rotation semantics.** Refresh tokens are one-time-use. Each refresh issues a fresh token; the old one is gone. If a consumed refresh token is presented again, it just looks unknown (the record was deleted on consume). The OAuth 2.1 family-revoke-on-reuse pattern is a future hardening — for now, the worst case is one client side-effect of "you'll be forced to re-OAuth," which is fine for a single-tenant server.
+
+Allowlist changes take effect on the next request OR the next refresh — no token revocation list needed.
 
 #### Env vars (set on the deployment platform)
 
@@ -467,6 +474,8 @@ Allowlist changes take effect on the next request — no token revocation list n
 | `MCP_ARTIFACT_TTL_SECONDS` | no | `3600` | Signed-URL TTL. |
 | `MCP_CLEANUP_INTERVAL_SECONDS` | no | `300` | Cleanup-loop cadence. |
 | `MCP_ALLOWED_ORIGINS` | no | (empty) | Optional comma-separated browser-Origin allowlist (DNS-rebinding defense). |
+| `MCP_REFRESH_TOKEN_TTL_SECONDS` | no | `2592000` (30 days) | Refresh-token lifetime. Drop lower if you want clients to re-auth more often. |
+| `MCP_LOG_IP` | no | `none` | Controls client-IP logging. `none` = drop IPs (DSGVO-safe default), `truncated` = /16 for IPv4 + /48 for IPv6, `full` = log as-is (opt-in only). |
 
 #### Google Cloud setup
 
@@ -492,13 +501,103 @@ To enable deploy: set repo variable `MCP_DEPLOY_ENABLED` = `true` (Settings → 
 
 (For client-side registration commands, see [§ Registering the MCP server](#registering-the-mcp-server) above.)
 
+### Diagnostic logging
+
+All MCP-HTTP events are logged to **stderr** in a structured key=value format. The prefix is always `[escape-velocity-brand MCP/http]`; the rest is a sequence of `key=value` pairs. Strings containing whitespace or `=` are double-quoted. Designed for `grep`, not `jq`.
+
+```
+[escape-velocity-brand MCP/http] evt=oauth_token_issued sub=tommi.enenkel@gmail.com client_id=cli_abcd… expires_in_s=3600 refresh_token_issued=true
+[escape-velocity-brand MCP/http] evt=auth_ok sub=tommi.enenkel@gmail.com legacy=false exp=1735678800 ttl_remaining_s=3559 path=/mcp
+[escape-velocity-brand MCP/http] evt=jwt_reject reason=verify_failed err="\"exp\" claim timestamp check failed" sub_claimed=tommi.enenkel@gmail.com exp_claimed=1735675200 expired=true path=/mcp
+```
+
+**Read logs from production:**
+
+```bash
+gcloud compute ssh web-server --zone=us-central1-a --tunnel-through-iap \
+  --command="sudo /usr/local/bin/service-logs brand-mcp 500" \
+  --configuration=brand-mcp
+```
+
+(Setup for the gcloud configuration is in `business/CLAUDE.md` § Server Access — Brand MCP.)
+
+#### Event vocabulary
+
+| Subsystem | `evt=` | Key fields | When |
+|---|---|---|---|
+| Startup | `startup` | `host`, `port`, `brand_dir`, `store_dir`, `jwt`, `legacy_bearer`, `oauth`, `allowlist_emails`, `refresh_ttl_s`, `log_ip`, `artifact_files`, `artifact_bytes` | HTTP listener bound. |
+| Startup | `shutdown` | `signal` | SIGINT / SIGTERM received. |
+| Sessions | `session_create` | `sid`, `total_sessions` | New session initialized via `/mcp` POST init. |
+| Sessions | `session_close` | `sid`, `total_sessions` | Transport closed (client DELETE or remote disconnect). |
+| Sessions | `session_restore` | `sid` | Persisted session re-created at boot. |
+| Sessions | `session_restore_fail` | `sid`, `err` | Pre-create on boot threw. |
+| Sessions | `startup_sessions_restored` | `count` | Summary at boot. |
+| Sessions | `session_prune` | `pruned`, `live` | Expired session records dropped from disk. |
+| Sessions | `session_persist_fail` | `err`, `file` | Writing sessions.json failed. |
+| Sessions | `session_delete_request` | `sid`, `email` | Client DELETE `/mcp`. |
+| Auth | `auth_missing` | `path`, `method`, `ua`, `ip` | No `Authorization` header. |
+| Auth | `auth_ok` | `sub`, `legacy`, `exp`, `ttl_remaining_s`, `path`, `ip` | JWT or legacy bearer accepted. |
+| Auth | `jwt_reject` | `reason=<missing_sub\|allowlist_miss\|verify_failed>`, `err`, `sub_claimed`, `exp_claimed`, **`expired`**, `path`, `ua`, `ip` | JWT failed. `expired=true` is the smoking gun for the 1h-TTL hypothesis. |
+| Auth | `auth_reject` | `reason=unknown_token`, `looked_like_jwt`, `path`, `ua`, `ip` | Bearer present but not a JWT and not the legacy token. |
+| Auth | `jwt_issue` | `sub`, `ttl_s`, `exp` | Access token minted. |
+| OAuth | `oauth_authorize` | `flow_id`, `client_id`, `redirect_uri_host` | `/authorize` accepted; redirecting to Google. |
+| OAuth | `oauth_authorize_reject` | `reason=<bad_response_type\|missing_client_id\|missing_redirect_uri\|missing_pkce\|bad_pkce_method\|unknown_client\|redirect_uri_mismatch>`, `client_id` | `/authorize` validation failed. |
+| OAuth | `oauth_callback_reject` | `reason=<google_returned_error\|missing_code_or_state\|flow_unknown_or_expired\|google_token_exchange_failed\|google_no_id_token\|google_idtoken_invalid\|missing_email\|email_unverified\|allowlist_miss>`, …context | `/oauth/google/callback` failed. |
+| OAuth | `oauth_code_issued` | `sub`, `flow_id`, `code`, `ttl_s` | Our short-lived auth code minted. |
+| OAuth | `oauth_token_reject` | `reason=<unsupported_grant_type\|invalid_request\|unknown_code\|expired\|redirect_uri_mismatch\|client_id_mismatch\|pkce_fail>`, `grant`, `code`, `sub` | `/token` rejected. |
+| OAuth | `oauth_token_issued` | `sub`, `client_id`, `expires_in_s`, `refresh_token_issued`, `grant?` | Access token returned. |
+| OAuth | `oauth_client_registered` | `client_id`, `client_name`, `redirect_uris_count` | DCR client registered via `/register`. |
+| Refresh | `refresh_issue` | `sub`, `rt_id`, `ttl_s` | Refresh token issued (alongside an access token). |
+| Refresh | `refresh_consume_ok` | `sub`, `old_rt_id`, `new_rt_id` | Refresh accepted; rotated. |
+| Refresh | `refresh_consume_reject` | `reason=<unknown_or_expired\|allowlist_miss>`, `sub`, `rt_claimed_id` | Refresh denied. |
+| Refresh | `refresh_prune` | `pruned`, `live` | Expired refresh tokens dropped from disk on boot. |
+| HTTP | `mcp_request` | `sid`, `email`, `is_init` | POST `/mcp` routed. |
+| HTTP | `mcp_stream_open` | `sid`, `email` | GET `/mcp` SSE stream opened. |
+| HTTP | `mcp_session_404` | `sid_claimed`, `had_header`, `email`, `verb`, `is_init?` | Client presented stale or missing session ID. **Second key diagnostic** — fires even when the JWT is fresh. |
+| HTTP | `http_404` / `http_405` / `http_500` | `path`, `method`, `err?` | Generic failures. |
+| HTTP | `artifact_404` | `token`, `reason` | `/artifacts/<token>` lookup failed. |
+
+#### Redaction rules
+
+- **Never logged:** raw tokens (access, refresh, auth code), `Authorization` headers, client secrets, Google ID tokens, `Error.stack` (file paths leak).
+- **`sub` (email) IS logged.** It's the join key for tracing one client through the OAuth flow + JWT validation + session lifecycle. Single-tenant server today — internal data only.
+- **Opaque IDs truncated to 8 chars + `…`** (session IDs, OAuth flow IDs, auth codes, refresh-token hashes). Enough to correlate within a log window, not enough to replay.
+- **IPs default OFF** (`MCP_LOG_IP=none`). Opt-in to `truncated` (/16 IPv4, /48 IPv6) or `full`.
+- **User-Agent truncated to 80 chars.**
+
+#### Example: healthy OAuth + first /mcp call
+
+```
+[escape-velocity-brand MCP/http] evt=oauth_authorize flow_id=a1b2c3d4… client_id=cli_xyz1… redirect_uri_host=claude.ai
+[escape-velocity-brand MCP/http] evt=oauth_code_issued sub=tommi.enenkel@gmail.com flow_id=a1b2c3d4… code=q9w8e7r6… ttl_s=60
+[escape-velocity-brand MCP/http] evt=jwt_issue sub=tommi.enenkel@gmail.com ttl_s=3600 exp=1735682400
+[escape-velocity-brand MCP/http] evt=refresh_issue sub=tommi.enenkel@gmail.com rt_id=h4a5s6h7… ttl_s=2592000
+[escape-velocity-brand MCP/http] evt=oauth_token_issued sub=tommi.enenkel@gmail.com client_id=cli_xyz1… expires_in_s=3600 refresh_token_issued=true
+[escape-velocity-brand MCP/http] evt=auth_ok sub=tommi.enenkel@gmail.com legacy=false exp=1735682400 ttl_remaining_s=3598 path=/mcp
+[escape-velocity-brand MCP/http] evt=mcp_request email=tommi.enenkel@gmail.com is_init=true
+[escape-velocity-brand MCP/http] evt=session_create sid=af020fb6… total_sessions=1
+```
+
+#### Example: expired-token + silent refresh
+
+```
+[escape-velocity-brand MCP/http] evt=jwt_reject reason=verify_failed err="\"exp\" claim timestamp check failed" sub_claimed=tommi.enenkel@gmail.com exp_claimed=1735678800 expired=true path=/mcp
+[escape-velocity-brand MCP/http] evt=refresh_consume_ok sub=tommi.enenkel@gmail.com old_rt_id=h4a5s6h7… new_rt_id=k1l2m3n4…
+[escape-velocity-brand MCP/http] evt=refresh_issue sub=tommi.enenkel@gmail.com rt_id=k1l2m3n4… ttl_s=2592000
+[escape-velocity-brand MCP/http] evt=jwt_issue sub=tommi.enenkel@gmail.com ttl_s=3600 exp=1735686000
+[escape-velocity-brand MCP/http] evt=oauth_token_issued sub=tommi.enenkel@gmail.com client_id=cli_xyz1… expires_in_s=3600 refresh_token_issued=true grant=refresh_token
+[escape-velocity-brand MCP/http] evt=auth_ok sub=tommi.enenkel@gmail.com legacy=false exp=1735686000 ttl_remaining_s=3599 path=/mcp
+```
+
+If you see `jwt_reject expired=true` without a subsequent `refresh_consume_ok` (or with `refresh_consume_reject`), the client never tried to refresh — that's the broken case to debug.
+
 ### Tests
 
 Two suites — same JSON fixtures, two transports:
 
 - **`npm run test:mcp`** — spawns `src/mcp/server.ts` via stdio. ~6s. Report at `tests/mcp/report/index.html`.
 - **`npm run test:mcp:http`** — spawns `src/mcp/server-http.ts` on a free port with test secrets, connects via `StreamableHTTPClientTransport`, downloads every signed URL into `tests/mcp/report-http/artifacts/`. ~6s. Report at `tests/mcp/report-http/index.html`.
-- **`npm run test:unit`** — unit tests for `signedToken`, `artifactStore`, `bearerAuth`.
+- **`npm run test:unit`** — unit tests for `signedToken`, `artifactStore`, `bearerAuth`, and `refreshTokenStore` (issue/consume/rotate/revoke/prune + disk-persistence + hash-not-raw-token-at-rest).
 
 Run the HTTP suite against an already-running server (e.g. production):
 

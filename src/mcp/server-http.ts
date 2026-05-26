@@ -12,6 +12,7 @@ import { createServer, type ServerContext } from './shared/createServer.js'
 import { RemoteOutputSink } from './shared/outputSinks.js'
 import { ArtifactStore, summarizeStore } from './shared/artifactStore.js'
 import { authenticate, type AuthConfig } from './shared/jwtAuth.js'
+import { log, truncId } from './shared/logger.js'
 import {
   handleAsMetadata,
   handleAuthorize,
@@ -21,6 +22,7 @@ import {
   stopOAuthCleanup,
   type OAuthConfig,
 } from './shared/oauthServer.js'
+import { RefreshTokenStore } from './shared/refreshTokenStore.js'
 import { resolveBrandDir } from './shared/resolveBrandDir.js'
 import { SessionStore } from './shared/sessionStore.js'
 
@@ -101,25 +103,30 @@ async function main() {
     legacyBearerToken,
   }
 
-  // OAuth (Google-delegated). Optional — only enabled if Google client creds
-  // are present. If not configured, /authorize etc. return 503; the static
-  // bearer fallback keeps the test suite working.
-  const googleClientId = process.env.MCP_OAUTH_GOOGLE_CLIENT_ID ?? ''
-  const googleClientSecret = process.env.MCP_OAUTH_GOOGLE_CLIENT_SECRET ?? ''
-  const oauthEnabled = !!(googleClientId && googleClientSecret && jwtSecret && allowedEmails.size > 0)
-  const oauthConfig: OAuthConfig = {
-    publicBaseUrl,
-    googleClientId,
-    googleClientSecret,
-    allowedEmails,
-    authConfig,
-  }
   const port = optEnvInt('MCP_PORT', 8080)
   const host = process.env.MCP_BIND_HOST ?? '0.0.0.0'
   const storeDir = process.env.MCP_TMP_DIR ?? resolve(tmpdir(), 'brand-mcp')
   const ttlSeconds = optEnvInt('MCP_ARTIFACT_TTL_SECONDS', 3600)
   const cleanupIntervalSeconds = optEnvInt('MCP_CLEANUP_INTERVAL_SECONDS', 300)
   const allowedOrigins = (process.env.MCP_ALLOWED_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+  const refreshTokenTtlSeconds = optEnvInt('MCP_REFRESH_TOKEN_TTL_SECONDS', 30 * 24 * 60 * 60)
+
+  // OAuth (Google-delegated). Optional — only enabled if Google client creds
+  // are present. If not configured, /authorize etc. return 503; the static
+  // bearer fallback keeps the test suite working.
+  const googleClientId = process.env.MCP_OAUTH_GOOGLE_CLIENT_ID ?? ''
+  const googleClientSecret = process.env.MCP_OAUTH_GOOGLE_CLIENT_SECRET ?? ''
+  const oauthEnabled = !!(googleClientId && googleClientSecret && jwtSecret && allowedEmails.size > 0)
+  const refreshTokenStore = new RefreshTokenStore(resolve(storeDir, 'refresh-tokens.json'))
+  const oauthConfig: OAuthConfig = {
+    publicBaseUrl,
+    googleClientId,
+    googleClientSecret,
+    allowedEmails,
+    authConfig,
+    refreshTokenStore,
+    refreshTokenTtlSeconds,
+  }
 
   const store = new ArtifactStore({
     storeDir,
@@ -162,6 +169,9 @@ async function main() {
       onsessioninitialized: (sid: string) => {
         transports.set(sid, transport)
         sessionStore.set(sid, ttlSeconds)
+        if (!forcedId) {
+          log('session_create', { sid: truncId(sid), total_sessions: transports.size })
+        }
       },
       allowedOrigins: allowedOrigins.length ? allowedOrigins : undefined,
     } as any)
@@ -169,6 +179,7 @@ async function main() {
       if (transport.sessionId && transports.get(transport.sessionId) === transport) {
         transports.delete(transport.sessionId)
         sessionStore.delete(transport.sessionId)
+        log('session_close', { sid: truncId(transport.sessionId), total_sessions: transports.size })
       }
     }
     // Pre-register forced IDs immediately — before the initialize handshake
@@ -184,7 +195,11 @@ async function main() {
     try {
       await route(req, res, transports, createSessionTransport, store, authConfig, oauthConfig, oauthEnabled)
     } catch (err) {
-      console.error('[escape-velocity-brand MCP/http] unhandled:', err)
+      log('http_500', {
+        path: (req.url ?? '/').split('?')[0],
+        method: req.method ?? 'GET',
+        err: err instanceof Error ? err : String(err),
+      })
       if (!res.headersSent) {
         res.writeHead(500, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ error: 'internal_server_error' }))
@@ -193,7 +208,7 @@ async function main() {
   })
 
   const shutdown = async (signal: string) => {
-    console.error(`[escape-velocity-brand MCP/http] ${signal} — shutting down`)
+    log('shutdown', { signal })
     store.stopCleanup()
     stopOAuthCleanup()
     try { httpServer.close() } catch {}
@@ -214,21 +229,36 @@ async function main() {
   for (const id of restoredIds) {
     try {
       await createSessionTransport(id)
+      log('session_restore', { sid: truncId(id) })
     } catch (err) {
-      console.error(`[escape-velocity-brand MCP/http] failed to restore session ${id}:`, err)
+      log('session_restore_fail', { sid: truncId(id), err: err instanceof Error ? err : String(err) })
     }
   }
   if (restoredIds.length > 0) {
-    console.error(`[escape-velocity-brand MCP/http] restored ${restoredIds.length} session(s) from disk`)
+    log('startup_sessions_restored', { count: restoredIds.length })
+  }
+  // Drop any expired refresh tokens left on disk from the previous boot.
+  const rtPrune = refreshTokenStore.prune()
+  if (rtPrune.pruned > 0) {
+    log('refresh_prune', { pruned: rtPrune.pruned, live: rtPrune.live })
   }
 
   httpServer.listen(port, host, () => {
-    console.error(`[escape-velocity-brand MCP/http] listening on http://${host}:${port}`)
-    console.error(`[escape-velocity-brand MCP/http] brandDir=${brandDir}`)
-    console.error(`[escape-velocity-brand MCP/http] artifact store: ${storeDir}`)
-    console.error(`[escape-velocity-brand MCP/http] auth: JWT=${jwtSecret ? 'on' : 'off'}, legacy bearer=${legacyBearerToken ? 'on' : 'off'}, OAuth=${oauthEnabled ? 'on' : 'off'}, allowlist=${allowedEmails.size} emails`)
     const snap = summarizeStore(storeDir)
-    console.error(`[escape-velocity-brand MCP/http] existing artifacts on disk: ${snap.fileCount} files, ${snap.bytes} bytes`)
+    log('startup', {
+      host,
+      port,
+      brand_dir: brandDir,
+      store_dir: storeDir,
+      jwt: jwtSecret ? 'on' : 'off',
+      legacy_bearer: legacyBearerToken ? 'on' : 'off',
+      oauth: oauthEnabled ? 'on' : 'off',
+      allowlist_emails: allowedEmails.size,
+      refresh_ttl_s: refreshTokenTtlSeconds,
+      log_ip: process.env.MCP_LOG_IP ?? 'none',
+      artifact_files: snap.fileCount,
+      artifact_bytes: snap.bytes,
+    })
   })
 }
 
@@ -321,12 +351,14 @@ async function route(
   if (path.startsWith('/artifacts/') && method === 'GET') {
     const token = path.slice('/artifacts/'.length)
     if (!token) {
+      log('artifact_404', { reason: 'empty_token' })
       res.writeHead(404, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify({ error: 'not_found' }))
       return
     }
     const resolved = store.resolve(token)
     if (!resolved) {
+      log('artifact_404', { token: truncId(token), reason: 'unresolved_or_expired' })
       res.writeHead(404, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify({ error: 'not_found_or_expired' }))
       return
@@ -350,14 +382,24 @@ async function route(
     if (method === 'POST') {
       const body = await readBody(req)
       let transport: StreamableHTTPServerTransport | undefined
+      const isInit = isInitializeRequest(body)
 
       if (sessionId && transports.has(sessionId)) {
         transport = transports.get(sessionId)!
-      } else if (!sessionId && isInitializeRequest(body)) {
+        log('mcp_request', { sid: truncId(sessionId), email: authed.email, is_init: false })
+      } else if (!sessionId && isInit) {
         transport = await createSessionTransport()
+        log('mcp_request', { sid: truncId(transport.sessionId), email: authed.email, is_init: true })
       } else {
         // 404 is the MCP-spec-compliant response for unknown sessions — it
         // signals compliant clients to drop the stale ID and reinitialize.
+        log('mcp_session_404', {
+          sid_claimed: truncId(sessionId),
+          had_header: !!sessionId,
+          email: authed.email,
+          verb: 'POST',
+          is_init: isInit,
+        })
         res.writeHead(404, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({
           jsonrpc: '2.0',
@@ -379,10 +421,12 @@ async function route(
     // GET: streaming response channel for an existing session.
     if (method === 'GET') {
       if (!sessionId || !transports.has(sessionId)) {
+        log('mcp_session_404', { sid_claimed: truncId(sessionId), had_header: !!sessionId, email: authed.email, verb: 'GET' })
         res.writeHead(404, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ error: 'session_not_found' }))
         return
       }
+      log('mcp_stream_open', { sid: truncId(sessionId), email: authed.email })
       await transports.get(sessionId)!.handleRequest(req, res)
       return
     }
@@ -390,19 +434,23 @@ async function route(
     // DELETE: terminate a session.
     if (method === 'DELETE') {
       if (!sessionId || !transports.has(sessionId)) {
+        log('mcp_session_404', { sid_claimed: truncId(sessionId), had_header: !!sessionId, email: authed.email, verb: 'DELETE' })
         res.writeHead(404, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ error: 'session_not_found' }))
         return
       }
+      log('session_delete_request', { sid: truncId(sessionId), email: authed.email })
       await transports.get(sessionId)!.handleRequest(req, res)
       return
     }
 
+    log('http_405', { path, method })
     res.writeHead(405, { 'Content-Type': 'application/json', 'Allow': 'POST, GET, DELETE' })
     res.end(JSON.stringify({ error: 'method_not_allowed' }))
     return
   }
 
+  log('http_404', { path, method })
   res.writeHead(404, { 'Content-Type': 'application/json' })
   res.end(JSON.stringify({ error: 'not_found' }))
 }

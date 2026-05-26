@@ -9,6 +9,7 @@ import { join } from 'node:path'
 import { generateSecret, sign, verify } from '../../src/mcp/shared/signedToken.js'
 import { ArtifactStore } from '../../src/mcp/shared/artifactStore.js'
 import { constantTimeEqual } from '../../src/mcp/shared/bearerAuth.js'
+import { RefreshTokenStore, __testing as rtTesting } from '../../src/mcp/shared/refreshTokenStore.js'
 
 let failures = 0
 function check(label: string, cond: unknown, detail?: string) {
@@ -134,12 +135,89 @@ function testBearerAuth() {
   check('one empty differs', !constantTimeEqual('', 'a'))
 }
 
+// ─── refreshTokenStore ────────────────────────────────────────────────────
+
+function testRefreshTokenStore() {
+  console.log('\n# refreshTokenStore')
+  const dir = mkdtempSync(join(tmpdir(), 'brand-mcp-rt-'))
+  const filePath = join(dir, 'refresh-tokens.json')
+
+  // 1. Issue → consume happy path
+  const store = new RefreshTokenStore(filePath)
+  const issued = store.issue('a@example.com', 3600)
+  check('issued token has rt_ prefix', issued.token.startsWith('rt_'))
+  check('issued token is long', issued.token.length > 30)
+  check('store has one record', store.count() === 1)
+  const consumed = store.consume(issued.token)
+  check('consume returns sub', consumed !== null && consumed.sub === 'a@example.com')
+  check('consume removes record (single-use)', store.count() === 0)
+
+  // 2. Double-consume rejected
+  const reuse = store.consume(issued.token)
+  check('reuse rejected after consume', reuse === null)
+
+  // 3. Unknown token rejected
+  const ghost = store.consume('rt_definitely-not-in-store')
+  check('unknown token rejected', ghost === null)
+
+  // 4. Expired token rejected (still deleted)
+  const expired = store.issue('b@example.com', -10) // already expired
+  check('expired token persisted before consume', store.count() === 1)
+  const consumedExpired = store.consume(expired.token)
+  check('expired consume returns null', consumedExpired === null)
+  check('expired consume still removes record', store.count() === 0)
+
+  // 5. Persists to disk (round-trip via fresh instance)
+  const issued2 = store.issue('c@example.com', 3600)
+  const store2 = new RefreshTokenStore(filePath)
+  check('record survives reload', store2.count() === 1)
+  const consumed2 = store2.consume(issued2.token)
+  check('reload-consume returns correct sub', consumed2 !== null && consumed2.sub === 'c@example.com')
+
+  // 6. Raw token never on disk (only hash)
+  const issued3 = store.issue('d@example.com', 3600)
+  const raw = readFileSync(filePath, 'utf-8')
+  check('raw token not in store file', !raw.includes(issued3.token))
+  // The hash should be present (hex SHA-256, 64 chars).
+  const expectedHash = rtTesting.hashToken(issued3.token)
+  check('hash IS in store file', raw.includes(expectedHash))
+
+  // 7. revoke() drops all for a sub
+  store.issue('e@example.com', 3600)
+  store.issue('e@example.com', 3600)
+  store.issue('f@example.com', 3600)
+  const beforeRevoke = store.count()
+  const removed = store.revoke('e@example.com')
+  check('revoke returns count removed', removed === 2)
+  check('revoke leaves other subs alone', store.count() === beforeRevoke - 2)
+
+  // 8. prune() drops expired
+  store.issue('g@example.com', -1) // expired
+  store.issue('h@example.com', 3600)
+  const pruneResult = store.prune()
+  check('prune reports pruned count', pruneResult.pruned >= 1)
+  // Live count should reflect non-expired entries only.
+  check('prune leaves live records', pruneResult.live === store.count())
+
+  // 9. Two independent tokens for same sub
+  const a1 = store.issue('i@example.com', 3600)
+  const a2 = store.issue('i@example.com', 3600)
+  check('two issues for same sub differ', a1.token !== a2.token)
+  const c1 = store.consume(a1.token)
+  check('first consume succeeds', c1 !== null)
+  const c2 = store.consume(a2.token)
+  check('second consume (independent) succeeds', c2 !== null)
+
+  rmSync(dir, { recursive: true, force: true })
+}
+
 // ─── runner ────────────────────────────────────────────────────────────────
 
 async function main() {
   testSignedToken()
   await testArtifactStore()
   testBearerAuth()
+  testRefreshTokenStore()
   console.log(`\n${failures === 0 ? 'All unit tests passed.' : `${failures} test(s) FAILED.`}`)
   process.exit(failures === 0 ? 0 : 1)
 }
