@@ -22,11 +22,36 @@
   <div class="container">
     {% for item in nav %}
       {%- set href = ('/' + item.slug + (('/') if item.slug else '')) | url -%}
-      {%- set isActive = (item.slug == navSlug) -%}
+      {%- set isActive = (item.slug == navSlug) or (item.slug == parentSlug) -%}
       <a href="{{ href }}"{% if isActive %} class="active"{% endif %}>{{ item.label }}</a>
     {% endfor %}
   </div>
 </nav>
+
+{%- set subnav = null -%}
+{%- set subnavActive = "" -%}
+{%- for item in nav -%}
+  {%- if item.slug == navSlug and item.children -%}
+    {%- set subnav = item.children -%}
+    {%- set subnavActive = "" -%}
+  {%- endif -%}
+  {%- if item.slug == parentSlug and item.children -%}
+    {%- set subnav = item.children -%}
+    {%- set subnavActive = navSlug -%}
+  {%- endif -%}
+{%- endfor -%}
+
+{% if subnav %}
+<nav class="demo-subnav">
+  <div class="container">
+    {% for child in subnav %}
+      {%- set childHref = ('/' + child.slug + '/') | url -%}
+      {%- set childActive = (child.slug == subnavActive) -%}
+      <a href="{{ childHref }}"{% if childActive %} class="active"{% endif %}>{{ child.label }}</a>
+    {% endfor %}
+  </div>
+</nav>
+{% endif %}
 
 {{ content | safe }}
 

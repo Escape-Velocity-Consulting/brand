@@ -3,50 +3,54 @@ layout: base.njk
 title: Overview
 permalink: /
 navSlug: ""
+subtitle: "Brand system for Escape Velocity — tokens, templates, and tooling."
 ---
 
-<!-- Logo Strip -->
-<div class="logo-strip">
+<!-- Brand Hero -->
+<div class="overview-hero">
   <div class="container">
-    <img src="{{ '/assets/logos/ev-wordmark.svg' | url }}" alt="EV Wordmark" width="150" height="150">
-    <img src="{{ '/assets/logos/logo-dark.svg' | url }}" alt="Logo Dark" width="250" height="125">
+    <img src="{{ '/assets/logos/logo-dark.svg' | url }}" alt="Escape Velocity" width="280" height="140">
+    <div class="tagline-label">Digitalisierung &amp; Prozessoptimierung</div>
+    <p class="descriptor">Design system — tokens, templates, and tooling for the Escape Velocity brand.</p>
   </div>
 </div>
 
-<!-- Color Snapshot -->
+<!-- Routing -->
 <section>
   <div class="container">
-    <div class="eyebrow">Colors</div>
-    <h2>Color Snapshot</h2>
-    {% set colors = palette.snapshot %}
-    {% include "partials/swatches.njk" %}
-  </div>
-</section>
-
-<!-- Font Samples -->
-<section>
-  <div class="container">
-    <div class="eyebrow">Typography</div>
-    <h2>Font Samples</h2>
-    {% set fonts = typography %}
-    {% include "partials/font-samples.njk" %}
-  </div>
-</section>
-
-<!-- Navigation Cards -->
-<section>
-  <div class="container">
-    <div class="eyebrow">Pages</div>
-    <h2>Brand Site Pages</h2>
+    <div class="eyebrow">Navigate</div>
+    <h2>What are you looking for?</h2>
     <div class="nav-cards">
-      {% for item in nav %}
-        {% if item.slug %}
-          <a href="{{ ('/' + item.slug + '/') | url }}" class="nav-card">
-            <h4>{{ item.label }}</h4>
-            <p>{{ item.description }}</p>
-          </a>
-        {% endif %}
-      {% endfor %}
+      <a href="{{ '/identity/' | url }}" class="nav-card">
+        <h4>The Brand</h4>
+        <p>Colors, typography, logos, voice rules, and press materials — the complete identity reference.</p>
+      </a>
+      <a href="{{ '/products/' | url }}" class="nav-card">
+        <h4>Create Something</h4>
+        <p>Documents, presentations, and graphics — templates and previews for every output type.</p>
+      </a>
+      <a href="{{ '/tooling/' | url }}" class="nav-card">
+        <h4>Connect Claude</h4>
+        <p>Claude skill, MCP server setup, build workflow, and the full template catalog.</p>
+      </a>
     </div>
+  </div>
+</section>
+
+<!-- System Diagram -->
+<section>
+  <div class="container">
+    <div class="eyebrow">Architecture</div>
+    <h2>How the System Works</h2>
+<pre>tokens.ts ──→ tokens.css ──→ brand/dist/tokens.css
+     │                                │
+     ▼                                ▼
+templates/*.html  ──→  pdf.ts/image.ts  ──→  PDFs / PNGs
+     │
+     ▼
+site/*.njk  ──→  11ty  ──→  brand/dist/site/  ──→  website /brand/  (via git submodule)</pre>
+    <p style="font-size: 14px; color: var(--color-body); margin-top: 16px;">
+      <code>tokens.ts</code> is the single source of truth. Every template, document, and social asset sources its colors and fonts from there via CSS custom properties. Changes propagate automatically on the next build.
+    </p>
   </div>
 </section>

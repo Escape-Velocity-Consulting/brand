@@ -3,7 +3,63 @@ layout: base.njk
 title: Tooling
 permalink: /tooling/
 navSlug: tooling
+subtitle: "Claude skill, MCP server, build workflow, and template catalog."
 ---
+
+<section>
+  <div class="container">
+    <div class="eyebrow">System</div>
+    <h2>How It Works</h2>
+
+<pre>tokens.ts ──→ tokens.css ──→ brand/dist/tokens.css
+     │                                │
+     ▼                                ▼
+templates/*.html  ──→  pdf.ts/image.ts  ──→  PDFs / PNGs
+     │
+     ▼
+site/*.njk  ──→  11ty  ──→  brand/dist/site/  ──→  website /brand/  (via git submodule)</pre>
+
+    <h3>Build Scripts</h3>
+    <table>
+      <thead>
+        <tr><th>Script</th><th>Command</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>build:tokens</code></td><td><code>tsx scripts/build-tokens.ts</code></td><td>Regenerate tokens.css + tokens.json from tokens.ts</td></tr>
+        <tr><td><code>build:dist</code></td><td><code>bash scripts/build-dist.sh</code></td><td>Build the full Brand Distribution (site + assets + fonts + tokens.css)</td></tr>
+        <tr><td><code>dev</code></td><td><code>11ty --serve</code></td><td>Serve Brand Site at localhost:3000/brand/ with live reload</td></tr>
+        <tr><td><code>pdf</code></td><td><code>tsx generators/pdf.ts</code></td><td>Markdown → branded A4 PDF</td></tr>
+        <tr><td><code>image</code></td><td><code>tsx generators/image.ts</code></td><td>HTML/SVG → PNG (banners, social)</td></tr>
+        <tr><td><code>export</code></td><td><code>tsx scripts/export-assets.ts</code></td><td>Regenerate all raster assets + document previews</td></tr>
+        <tr><td><code>build:skill</code></td><td><code>bash scripts/build-skill.sh</code></td><td>Package brand-engine.skill</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Token Workflow</div>
+    <h2>Updating Tokens</h2>
+
+    <div class="step">
+      <div class="step-number">1</div>
+      <p>Edit <code>brand/tokens.ts</code> — Change colors, fonts, or spacing values</p>
+    </div>
+    <div class="step">
+      <div class="step-number">2</div>
+      <p>Run <code>npm run dev</code> in <code>brand/</code> — Brand Site at localhost:3000/brand/ updates live as you tweak tokens</p>
+    </div>
+    <div class="step">
+      <div class="step-number">3</div>
+      <p>Commit and push the brand repo — that becomes the new "release" the website can consume</p>
+    </div>
+    <div class="step">
+      <div class="step-number">4</div>
+      <p>In the website repo: <code>git submodule update --remote _brand</code> → commit the new pin → deploy. The live <code>/brand/</code> page now reflects the new tokens.</p>
+    </div>
+  </div>
+</section>
 
 <section>
   <div class="container">
@@ -157,9 +213,14 @@ navSlug: tooling
   <div class="container">
     <h3>Reference</h3>
     <ul class="links-list">
+      <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/BRAND_SPEC.md" target="_blank">BRAND_SPEC.md</a> — Canonical brand specification (source of truth)</li>
       <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/docs/mcp-server.md" target="_blank">docs/mcp-server.md</a> — Full MCP server reference (routes, auth, env vars, architecture)</li>
+      <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/docs/README.md" target="_blank">docs/</a> — Operational documentation (architecture, rules, MCP, publishing, templates, troubleshooting, glossary)</li>
       <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/templates.meta.ts" target="_blank">templates.meta.ts</a> — Template registry source (descriptions, dims, required vars)</li>
       <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/docs/publishing.md" target="_blank">docs/publishing.md</a> — Publish / unpublish flow and bundle abstraction</li>
+      <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/BRAND_SKILL.md" target="_blank">BRAND_SKILL.md</a> — Agent cheatsheet for brand system (token table + CSS vars + layout patterns)</li>
+      <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/tokens.ts" target="_blank">tokens.ts</a> — Token source of truth (colors, fonts, spacing)</li>
+      <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/tokens.css" target="_blank">tokens.css</a> — Generated CSS custom properties</li>
       <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/skill/escape-velocity-brand/SKILL.md" target="_blank">skill/SKILL.md</a> — Deployed skill source (template catalog + routing map)</li>
     </ul>
   </div>

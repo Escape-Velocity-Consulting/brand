@@ -1,0 +1,60 @@
+---
+layout: base.njk
+title: Graphics
+permalink: /graphics/
+navSlug: graphics
+parentSlug: products
+subtitle: "Social assets, banners, and graphic templates."
+---
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Social</div>
+    <h2>Social Assets</h2>
+    {% for s in social %}
+      <div style="margin-top: 32px;">
+        <h3 style="margin-top: 0;">{{ s.title }}</h3>
+        {% if s.rasterUrl %}
+          <img class="preview-img" src="{{ s.rasterUrl | url }}" alt="{{ s.title }} — {{ s.size }}" style="max-width: 100%;">
+        {% else %}
+          <div style="background:#eee;border-radius:8px;padding:40px;text-align:center;color:#999;font-size:14px;">Run npm run build:assets to generate {{ s.slug }}.png</div>
+        {% endif %}
+        <div class="preview-caption">{{ s.title }}{% if s.size %} — {{ s.size }}{% endif %} — brand/templates/social/{{ s.slug }}.html</div>
+        <div class="action-bar">
+          <a href="{{ s.templateUrl }}" target="_blank">View template →</a>
+          {% if s.rasterUrl %}<a href="{{ s.rasterUrl | url }}">Download PNG →</a>{% endif %}
+        </div>
+        {% if s.cmd %}<pre><code>{{ s.cmd }}</code></pre>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">QR</div>
+    <h2>QR Codes</h2>
+
+    <img src="{{ '/assets/qr/qr-hi.png' | url }}" alt="QR Code → /hi/" style="max-width: 200px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06);">
+    <div class="preview-caption" style="margin-top: 8px;">QR → /hi/ (digital business card)</div>
+    <div class="action-bar"><a href="{{ '/assets/qr/qr-hi.png' | url }}">Download PNG →</a></div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Business Card</div>
+    <h2>Digital Business Card</h2>
+
+    <p style="font-size: 14px; color: var(--color-body); margin-top: 8px;">
+      Live at <a href="https://escapevelocity.consulting/hi/" target="_blank">escapevelocity.consulting/hi/</a>.
+      Source lives in the website repo (<code>website/hi/index.njk</code>) — not part of the brand system.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <p class="footnote">Logo variants, SVG sources, and PNG downloads → <a href="{{ '/identity/#logos' | url }}">Identity — Logos</a></p>
+  </div>
+</section>

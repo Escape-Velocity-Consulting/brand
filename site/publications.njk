@@ -1,8 +1,8 @@
 ---
 layout: base.njk
-title: Published
-permalink: /published/
-navSlug: published
+title: Publications
+permalink: /publications/
+navSlug: publications
 subtitle: All published brand outputs — decks, images, documents, and more.
 ---
 
@@ -105,12 +105,10 @@ subtitle: All published brand outputs — decks, images, documents, and more.
 
     var meta = el('div', { class: 'deck-meta' });
 
-    // Title
     var titlerow = el('div', { class: 'deck-titlerow' });
     titlerow.appendChild(el('h3', { text: item.title }));
     meta.appendChild(titlerow);
 
-    // ID chip + date
     var idrow = el('div', { class: 'deck-idrow' });
     var chip = el('button', { class: 'deck-id-chip', type: 'button', title: 'Click to copy ID', text: item.id });
     chip.addEventListener('click', function () {
@@ -124,7 +122,6 @@ subtitle: All published brand outputs — decks, images, documents, and more.
     idrow.appendChild(el('span', { class: 'deck-published-at', text: 'Published ' + fmtDate(item.publishedAt) }));
     meta.appendChild(idrow);
 
-    // Actions
     var actions = el('div', { class: 'deck-actions' });
 
     if (item.primaryUrl) {
@@ -134,7 +131,6 @@ subtitle: All published brand outputs — decks, images, documents, and more.
       actions.appendChild(primary);
     }
 
-    // Secondary PDF download (only if primary isn't already the PDF or if primary is viewer)
     if (item.type === 'deck' || item.type === 'carousel') {
       var pdf = item.files.find(function (f) { return f.mime === 'application/pdf'; });
       if (pdf) {
@@ -144,7 +140,6 @@ subtitle: All published brand outputs — decks, images, documents, and more.
       }
     }
 
-    // Markdown source (decks only)
     var md = item.files.find(function (f) { return f.mime === 'text/markdown'; });
     if (md) {
       var mdBtn = el('a', { class: 'btn-secondary-light', href: md.url, download: md.filename, rel: 'noopener' });
@@ -184,14 +179,12 @@ subtitle: All published brand outputs — decks, images, documents, and more.
         return;
       }
 
-      // Group by type
       var groups = {};
       items.forEach(function (item) {
         if (!groups[item.type]) groups[item.type] = [];
         groups[item.type].push(item);
       });
 
-      // Render known types in order
       TYPE_ORDER.forEach(function (type) {
         var group = groups[type];
         if (!group || group.length === 0) return;
@@ -205,7 +198,6 @@ subtitle: All published brand outputs — decks, images, documents, and more.
         delete groups[type];
       });
 
-      // Any remaining unknown types
       Object.keys(groups).forEach(function (type) {
         var group = groups[type];
         if (!group || group.length === 0) return;

@@ -1,15 +1,13 @@
 // Brand Site navigation. Order matters — used in header nav and on overview page.
 module.exports = [
-  { slug: "",          label: "Overview",   description: "Color, type, page index" },
-  { slug: "identity",  label: "Identity",   description: "Full color palette, typography scale, spacing, voice rules" },
-  { slug: "components", label: "Components", description: "Buttons, cards, tags, dividers, newsletter blocks" },
-  { slug: "documents", label: "Documents",  description: "Letter, offer, invoice, ToS templates with previews" },
-  { slug: "presentations", label: "Presentations", description: "Slide-deck templates and the viewer pipeline" },
-  { slug: "decks",     label: "Decks",      description: "Rendered slide decks (auto-discovered)" },
-  { slug: "published", label: "Published",  description: "All published outputs — decks, images, documents, carousels" },
-  { slug: "social",    label: "Social",     description: "LinkedIn banner, logo variants, QR codes" },
-  { slug: "workflow",  label: "Workflow",   description: "Pipeline overview, generators, token workflow" },
-  { slug: "tooling",   label: "Tooling",    description: "Claude skill + MCP server — tools, templates, quick-connect" },
-  { slug: "download",  label: "Download",   description: "Brand assets kit — logos, colors, fonts, templates" },
-  { slug: "press",     label: "Press",      description: "Boilerplate, founder bio, photos, contact" }
+  { slug: "",             label: "Overview",      description: "Brand front door — routing and system overview" },
+  { slug: "identity",     label: "Identity",      description: "Colors, typography, logos, voice & press" },
+  { slug: "products",     label: "Products",      description: "Everything the brand produces", children: [
+    { slug: "graphics",       label: "Graphics" },
+    { slug: "documents",      label: "Documents" },
+    { slug: "presentations",  label: "Presentations" },
+  ]},
+  { slug: "publications", label: "Publications",  description: "All published brand outputs" },
+  { slug: "tooling",      label: "Tooling",       description: "Claude skill, MCP server, build workflow" },
+  { slug: "download",     label: "Download",      description: "Brand kit — logos, fonts, templates, press" },
 ];

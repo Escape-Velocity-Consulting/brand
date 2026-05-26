@@ -3,9 +3,19 @@ layout: base.njk
 title: Identity
 permalink: /identity/
 navSlug: identity
+subtitle: "The complete brand reference — colors, typography, logos, voice, and press."
 ---
 
-<section>
+<div class="identity-anchors">
+  <a href="#colors">Colors</a>
+  <a href="#typography">Typography</a>
+  <a href="#spacing">Spacing</a>
+  <a href="#logos">Logos</a>
+  <a href="#voice">Voice &amp; Copy</a>
+  <a href="#press">Press</a>
+</div>
+
+<section id="colors">
   <div class="container">
     <div class="eyebrow">Colors</div>
     <h2>Color Palette</h2>
@@ -34,7 +44,7 @@ navSlug: identity
   </div>
 </section>
 
-<section>
+<section id="typography">
   <div class="container">
     <div class="eyebrow">Typography</div>
     <h2>Typography Scale</h2>
@@ -65,7 +75,7 @@ navSlug: identity
   </div>
 </section>
 
-<section>
+<section id="spacing">
   <div class="container">
     <div class="eyebrow">Spacing</div>
     <h2>Spacing &amp; Layout</h2>
@@ -98,7 +108,49 @@ navSlug: identity
   </div>
 </section>
 
-<section>
+{%- set logoGroups = [
+  { heading: "Dark Background", bg: "dark", items: [
+    { svg: "ev-wordmark.svg",       png: "ev-wordmark-300.png",       width: 150, height: 150, caption: "EV Wordmark — Square monogram, dark bg" },
+    { svg: "logo-dark.svg",         png: "logo-dark-300.png",         width: 250, height: 125, caption: "Full Wordmark — Wide, dark bg" },
+    { svg: "logo-dark-square.svg",  png: "logo-dark-square-300.png",  width: 150, height: 150, caption: "Full Wordmark — Square, dark bg" }
+  ]},
+  { heading: "Light Background", bg: "", items: [
+    { svg: "ev-wordmark-light.svg",       png: "ev-wordmark-light-300.png",       width: 150, height: 150, caption: "EV Wordmark — Square monogram, light bg" },
+    { svg: "logo-light.svg",              png: "logo-light-300.png",              width: 250, height: 125, caption: "Full Wordmark — Wide, light bg" },
+    { svg: "logo-light-square.svg",       png: "logo-light-square-300.png",       width: 150, height: 150, caption: "Full Wordmark — Square, light bg" }
+  ]},
+  { heading: "Transparent", bg: "transparent", items: [
+    { svg: "ev-wordmark-transparent.svg",  png: "ev-wordmark-transparent-300.png",  width: 150, height: 150, caption: "EV Wordmark — Square monogram, transparent" },
+    { svg: "logo-transparent.svg",         png: "logo-transparent-300.png",         width: 250, height: 125, caption: "Full Wordmark — Wide, transparent" }
+  ]}
+] -%}
+
+<section id="logos">
+  <div class="container">
+    <div class="eyebrow">Logos</div>
+    <h2>Logo Variants</h2>
+
+    {% for group in logoGroups %}
+      <h3>{{ group.heading }}</h3>
+      <div class="previews-grid">
+        {% for item in group.items %}
+          <div>
+            <div class="logo-preview-box{% if group.bg %} {{ group.bg }}{% endif %}">
+              <img src="{{ ('/assets/logos/' + item.svg) | url }}" alt="{{ item.caption }}" width="{{ item.width }}" height="{{ item.height }}">
+            </div>
+            <div class="preview-caption">{{ item.caption }}</div>
+            <div class="action-bar">
+              <a href="{{ ('/assets/logos/' + item.svg) | url }}">SVG →</a>
+              <a href="{{ ('/assets/raster/' + item.png) | url }}">PNG →</a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section id="voice">
   <div class="container">
     <div class="eyebrow">Voice</div>
     <h2>Voice &amp; Copy</h2>
@@ -134,5 +186,44 @@ navSlug: identity
         <li>Tagline: "Digitalisierung &amp; Prozessoptimierung" (DE)</li>
       </ul>
     </div>
+  </div>
+</section>
+
+<section id="press">
+  <div class="container">
+    <div class="eyebrow">Press</div>
+    <h2>Copy &amp; Bio</h2>
+    <div class="prose">
+      {{ press.html | safe }}
+    </div>
+    <p style="margin-top: 1.5rem;">
+      <a class="btn btn-primary" href="{{ '/press/boilerplate.md' | url }}" download>Download boilerplate.md</a>
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Photos</div>
+    <h2>Founder Photos</h2>
+    <div class="photo-grid">
+      {% for p in press.photos %}
+      <figure class="photo">
+        <a href="{{ ('/press/photos/' + p.file) | url }}" download>
+          <img src="{{ ('/press/photos/' + p.file) | url }}" alt="{{ p.alt }}" loading="lazy">
+        </a>
+        <figcaption>
+          <span>{{ p.alt }}</span>
+          <a href="{{ ('/press/photos/' + p.file) | url }}" download>Download</a>
+        </figcaption>
+      </figure>
+      {% endfor %}
+    </div>
+    <p style="margin-top: 1rem; color: var(--color-subtle); font-size: 0.9rem;">
+      Photos available for editorial use under the kit license. Higher resolution available on request.
+    </p>
+    <p style="margin-top: 1rem;">
+      Full press kit including logos, fonts, and templates: <a href="{{ '/download/' | url }}">Download Brand Kit →</a>
+    </p>
   </div>
 </section>

@@ -307,3 +307,108 @@ table td code { font-size: 12px; background: rgba(0,0,0,0.04); padding: 2px 6px;
 .method-delete { background: rgba(212,120,74,0.12);  color: #C2653A; }
 
 .auth-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-family: var(--font-ui); font-size: 11px; font-weight: 600; background: rgba(0,0,0,0.05); color: var(--color-subtle); white-space: nowrap; }
+
+/* ===== Secondary sub-nav ===== */
+.demo-subnav {
+  background: var(--color-cream);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+.demo-subnav .container { display: flex; gap: 0; padding-top: 0; padding-bottom: 0; }
+.demo-subnav a {
+  display: block;
+  padding: 10px 20px;
+  color: var(--color-body);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  font-weight: 500;
+}
+.demo-subnav a:hover { color: var(--color-text); }
+.demo-subnav a.active { color: var(--color-text); border-bottom-color: var(--color-terracotta); font-weight: 600; }
+
+/* ===== Overview hero ===== */
+.overview-hero {
+  background: var(--color-black);
+  color: var(--color-light);
+  padding: 64px 0 56px;
+  text-align: center;
+}
+.overview-hero .container { border-bottom: none; }
+.overview-hero img { display: block; margin: 0 auto 28px; }
+.overview-hero .tagline-label {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-terracotta);
+  margin-bottom: 12px;
+}
+.overview-hero .descriptor {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: rgba(255,255,255,0.45);
+  margin-top: 6px;
+}
+
+/* ===== Identity anchor nav ===== */
+.identity-anchors {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  background: var(--color-cream);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 0 40px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.identity-anchors a {
+  padding: 12px 20px;
+  color: var(--color-body);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.identity-anchors a:hover { color: var(--color-text); border-bottom-color: var(--color-terracotta); }
+
+/* ===== Press / Photos (moved from press.njk inline style) ===== */
+.prose h1 { font-size: 1.75rem; margin: 1.5rem 0 0.5rem; }
+.prose h2 { font-size: 1.35rem; margin: 1.5rem 0 0.5rem; }
+.prose h3 { font-size: 1.1rem; margin: 1.25rem 0 0.4rem; color: var(--color-text); }
+.prose hr { border: 0; border-top: 1px solid rgba(0,0,0,0.06); margin: 2rem 0; }
+.prose ul { margin: 0.5rem 0 1rem 1.25rem; }
+.prose li { margin-bottom: 0.25rem; }
+.prose p { margin: 0.5rem 0 1rem; }
+.prose a { color: var(--color-terracotta); }
+.prose code { font-family: var(--font-mono); font-size: 0.9em; }
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+.photo {
+  margin: 0;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+.photo img { display: block; width: 100%; height: auto; }
+.photo figcaption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  color: var(--color-subtle);
+}
+.photo figcaption a { color: var(--color-terracotta); font-weight: 500; text-decoration: none; }
