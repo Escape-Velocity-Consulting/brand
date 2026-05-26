@@ -1,0 +1,166 @@
+---
+layout: base.njk
+title: Tooling
+permalink: /tooling/
+navSlug: tooling
+---
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Agent Integration</div>
+    <h2>Skill &amp; MCP Server</h2>
+    <p class="lede">The <code>escape-velocity-brand</code> Claude skill authors on-brand assets — documents, social images, slide decks — using bundled templates, tokens, fonts, and logos. The optional MCP server extends it with headless rendering (PNG/PDF via Playwright) and publishing to the Brand Site.</p>
+
+    <div class="tooling-matrix">
+      <div class="tooling-col">
+        <div class="tooling-col-label">Skill alone</div>
+        <ul class="rules-list">
+          <li>Authors HTML from named templates</li>
+          <li>Substitutes Nunjucks variables</li>
+          <li>Reads brand tokens, fonts, and logos</li>
+          <li>Hands finished HTML back to user</li>
+          <li>Works in any Claude client, no setup</li>
+        </ul>
+      </div>
+      <div class="tooling-col">
+        <div class="tooling-col-label">+ MCP server</div>
+        <ul class="rules-list">
+          <li>Renders HTML → PNG or PDF (Playwright)</li>
+          <li>Publishes decks &amp; documents to Brand Site</li>
+          <li>Returns signed download URLs (1 h TTL)</li>
+          <li>Warm Chromium pool (~600 ms/render)</li>
+          <li>OAuth 2.1 + Google login (HTTP transport)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Setup</div>
+    <h2>Quick Connect</h2>
+
+    <h3>Claude Code — OAuth (recommended)</h3>
+<pre><code>claude mcp add --transport http escape-velocity-brand \
+  https://mcp.escapevelocity.consulting/mcp</code></pre>
+
+    <h3>Claude Desktop</h3>
+    <div class="step">
+      <div class="step-number">1</div>
+      <p>Open <strong>Settings → Connectors → Add custom connector</strong></p>
+    </div>
+    <div class="step">
+      <div class="step-number">2</div>
+      <p>Name: <code>escape-velocity-brand</code> &nbsp;·&nbsp; Remote MCP URL: <code>https://mcp.escapevelocity.consulting/mcp</code></p>
+    </div>
+    <div class="step">
+      <div class="step-number">3</div>
+      <p>Leave OAuth Client ID and Secret fields <strong>blank</strong> — Claude Desktop self-registers via <a href="https://www.rfc-editor.org/rfc/rfc7591" target="_blank">RFC 7591</a>.</p>
+    </div>
+    <div class="step">
+      <div class="step-number">4</div>
+      <p>Click <strong>Add</strong>. A Google login browser tab opens → sign in → the connector becomes available. Only emails in <code>MCP_ALLOWED_EMAILS</code> on the server can authenticate.</p>
+    </div>
+
+    <h3>Claude Code — local stdio (dev)</h3>
+<pre><code>{
+  "mcpServers": {
+    "escape-velocity-brand": {
+      "command": "npx",
+      "args": ["tsx", "/path/to/brand/src/mcp/server.ts"],
+      "env": { "BRAND_DIR": "/path/to/brand" }
+    }
+  }
+}</code></pre>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">MCP</div>
+    <h2>Tools ({{ tooling.totalTools }})</h2>
+
+    {% for group in tooling.toolGroups %}
+    <h3>{{ group.label }} <span class="tooling-note">— {{ group.note }}</span></h3>
+    <table>
+      <thead>
+        <tr><th>Tool</th><th>Description</th><th>Transport</th></tr>
+      </thead>
+      <tbody>
+        {% for tool in group.tools %}
+        <tr>
+          <td><code>{{ tool.name }}</code></td>
+          <td>{{ tool.description }}</td>
+          <td class="tooling-transports">
+            {% for t in tool.transports %}
+            <span class="transport-badge transport-{{ t }}">{{ t }}</span>
+            {% endfor %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endfor %}
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">Templates</div>
+    <h2>Template Catalog ({{ tooling.totalTemplates }})</h2>
+    <p style="font-size:14px; color:var(--color-body); margin-bottom:32px;">Auto-generated from <code>templates.meta.ts</code>. Pass the key to <code>render_template</code>.</p>
+
+    {% for group in tooling.templateGroups %}
+    <h3>{{ group.label }}</h3>
+    <div class="tooling-templates-grid">
+      {% for tmpl in group.templates %}
+      <div class="tooling-tmpl-card">
+        <div class="tooling-tmpl-header">
+          <code class="tooling-tmpl-key">{{ tmpl.key }}</code>
+          <span class="output-badge output-{{ tmpl.output }}">{{ tmpl.output | upper }}</span>
+        </div>
+        <p class="tooling-tmpl-desc">{{ tmpl.description }}</p>
+        {% if tmpl.dims %}<div class="tooling-tmpl-dims">{{ tmpl.dims }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="eyebrow">HTTP Transport</div>
+    <h2>REST API</h2>
+    <p style="font-size:14px; color:var(--color-body); margin-bottom:24px;">Base URL: <code>https://mcp.escapevelocity.consulting</code></p>
+
+    <table>
+      <thead>
+        <tr><th>Method</th><th>Path</th><th>Auth</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        {% for route in tooling.routes %}
+        <tr>
+          <td><span class="method-badge method-{{ route.method | lower }}">{{ route.method }}</span></td>
+          <td><code>{{ route.path }}</code></td>
+          <td><span class="auth-tag">{{ route.auth }}</span></td>
+          <td>{{ route.purpose }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <h3>Reference</h3>
+    <ul class="links-list">
+      <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/docs/mcp-server.md" target="_blank">docs/mcp-server.md</a> — Full MCP server reference (routes, auth, env vars, architecture)</li>
+      <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/templates.meta.ts" target="_blank">templates.meta.ts</a> — Template registry source (descriptions, dims, required vars)</li>
+      <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/docs/publishing.md" target="_blank">docs/publishing.md</a> — Publish / unpublish flow and bundle abstraction</li>
+      <li><a href="https://github.com/Escape-Velocity-Consulting/brand/blob/main/skill/escape-velocity-brand/SKILL.md" target="_blank">skill/SKILL.md</a> — Deployed skill source (template catalog + routing map)</li>
+    </ul>
+  </div>
+</section>

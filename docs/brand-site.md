@@ -1,6 +1,6 @@
 # Brand Site
 
-The multi-page reference at `/brand/` (overview, identity, components, documents, social, presentations, decks, workflow, download, press). Built from `site/` by 11ty. Viewable standalone at `localhost:3000/brand/` and embedded on the live website at `escapevelocity.consulting/brand/` via git submodule.
+The multi-page reference at `/brand/` (overview, identity, components, documents, social, presentations, decks, workflow, tooling, download, press). Built from `site/` by 11ty. Viewable standalone at `localhost:3000/brand/` and embedded on the live website at `escapevelocity.consulting/brand/` via git submodule.
 
 ## Architecture
 
@@ -22,6 +22,7 @@ The multi-page reference at `/brand/` (overview, identity, components, documents
 | `/brand/presentations/` | `site/presentations.njk` + `_data/slide-types.cjs` | Showcase of slide types from `previews/showcase/slide-types/` |
 | `/brand/decks/` | `site/decks.njk` | **Live API fetch** from `GET /api/published?type=deck`. See [publishing.md](publishing.md). |
 | `/brand/workflow/` | `site/workflow.njk` | Iteration / contribution guide |
+| `/brand/tooling/` | `site/tooling.njk` + `_data/tooling.json` (generated) | Skill & MCP reference — tools, template catalog (auto-generated from `templates.meta.ts`), REST API, quick-connect |
 | `/brand/download/` | `site/download.njk` | Brand Kit zip link |
 | `/brand/press/` | `site/press.njk` + `_data/press.cjs` | Reads `press/boilerplate.md` |
 
@@ -82,6 +83,7 @@ Each `.cjs` exports either a data object (consumed directly by Nunjucks `{{ name
 | `documents.cjs` | scans `previews/*-preview.png` + colocated `DOCS_META` |
 | `social.cjs` | scans `templates/social/*.html` + colocated `SOCIAL_META` |
 | `slide-types.cjs` | hand-authored slide-type catalog with thumbnail paths |
+| `tooling.json` | **generated** by `scripts/gen-tooling-data.ts` (gitignored) — MCP tool groups, template catalog (from `templates.meta.ts`), REST routes |
 
 ## Build chain
 

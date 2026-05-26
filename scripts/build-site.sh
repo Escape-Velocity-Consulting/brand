@@ -10,6 +10,9 @@ DIST_SITE="$BRAND_DIR/dist/site"
 
 cd "$BRAND_DIR"
 
+# Regenerate tooling page data from templates.meta.ts
+./node_modules/.bin/tsx "$BRAND_DIR/scripts/gen-tooling-data.ts"
+
 # Render the Brand Site
 rm -rf "$DIST_SITE"
 ./node_modules/.bin/eleventy --config=site/.eleventy.cjs --input=site

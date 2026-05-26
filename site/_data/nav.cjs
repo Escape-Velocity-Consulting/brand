@@ -8,6 +8,7 @@ module.exports = [
   { slug: "decks",     label: "Decks",      description: "Rendered slide decks (auto-discovered)" },
   { slug: "social",    label: "Social",     description: "LinkedIn banner, logo variants, QR codes" },
   { slug: "workflow",  label: "Workflow",   description: "Pipeline overview, generators, token workflow" },
+  { slug: "tooling",   label: "Tooling",    description: "Claude skill + MCP server — tools, templates, quick-connect" },
   { slug: "download",  label: "Download",   description: "Brand assets kit — logos, colors, fonts, templates" },
   { slug: "press",     label: "Press",      description: "Boilerplate, founder bio, photos, contact" }
 ];
