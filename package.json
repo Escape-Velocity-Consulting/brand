@@ -11,6 +11,7 @@
     "build:kit": "tsx scripts/build-kit.ts",
     "build:dist": "bash scripts/build-dist.sh",
     "build:skill": "bash scripts/build-skill.sh",
+    "build:skill-catalog": "tsx scripts/build-skill-catalog.ts",
     "build:mcp": "tsc -p tsconfig.mcp.json",
     "dev": "npm run build:tokens && npm run build:site && eleventy --config=site/.eleventy.cjs --input=site --serve --port=3000",
     "pdf": "tsx generators/pdf.ts",

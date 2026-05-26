@@ -29,30 +29,91 @@ browser or register the MCP later to get rendered artifacts.
 |------|----------|
 | **`render_template`**     | You want a standard branded asset (letter, OG image, invoice, carousel slide). Pick a template key, fill `vars`, optionally pass a markdown body. Output format is driven by the template registry. |
 | **`render_slides`**       | You have N discrete pages → want a viewer / combined PDF / per-page PNGs / any combination. Two input modes: `markdown` (presentation-style with `===` separators) or `pages` (carousel-style explicit HTML/template per page). |
-| **`render_html_to_png`**  | You wrote custom HTML — want a single PNG screenshot. |
-| **`render_html_to_pdf`**  | You wrote custom HTML — want a PDF. Playwright auto-paginates long HTML. |
+| **`render_html_to_png`**  | You wrote custom HTML — want a single PNG screenshot. **Last-resort tool.** |
+| **`render_html_to_pdf`**  | You wrote custom HTML — want a PDF. Playwright auto-paginates long HTML. **Last-resort tool.** |
 | **`list_templates`**      | Discover which templates exist + their metadata (output format, dims, required vars, tags). |
 | **`get_tokens`**          | Get the parsed `tokens.json` (colors, type, spacing values). |
 
-## Routing decision tree
+<!-- AUTO-GENERATED:CATALOG — edit templates.meta.ts and run `npm run build:skill` -->
 
-1. **Standard branded output** → `render_template`
-   - "Write a letter to X" → `render_template({ template: 'letter', markdown, recipient, ... })`
-   - "Render an OG image" → `render_template({ template: 'social/og', vars: {...} })`
-   - "Make an invoice" → `render_template({ template: 'invoice', markdown, recipient, ref, ... })`
+## Template catalog
 
-2. **Multi-page / slide-like** → `render_slides`
-   - LinkedIn carousel → `render_slides({ pages: [{template, vars}...], dimensions: 'linkedin-portrait', outputs: { pdf: true, pngs: true } })`
-   - Slide deck from markdown → `render_slides({ markdown, dimensions: 'slide-16-9', outputs: { viewer: true, pdf: true, pngs: true } })`
+_Snapshot generated from `templates.meta.ts`. Call `list_templates` if you suspect drift since the skill was built._
 
-3. **Ad-hoc custom design** → `render_html_to_png` or `render_html_to_pdf`
-   - Custom infographic / one-off layout → write the HTML, call the appropriate tool.
+### Documents (PDF, A4)
 
-4. **Long custom multi-page PDF document** → `render_html_to_pdf` (HTML is naturally paginated).
+Call as `render_template({ template: KEY, markdown: BODY, ...vars })`. Each accepts a markdown body and the listed required vars.
 
-5. **Don't know the template name?** → call `list_templates` first.
+| Key | Use for | Required vars |
+|-----|---------|---------------|
+| `letter` | Branded business letter (single or multi-page). Markdown body, optional recipient block. | _(none)_ |
+| `offer` | Branded offer / proposal PDF. Markdown body, recipient + date required for canonical filename. | `recipient`, `date` |
+| `invoice` | Branded invoice PDF. Structured invoice line items in the body. Recipient + UID (or private flag) required. | `recipient`, `date` |
+| `tos` | Terms of service / legal document. Markdown body, optional headings. | _(none)_ |
+| `report` | Branded multi-page report. Markdown body, optional cover image. | _(none)_ |
 
-6. **Don't have token values handy?** → call `get_tokens`. (Or read the brand reference sidecar.)
+### Social (PNG)
+
+Call as `render_template({ template: KEY, vars: { ... } })`.
+
+| Key | Dimensions | Use for | Optional vars |
+|-----|------------|---------|---------------|
+| `social/og` | 1200×630 | Open Graph image (1200×630). For website / blog post sharing. | `TITLE`, `SUBTITLE`, `EYEBROW` |
+| `social/linkedin-banner` | 1584×396 | LinkedIn profile banner (1584×396). | `TITLE`, `SUBTITLE` |
+| `social/twitter-banner` | 1500×500 | Twitter/X profile banner (1500×500). | `TITLE`, `SUBTITLE` |
+| `social/youtube-banner` | 2560×1440 | YouTube channel banner (2560×1440, safe area ~1546×423). | `TITLE`, `SUBTITLE` |
+| `social/announcement` | 1200×630 | Announcement post (1200×630). Bold title + body copy. | `TITLE`, `BODY`, `EYEBROW` |
+| `social/quote-card` | 1200×1200 | Square quote card (1200×1200). Quote + attribution. | `QUOTE`, `AUTHOR` |
+| `social/stats-card` | 1200×1200 | Square stats card (1200×1200). Big number + label + context. | `NUMBER`, `LABEL`, `CONTEXT` |
+| `social/linkedin-post-portrait` | 1080×1350 | LinkedIn portrait feed post (1080×1350, 4:5). Content-flexible: eyebrow + headline + body + CTA. The generalist "LinkedIn shareable image" — use when nothing more specific (quote-card, stats-card) fits. | `EYEBROW`, `HEADLINE`, `BODY`, `CTA` |
+
+### Carousel slides (PNG)
+
+Used **inside** `render_slides({ pages: [{ template: KEY, vars }, ...] })`, not directly via `render_template`.
+
+| Key | Dimensions | Role | Optional vars |
+|-----|------------|------|---------------|
+| `carousel/title` | 1080×1350 | Carousel title slide (LinkedIn portrait 1080×1350). Eyebrow + big number + body. | `EYEBROW`, `BIGNUMBER`, `TITLE`, `BODY` |
+| `carousel/numbered-item` | 1080×1350 | Carousel numbered list item (1080×1350). Used inside multi-slide carousels. | `TITLE`, `BODY`, `PROGRESS` |
+| `carousel/cta` | 1080×1350 | Carousel CTA / closing slide (1080×1350). | `CTA`, `SUBTITLE` |
+
+<!-- /AUTO-GENERATED:CATALOG -->
+
+<!-- AUTO-GENERATED:ROUTING — edit templates.meta.ts and run `npm run build:skill` -->
+
+## Routing
+
+> **Default to `render_template` (or `render_slides` for multi-page).**
+> Custom HTML via `render_html_to_png` / `render_html_to_pdf` is the **last resort** — only when nothing in the table below matches. If the user mentions any phrasing in the left column, use the mapped tool.
+
+| If user asks for ... | Use ... |
+|---------------------|---------|
+| Brief, letter, Korrespondenz, correspondence, briefing, Anschreiben | `render_template({ template: 'letter', markdown: '...' })` |
+| Angebot, offer, proposal, service offer, Offerte | `render_template({ template: 'offer', markdown: '...', recipient: ..., date: ... })` |
+| Rechnung, invoice, bill, Honorarnote | `render_template({ template: 'invoice', markdown: '...', recipient: ..., date: ... })` |
+| AGB, ToS, terms of service, Nutzungsbedingungen, Geschäftsbedingungen, contract | `render_template({ template: 'tos', markdown: '...' })` |
+| Report, Bericht, report, multi-page report, study, Studie, whitepaper | `render_template({ template: 'report', markdown: '...' })` |
+| OG image, Open Graph image, blog share image, website share image, link preview image | `render_template({ template: 'social/og', vars: { ... } })` |
+| LinkedIn banner, LinkedIn profile banner, LinkedIn cover, LinkedIn header | `render_template({ template: 'social/linkedin-banner', vars: { ... } })` |
+| Twitter banner, X banner, Twitter/X banner, X profile banner, Twitter header | `render_template({ template: 'social/twitter-banner', vars: { ... } })` |
+| YouTube banner, YouTube channel banner, YouTube channel art, YouTube cover | `render_template({ template: 'social/youtube-banner', vars: { ... } })` |
+| Ankündigung, announcement post, announcement, launch post, news post | `render_template({ template: 'social/announcement', vars: { ... } })` |
+| quote card, Zitat-Karte, LinkedIn quote post, square quote, quote post, pull quote | `render_template({ template: 'social/quote-card', vars: { ... } })` |
+| stats card, Zahlen-Karte, big number post, stat post, metric card, KPI card | `render_template({ template: 'social/stats-card', vars: { ... } })` |
+| LinkedIn post, LinkedIn image, LinkedIn shareable, LinkedIn portrait post, LinkedIn vertical post, LinkedIn feed post, LinkedIn content post, shareable image, social post, social image, feed post, post image | `render_template({ template: 'social/linkedin-post-portrait', vars: { ... } })` |
+| LinkedIn carousel, Carousel post, multi-slide post | `render_slides({ pages: [{ template: 'carousel/title', vars }, { template: 'carousel/numbered-item', vars }, ...], dimensions: 'linkedin-portrait', outputs: { pdf: true, pngs: true } })` |
+| Slide deck, presentation, Präsentation, Foliendeck | `render_slides({ markdown: '...', dimensions: 'slide-16-9', outputs: { viewer: true, pdf: true } })` |
+| Long custom multi-page PDF | `render_html_to_pdf({ html: '...', format: 'A4' })` |
+| Custom one-off design with no template match | `render_html_to_png({ html: '...', width, height })` or `render_html_to_pdf` |
+
+If nothing matches and the request feels like it _should_ have a template, call `list_templates` before falling back to custom HTML — the registry may have grown since this skill was built.
+
+<!-- /AUTO-GENERATED:ROUTING -->
+
+## Other lookups
+
+- **Don't have token values handy?** Call `get_tokens`, or check `references/brand-reference.md`.
+- **Suspect the catalog above is stale?** Call `list_templates` — the registry is the live source of truth.
 
 ## HTML authoring rules (always, even without MCP)
 
@@ -146,10 +207,11 @@ render_slides({
 
 ## Anti-patterns
 
+- ❌ **Writing custom HTML for a standard asset type.** If the user's request matches *any* phrasing in the Routing table above (LinkedIn banner, OG image, quote post, letter, offer, invoice, etc.), call the mapped template tool — don't author HTML. Custom HTML is only for designs no template covers.
 - ❌ Hardcoding hex values (`#c0392b`) or font names (`'Space Grotesk'`) in HTML you write. Use `var(--color-terracotta)` / `var(--font-headline)`.
-- ❌ Calling `render_html_to_png` when a named template exists. Use `render_template` for known assets.
 - ❌ Calling N times for a multi-page render. Use `render_slides` with output toggles — one round trip.
 - ❌ Writing full slide HTML from scratch for a presentation. Use markdown input mode with `===` separators + `<!-- @type: title|content|two-col|quote|image -->` directives.
+- ❌ Calling `list_templates` on the hot path just to discover templates. The catalog above is already in your context — only call `list_templates` if you suspect drift.
 
 ## See also
 

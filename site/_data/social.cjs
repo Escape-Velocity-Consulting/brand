@@ -25,6 +25,11 @@ const SOCIAL_META = {
     size:  "1200×1200",
     cmd:   'npm run image -- --input templates/social/stats-card.html --type html --preset linkedin-post --var "STAT=17+" --var "UNIT=Jahre" --var "LABEL=Description" -o stats.png',
   },
+  "linkedin-post-portrait": {
+    title: "LinkedIn Post (Portrait)",
+    size:  "1080×1350",
+    cmd:   'npm run image -- --input templates/social/linkedin-post-portrait.html --type html --width 1080 --height 1350 --var "EYEBROW=PROZESS-REVIEW" --var "HEADLINE=Headline goes here" --var "BODY=Optional supporting body copy." -o linkedin-post.png',
+  },
   "announcement": {
     title: "Announcement",
     size:  "1200×630",

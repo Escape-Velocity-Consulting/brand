@@ -23,6 +23,16 @@ BRAND_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 STAGE_DIR="$BRAND_DIR/dist/.stage/escape-velocity-brand"
 DIST_DIR="$BRAND_DIR/dist"
 
+# ── 0. Regenerate auto-managed sections in SKILL.md ─────────────────────────
+#
+# build-skill-catalog.ts reads templates.meta.ts and replaces the catalog +
+# routing blocks in the source SKILL.md in place. Edit-in-place so the diff
+# is committed alongside registry changes (drift visible in PRs).
+
+cd "$BRAND_DIR"
+npx tsx scripts/build-skill-catalog.ts
+echo "  Refreshed catalog + routing in SKILL.md"
+
 # ── 1. Clean staging ─────────────────────────────────────────────────────────
 
 rm -rf "$BRAND_DIR/dist/.stage"

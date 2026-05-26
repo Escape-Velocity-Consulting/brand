@@ -37,6 +37,15 @@ export interface TemplateMeta {
   optional?: string[]
   /** Tags for filtering / grouping (e.g. 'document', 'social', 'carousel-slide'). */
   tags?: string[]
+  /**
+   * Natural-language phrasings (DE + EN) that should route to this template.
+   * Used by `scripts/build-skill-catalog.ts` to generate the routing map in
+   * the skill's SKILL.md.
+   *
+   * Empty array (or omitted) = template is not directly user-facing — e.g.
+   * carousel slides are picked by `render_slides`, not by the user naming them.
+   */
+  prompts?: string[]
 }
 
 // ─── Document templates ────────────────────────────────────────────────────
@@ -56,6 +65,7 @@ const DOCUMENTS: Record<string, TemplateMeta> = {
     bodyAs: 'markdown',
     optional: ['recipient', 'date', 'ref', 'subject', 'eyebrow', 'confidential', 'lang'],
     tags: ['document'],
+    prompts: ['Brief', 'letter', 'Korrespondenz', 'correspondence', 'briefing', 'Anschreiben'],
   },
   offer: {
     output: 'pdf',
@@ -66,6 +76,7 @@ const DOCUMENTS: Record<string, TemplateMeta> = {
     requires: ['recipient', 'date'],
     optional: ['ref', 'subject', 'eyebrow', 'lang'],
     tags: ['document'],
+    prompts: ['Angebot', 'offer', 'proposal', 'service offer', 'Offerte'],
   },
   invoice: {
     output: 'pdf',
@@ -76,6 +87,7 @@ const DOCUMENTS: Record<string, TemplateMeta> = {
     requires: ['recipient', 'date'],
     optional: ['ref', 'subject', 'lang'],
     tags: ['document'],
+    prompts: ['Rechnung', 'invoice', 'bill', 'Honorarnote'],
   },
   tos: {
     output: 'pdf',
@@ -85,6 +97,7 @@ const DOCUMENTS: Record<string, TemplateMeta> = {
     bodyAs: 'markdown',
     optional: ['subject', 'date', 'lang'],
     tags: ['document'],
+    prompts: ['AGB', 'ToS', 'terms of service', 'Nutzungsbedingungen', 'Geschäftsbedingungen', 'contract'],
   },
   report: {
     output: 'pdf',
@@ -94,6 +107,7 @@ const DOCUMENTS: Record<string, TemplateMeta> = {
     bodyAs: 'markdown',
     optional: ['cover', 'subject', 'eyebrow', 'lang'],
     tags: ['document'],
+    prompts: ['Report', 'Bericht', 'report', 'multi-page report', 'study', 'Studie', 'whitepaper'],
   },
 }
 
@@ -106,6 +120,7 @@ const SOCIAL: Record<string, TemplateMeta> = {
     dims: { width: 1200, height: 630 },
     optional: ['TITLE', 'SUBTITLE', 'EYEBROW'],
     tags: ['social', 'og'],
+    prompts: ['OG image', 'Open Graph image', 'blog share image', 'website share image', 'link preview image'],
   },
   'social/linkedin-banner': {
     output: 'png',
@@ -113,6 +128,7 @@ const SOCIAL: Record<string, TemplateMeta> = {
     dims: { width: 1584, height: 396 },
     optional: ['TITLE', 'SUBTITLE'],
     tags: ['social', 'linkedin'],
+    prompts: ['LinkedIn banner', 'LinkedIn profile banner', 'LinkedIn cover', 'LinkedIn header'],
   },
   'social/twitter-banner': {
     output: 'png',
@@ -120,6 +136,7 @@ const SOCIAL: Record<string, TemplateMeta> = {
     dims: { width: 1500, height: 500 },
     optional: ['TITLE', 'SUBTITLE'],
     tags: ['social', 'twitter'],
+    prompts: ['Twitter banner', 'X banner', 'Twitter/X banner', 'X profile banner', 'Twitter header'],
   },
   'social/youtube-banner': {
     output: 'png',
@@ -127,6 +144,7 @@ const SOCIAL: Record<string, TemplateMeta> = {
     dims: { width: 2560, height: 1440 },
     optional: ['TITLE', 'SUBTITLE'],
     tags: ['social', 'youtube'],
+    prompts: ['YouTube banner', 'YouTube channel banner', 'YouTube channel art', 'YouTube cover'],
   },
   'social/announcement': {
     output: 'png',
@@ -134,6 +152,7 @@ const SOCIAL: Record<string, TemplateMeta> = {
     dims: { width: 1200, height: 630 },
     optional: ['TITLE', 'BODY', 'EYEBROW'],
     tags: ['social'],
+    prompts: ['Ankündigung', 'announcement post', 'announcement', 'launch post', 'news post'],
   },
   'social/quote-card': {
     output: 'png',
@@ -141,6 +160,7 @@ const SOCIAL: Record<string, TemplateMeta> = {
     dims: { width: 1200, height: 1200 },
     optional: ['QUOTE', 'AUTHOR'],
     tags: ['social'],
+    prompts: ['quote card', 'Zitat-Karte', 'LinkedIn quote post', 'square quote', 'quote post', 'pull quote'],
   },
   'social/stats-card': {
     output: 'png',
@@ -148,6 +168,28 @@ const SOCIAL: Record<string, TemplateMeta> = {
     dims: { width: 1200, height: 1200 },
     optional: ['NUMBER', 'LABEL', 'CONTEXT'],
     tags: ['social'],
+    prompts: ['stats card', 'Zahlen-Karte', 'big number post', 'stat post', 'metric card', 'KPI card'],
+  },
+  'social/linkedin-post-portrait': {
+    output: 'png',
+    description: 'LinkedIn portrait feed post (1080×1350, 4:5). Content-flexible: eyebrow + headline + body + CTA. The generalist "LinkedIn shareable image" — use when nothing more specific (quote-card, stats-card) fits.',
+    dims: { width: 1080, height: 1350 },
+    optional: ['EYEBROW', 'HEADLINE', 'BODY', 'CTA'],
+    tags: ['social', 'linkedin', 'feed-post'],
+    prompts: [
+      'LinkedIn post',
+      'LinkedIn image',
+      'LinkedIn shareable',
+      'LinkedIn portrait post',
+      'LinkedIn vertical post',
+      'LinkedIn feed post',
+      'LinkedIn content post',
+      'shareable image',
+      'social post',
+      'social image',
+      'feed post',
+      'post image',
+    ],
   },
 }
 
@@ -160,6 +202,7 @@ const CAROUSEL: Record<string, TemplateMeta> = {
     dims: { width: 1080, height: 1350 },
     optional: ['EYEBROW', 'BIGNUMBER', 'TITLE', 'BODY'],
     tags: ['carousel-slide', 'linkedin'],
+    prompts: [],
   },
   'carousel/numbered-item': {
     output: 'png',
@@ -167,6 +210,7 @@ const CAROUSEL: Record<string, TemplateMeta> = {
     dims: { width: 1080, height: 1350 },
     optional: ['TITLE', 'BODY', 'PROGRESS'],
     tags: ['carousel-slide', 'linkedin'],
+    prompts: [],
   },
   'carousel/cta': {
     output: 'png',
@@ -174,6 +218,7 @@ const CAROUSEL: Record<string, TemplateMeta> = {
     dims: { width: 1080, height: 1350 },
     optional: ['CTA', 'SUBTITLE'],
     tags: ['carousel-slide', 'linkedin'],
+    prompts: [],
   },
 }
 
