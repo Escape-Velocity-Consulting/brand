@@ -40,23 +40,62 @@ subtitle: "MCP tools, template catalog, REST API, and source documentation."
   <div class="container">
     <div class="eyebrow">Templates</div>
     <h2>Template Catalog ({{ tooling.totalTemplates }})</h2>
-    <p style="font-size:14px; color:var(--color-body); margin-bottom:32px;">Auto-generated from <code>templates.meta.ts</code>. Pass the key to <code>render_template</code>.</p>
+    <p style="font-size:14px; color:var(--color-body); margin-bottom:16px;">Auto-generated from <code>templates.meta.ts</code> + a scan of each template's <code>.html</code>. Pass the key to <code>render_template</code>. Visual previews live on <a href="{{ '/documents/' | url }}">Documents</a>, <a href="{{ '/graphics/' | url }}">Graphics</a>, and <a href="{{ '/presentations/' | url }}">Presentations</a>.</p>
 
-    {% for group in tooling.templateGroups %}
-    <h3>{{ group.label }}</h3>
-    <div class="tooling-templates-grid">
-      {% for tmpl in group.templates %}
-      <div class="tooling-tmpl-card">
-        <div class="tooling-tmpl-header">
-          <code class="tooling-tmpl-key">{{ tmpl.key }}</code>
-          <span class="output-badge output-{{ tmpl.output }}">{{ tmpl.output | upper }}</span>
-        </div>
-        <p class="tooling-tmpl-desc">{{ tmpl.description }}</p>
-        {% if tmpl.dims %}<div class="tooling-tmpl-dims">{{ tmpl.dims }}</div>{% endif %}
-      </div>
-      {% endfor %}
+    <div class="param-filter">
+      <input type="text" id="paramFilter" placeholder="Filter by template key, param, or tag…" oninput="filterParams(this.value)">
     </div>
-    {% endfor %}
+
+    <table class="ref-templates-table">
+      <thead>
+        <tr>
+          <th>Template key</th>
+          <th>Out</th>
+          <th>Size / Format</th>
+          <th>Parameters</th>
+          <th>Tags</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tmpl in tooling.allTemplates %}
+        <tr class="ref-tmpl-row" data-search="{{ tmpl.key }} {{ tmpl.tags | join(' ') }} {% for p in tmpl.params %}{{ p.name }} {% endfor %}">
+          <td>
+            <code class="tooling-tmpl-key">{{ tmpl.key }}</code>
+            <p class="ref-tmpl-desc">{{ tmpl.description }}</p>
+          </td>
+          <td><span class="output-badge output-{{ tmpl.output }}">{{ tmpl.output | upper }}</span></td>
+          <td class="ref-tmpl-dims">{{ tmpl.dims }}</td>
+          <td class="ref-tmpl-params">
+            {% if tmpl.params.length %}
+              {% for p in tmpl.params %}
+              <div class="ref-param">
+                <code class="param-name">{{ p.name }}</code>
+                <code class="param-type">{{ p.type }}</code>
+                {% if p.required %}<span class="param-required">required</span>{% endif %}
+                {% if not p.documented %}<span class="param-flag flag-undocumented">undocumented</span>{% endif %}
+                {% if p.documented and not p.used %}<span class="param-flag flag-unused">unused</span>{% endif %}
+              </div>
+              {% endfor %}
+            {% else %}
+              <span class="params-empty">—</span>
+            {% endif %}
+          </td>
+          <td class="ref-tmpl-tags">
+            {% for t in tmpl.tags %}<span class="tag-chip">{{ t }}</span>{% endfor %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <script>
+      function filterParams(q) {
+        q = q.trim().toLowerCase();
+        document.querySelectorAll('.ref-tmpl-row').forEach(r => {
+          r.style.display = !q || r.dataset.search.toLowerCase().includes(q) ? '' : 'none';
+        });
+      }
+    </script>
   </div>
 </section>
 

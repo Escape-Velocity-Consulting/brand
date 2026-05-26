@@ -7,6 +7,8 @@ parentSlug: templates
 subtitle: "Social assets, banners, and graphic templates."
 ---
 
+{% import "partials/params-table.njk" as pt %}
+
 <section>
   <div class="container">
     <div class="eyebrow">Social</div>
@@ -25,6 +27,8 @@ subtitle: "Social assets, banners, and graphic templates."
           {% if s.rasterUrl %}<a href="{{ s.rasterUrl | url }}">Download PNG →</a>{% endif %}
         </div>
         {% if s.cmd %}<pre><code>{{ s.cmd }}</code></pre>{% endif %}
+        <h4 class="params-heading">Parameters</h4>
+        {{ pt.render(tooling.paramsByKey[s.slug]) }}
       </div>
     {% endfor %}
   </div>

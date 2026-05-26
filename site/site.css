@@ -317,6 +317,35 @@ table td code { font-size: 12px; background: rgba(0,0,0,0.04); padding: 2px 6px;
 
 .auth-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-family: var(--font-ui); font-size: 11px; font-weight: 600; background: rgba(0,0,0,0.05); color: var(--color-subtle); white-space: nowrap; }
 
+/* ===== Params tables (template parameter docs) ===== */
+.params-table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; font-size: 13px; }
+.params-table thead th { text-align: left; font-family: var(--font-ui); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--color-subtle); border-bottom: 1px solid rgba(0,0,0,0.1); padding: 6px 10px; }
+.params-table tbody td { padding: 8px 10px; border-bottom: 1px solid rgba(0,0,0,0.05); vertical-align: top; }
+.params-table tbody tr:last-child td { border-bottom: none; }
+.param-name { font-family: var(--font-mono); font-size: 12px; color: var(--color-terracotta); background: rgba(212,120,74,0.06); padding: 1px 6px; border-radius: 3px; }
+.param-type { font-family: var(--font-mono); font-size: 11px; color: var(--color-subtle); background: rgba(0,0,0,0.04); padding: 1px 6px; border-radius: 3px; }
+.param-required { font-family: var(--font-ui); font-size: 10px; font-weight: 700; color: #C2653A; text-transform: uppercase; letter-spacing: 0.4px; }
+.param-optional { font-family: var(--font-ui); font-size: 10px; color: var(--color-subtle); text-transform: uppercase; letter-spacing: 0.4px; }
+.param-notes { color: var(--color-body); font-size: 12px; line-height: 1.5; }
+.param-flag { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 3px; font-family: var(--font-ui); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+.flag-undocumented { background: rgba(234,179,8,0.15); color: #A16207; }
+.flag-unused { background: rgba(0,0,0,0.05); color: var(--color-subtle); }
+.params-empty { font-size: 13px; color: var(--color-subtle); font-style: italic; margin: 8px 0 24px; }
+.params-heading { font-family: var(--font-ui); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--color-subtle); margin: 20px 0 0; }
+
+/* Reference page — flat templates table */
+.param-filter { margin: 12px 0 16px; }
+.param-filter input { width: 100%; max-width: 480px; padding: 8px 12px; border: 1px solid rgba(0,0,0,0.12); border-radius: 6px; font-family: var(--font-ui); font-size: 13px; }
+.param-filter input:focus { outline: none; border-color: var(--color-terracotta); box-shadow: 0 0 0 3px rgba(212,120,74,0.12); }
+.ref-templates-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 24px; }
+.ref-templates-table thead th { text-align: left; font-family: var(--font-ui); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--color-subtle); border-bottom: 1px solid rgba(0,0,0,0.1); padding: 8px 10px; }
+.ref-templates-table tbody td { padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.05); vertical-align: top; }
+.ref-tmpl-desc { font-size: 12px; color: var(--color-body); margin: 6px 0 0; line-height: 1.45; }
+.ref-tmpl-dims { font-family: var(--font-mono); font-size: 11px; color: var(--color-subtle); white-space: nowrap; }
+.ref-tmpl-params { min-width: 280px; }
+.ref-param { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 3px 0; }
+.ref-tmpl-tags .tag-chip { display: inline-block; margin: 0 4px 4px 0; padding: 1px 7px; border-radius: 3px; font-family: var(--font-ui); font-size: 10px; font-weight: 600; background: rgba(0,0,0,0.05); color: var(--color-subtle); }
+
 /* ===== Secondary sub-nav ===== */
 .demo-subnav {
   background: var(--color-cream);

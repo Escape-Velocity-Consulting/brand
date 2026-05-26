@@ -1,0 +1,28 @@
+{# Renders a template-params table.
+   Caller passes `params` (array from tooling.paramsByKey[<slug>]).
+   Empty array = nothing to render. #}
+{% macro render(params) %}
+  {% if params and params.length %}
+    <table class="params-table">
+      <thead>
+        <tr><th>Param</th><th>Type</th><th>Required</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        {% for p in params %}
+        <tr class="param-row {% if not p.documented %}param-undocumented{% elif not p.used %}param-unused{% endif %}">
+          <td>
+            <code class="param-name">{{ p.name }}</code>
+            {% if not p.documented %}<span class="param-flag flag-undocumented" title="In template but missing from registry">undocumented</span>{% endif %}
+            {% if p.documented and not p.used %}<span class="param-flag flag-unused" title="In registry but not used in template">unused</span>{% endif %}
+          </td>
+          <td><code class="param-type">{{ p.type }}</code></td>
+          <td>{% if p.required %}<span class="param-required">required</span>{% else %}<span class="param-optional">optional</span>{% endif %}</td>
+          <td class="param-notes">{{ p.notes or '' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="params-empty">No parameters.</p>
+  {% endif %}
+{% endmacro %}

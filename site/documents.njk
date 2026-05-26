@@ -6,6 +6,8 @@ navSlug: documents
 parentSlug: templates
 ---
 
+{% import "partials/params-table.njk" as pt %}
+
 <section>
   <div class="container">
     <div class="eyebrow">Documents</div>
@@ -28,6 +30,8 @@ parentSlug: templates
           {% if d.pdfUrl %}<a href="{{ d.pdfUrl | url }}" target="_blank">Download PDF →</a>{% endif %}
         </div>
         {% if d.cmd %}<pre><code>{{ d.cmd }}</code></pre>{% endif %}
+        <h4 class="params-heading">Parameters</h4>
+        {{ pt.render(tooling.paramsByKey[d.slug]) }}
       </div>
     {% endfor %}
   </div>
