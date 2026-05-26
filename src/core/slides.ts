@@ -51,7 +51,7 @@ function resolveDimensions(d: DimensionsInput): { width: number; height: number 
 
 const md = new MarkdownIt({ html: true, typographer: true })
 
-interface ParsedFragment {
+export interface ParsedFragment {
   type: string
   bg: string
   notes: string
@@ -565,6 +565,35 @@ export async function renderSlides(
 
 // ─── Markdown mode (presentation-style) ────────────────────────────────────
 
+/**
+ * Pure function — enforces the title-once contract without touching the browser.
+ *
+ * Scans `fragments` in order. The first `@type: title` is left as-is. Any
+ * subsequent `@type: title` is downgraded to `@type: section` and a
+ * `title_misuse` warning is appended to the returned `warnings` array.
+ *
+ * Exported so unit tests can exercise the rule directly without Playwright.
+ */
+export function applyTitleOnce(fragments: ParsedFragment[]): { fragments: ParsedFragment[]; warnings: RenderWarning[] } {
+  const warnings: RenderWarning[] = []
+  let titleEmitted = false
+  const result = fragments.map((f, i) => {
+    if (f.type === 'title') {
+      if (titleEmitted) {
+        warnings.push({
+          type: 'title_misuse',
+          slideIndex: i + 1,
+          message: `@type: title used on slide ${i + 1} — downgraded to @type: section. Title chrome (logo, byline, QR) is reserved for slide 1. Use @type: section for chapter dividers.`,
+        })
+        return { ...f, type: 'section' }
+      }
+      titleEmitted = true
+    }
+    return f
+  })
+  return { fragments: result, warnings }
+}
+
 async function renderFromMarkdown(
   input: SlidesInput,
   paths: BrandPaths,
@@ -582,24 +611,9 @@ async function renderFromMarkdown(
   // the title chrome (logo + byline + QR slot + "Get the slides!" caption)
   // every time. Downgrade subsequent titles to section and warn so the agent
   // self-corrects on the next iteration.
-  const warnings: RenderWarning[] = []
-  let titleEmitted = false
-  const renderedFragments = parsed.map((f, i) => {
-    const slideIndex = i + 1
-    let effective = f
-    if (f.type === 'title') {
-      if (titleEmitted) {
-        warnings.push({
-          type: 'title_misuse',
-          slideIndex,
-          message: `@type: title used on slide ${slideIndex} — downgraded to @type: section. Title chrome (logo, byline, QR) is reserved for slide 1. Use @type: section for chapter dividers.`,
-        })
-        effective = { ...f, type: 'section' }
-      } else {
-        titleEmitted = true
-      }
-    }
-    return renderFragment(effective, mdDir, { slideIndex, warnings })
+  const { fragments: effective, warnings } = applyTitleOnce(parsed)
+  const renderedFragments = effective.map((f, i) => {
+    return renderFragment(f, mdDir, { slideIndex: i + 1, warnings })
   })
 
   // Build viewer HTML (used for ALL three outputs in this mode)

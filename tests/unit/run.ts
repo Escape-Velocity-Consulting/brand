@@ -11,6 +11,7 @@ import { ArtifactStore } from '../../src/mcp/shared/artifactStore.js'
 import { constantTimeEqual } from '../../src/mcp/shared/bearerAuth.js'
 import { RefreshTokenStore, __testing as rtTesting } from '../../src/mcp/shared/refreshTokenStore.js'
 import { lintHtmlFragment } from '../../src/core/htmlLint.js'
+import { parseDeckMarkdown, applyTitleOnce } from '../../src/core/slides.js'
 
 let failures = 0
 function check(label: string, cond: unknown, detail?: string) {
@@ -279,6 +280,77 @@ function testHtmlLint() {
   check('inline-style warnings dedupe to one', inlineCount === 1, `got ${inlineCount}`)
 }
 
+// ─── titleMisuse (title-once enforcement) ──────────────────────────────────
+//
+// Regression for the v4-deck pattern: agent wrote @type: title for every
+// chapter divider (13 per deck). applyTitleOnce() must:
+//   - leave slide 1 as `title`
+//   - downgrade slides 2+ to `section`
+//   - emit one `title_misuse` warning per downgraded slide
+//   - leave non-title types untouched
+
+function testTitleMisuse() {
+  console.log('\n# titleMisuse (title-once)')
+
+  const md = `
+<!-- @type: title -->
+# Main Title
+
+===
+
+<!-- @type: title -->
+# Chapter One
+
+===
+
+<!-- @type: content -->
+## Some Content
+
+===
+
+<!-- @type: title -->
+# Chapter Two
+  `.trim()
+
+  const { fragments } = parseDeckMarkdown(md)
+  check('parseDeckMarkdown sees 4 fragments', fragments.length === 4)
+
+  const { fragments: result, warnings } = applyTitleOnce(fragments)
+
+  // Slide 1 stays title
+  check('slide 1 remains @type: title', result[0].type === 'title')
+
+  // Slides 2 and 4 downgraded to section
+  check('slide 2 downgraded to section', result[1].type === 'section')
+  check('slide 3 (content) unchanged', result[2].type === 'content')
+  check('slide 4 downgraded to section', result[3].type === 'section')
+
+  // Two warnings, one per misuse
+  check('exactly 2 title_misuse warnings', warnings.filter((w) => w.type === 'title_misuse').length === 2)
+
+  // Warning slide indices match slides 2 and 4
+  const indices = warnings.filter((w) => w.type === 'title_misuse').map((w) => w.slideIndex)
+  check('warning indices are 2 and 4', indices[0] === 2 && indices[1] === 4, `got ${indices}`)
+
+  // Warning message mentions the downgrade
+  check('warning message mentions section', warnings[0].message.includes('section'))
+
+  // Idempotent on a clean deck (single title)
+  const clean = `
+<!-- @type: title -->
+# Title
+
+===
+
+<!-- @type: section -->
+# Chapter
+  `.trim()
+  const { fragments: cf } = parseDeckMarkdown(clean)
+  const { fragments: cr, warnings: cw } = applyTitleOnce(cf)
+  check('clean deck: no warnings', cw.length === 0)
+  check('clean deck: types unchanged', cr[0].type === 'title' && cr[1].type === 'section')
+}
+
 // ─── qrInject (regex regression) ───────────────────────────────────────────
 //
 // Standalone regression test for the v4-deck silent failure: a global regex
@@ -315,6 +387,7 @@ async function main() {
   testBearerAuth()
   testRefreshTokenStore()
   testHtmlLint()
+  testTitleMisuse()
   testQrPlaceholderReplace()
   console.log(`\n${failures === 0 ? 'All unit tests passed.' : `${failures} test(s) FAILED.`}`)
   process.exit(failures === 0 ? 0 : 1)

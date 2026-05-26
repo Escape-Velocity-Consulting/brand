@@ -4,6 +4,25 @@
   and the `@type: html` canvas + recipe library (flow, spectrum, tiers,
   multiplier — replacing the inline-style spam from earlier hand-rolled decks).
 
+  Slide inventory (17 slides):
+    1  @type: title          — cream, with date                     (title-once: only slide 1 gets chrome)
+    2  @type: quote          — black bg                             (dark contrast: attribution in --color-cream)
+    3  @type: quote          — cream bg                             (light contrast: attribution in --color-text)
+    4  @type: section        — cream, with > eyebrow prefix         (section-num rendered above headline)
+    5  @type: content        — standard bullets
+    6  @type: content        — with ### H3 eyebrows                 (terracotta uppercase section labels)
+    7  @type: html           — .ev-mult-row multiplier recipe
+    8  @type: big-number     — clamp(120px, 14vw, 220px)
+    9  @type: html           — .ev-spectrum axis recipe
+   10  @type: section        — black bg (chapter divider, no chrome)
+   11  @type: cards          — auto-grid from bullet list
+   12  @type: html           — .ev-flow process recipe
+   13  @type: two-col        — symmetric two-column layout
+   14  @type: image          — cream, @chrome: none (emoji/meme)
+   15  @type: comparison     — muted left / accent right
+   16  @type: html           — .ev-tiers offer ladder recipe
+   17  @type: section        — terracotta closing
+
   Render locally:    npm run pres -- previews/decks/reference-deck.md --output previews/decks/reference-deck
   Bake (with QR):    npm run build:reference-deck
   Publish via MCP:   render_slides → publish_artifact → /published/<id>
@@ -25,7 +44,16 @@ KI als 10x Hebel in Deinem Unternehmen einsetzen.
 
 ===
 
+<!-- @type: quote -->
+<!-- @bg: cream -->
+<!-- @source: Tommi Enenkel, Escape Velocity Consulting -->
+> Die meisten Firmen haben nicht zu wenig KI. Sie haben zu wenig Klarheit über ihre Prozesse.
+
+===
+
 <!-- @type: section -->
+<!-- @bg: cream -->
+> Schritt 1
 # Enablement
 
 Drei Schritte vom Hype zur Hebelwirkung.
@@ -40,6 +68,23 @@ KI ist eine General-Purpose-Technologie — und sie macht Einzelpersonen messbar
 - Ein Geschäftsführer mit den richtigen Werkzeugen erledigt **in einem Tag**, wofür er früher eine Woche brauchte
 - Das ist kein Hype — das ist messbar
 - Soweit liegt der Anwalt richtig
+
+===
+
+<!-- @type: content -->
+## Drei Hebel im Überblick
+
+### Automatisierung
+
+Repetitive Aufgaben — E-Mail-Drafts, Reports, Datenrecherche.
+
+### Augmentierung
+
+Bessere Entscheidungen durch KI-gestützte Analyse und Zusammenfassung.
+
+### Transformation
+
+Neue Geschäftsmodelle, die ohne KI schlicht nicht möglich wären.
 
 ===
 
@@ -126,6 +171,25 @@ In einem Tag erledigen, wofür sonst eine Woche reicht.
   <div class="ev-flow-step">Output</div>
 </div>
 <p class="ev-foot">KI ersetzt eure Prozesse nicht. Sie wird in sie integriert.</p>
+
+===
+
+<!-- @type: two-col -->
+## Warum jetzt?
+
+Kosten sinken exponentiell — Qualität steigt.
+
+- GPT-3 (2020): **$100** pro 1M Token
+- GPT-4 (2023): **$30** pro 1M Token
+- Claude 3.5 (2024): **$3** pro 1M Token
+
+:::
+
+Die Fähigkeiten wachsen schneller als die Adoption.
+
+- Reasoning: PhD-Niveau in Fachdomänen
+- Code: Senior-Engineer-Niveau
+- Übersetzung: muttersprachlich
 
 ===
 
