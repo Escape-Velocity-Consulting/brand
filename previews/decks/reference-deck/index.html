@@ -189,11 +189,14 @@ html, body {
   grid-column: 1 / -1; grid-row: 3;
   font-family: var(--font-ui);
   font-size: 24px; font-weight: 600;
-  color: var(--color-body);
+  /* Small-text-on-cream rule: anything below 24px gets --color-text
+     for contrast, not --color-body. The byline is exactly at the
+     threshold, so we use --color-text. */
+  color: var(--color-text);
   letter-spacing: 0.02em;
 }
 .slide--title[data-bg="black"] .title-author,
-.slide--title[data-bg="terracotta"] .title-author { color: rgba(255,255,255,0.85); }
+.slide--title[data-bg="terracotta"] .title-author { color: var(--color-cream); opacity: 0.95; }
 
 /* Wordmark — "Escape Velocity" with the second word as accent. Color picks
    itself by background; default is dark word + terracotta accent on cream. */
@@ -230,10 +233,12 @@ html, body {
 .slide--title .subtitle {
   font-family: var(--font-body);
   font-size: 40px; font-weight: 400;
-  color: var(--color-body);
+  /* Even at 40px, --color-body washes out on cream — use --color-text
+     for the title-slide subtitle so the value-prop reads sharp. */
+  color: var(--color-text);
   line-height: 1.35;
 }
-.slide--title[data-bg="black"] .subtitle { color: rgba(255,255,255,0.88); }
+.slide--title[data-bg="black"] .subtitle { color: var(--color-cream); opacity: 0.95; }
 .slide--title[data-bg="terracotta"] .subtitle { color: var(--color-cream); }
 .slide--title .accent-rule {
   width: 96px; height: 5px; background: var(--color-terracotta);
@@ -300,13 +305,22 @@ html, body {
   width: 24px; height: 3px; background: var(--color-terracotta);
 }
 .slide--content .md h3 {
-  font-family: var(--font-headline);
-  font-size: 44px; font-weight: 600;
+  /* v4 feedback (slide 10): h3 was rendered as a headline-style 44px bold
+     block, which looked like a sub-bullet of the h2 above it — broken
+     hierarchy. Switched to an eyebrow treatment: ui-font, uppercase,
+     terracotta, small. Each h3 now reads as an explicit section divider
+     above its paragraph/bullet block. */
+  font-family: var(--font-ui);
+  font-size: 20px; font-weight: 700;
   line-height: 1.2;
-  color: var(--color-text);
-  margin-top: 40px; margin-bottom: 16px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-terracotta);
+  margin-top: 44px; margin-bottom: 14px;
 }
 .slide--content .md h3:first-child { margin-top: 0; }
+.slide--content[data-bg="black"] .md h3,
+.slide--content[data-bg="terracotta"] .md h3 { color: var(--color-cream); }
 .slide--content .md strong { font-weight: 600; color: var(--color-text); }
 .slide--content .md table { width: 100%; border-collapse: collapse; margin-top: 24px; }
 .slide--content .md th {
@@ -371,14 +385,20 @@ html, body {
   margin-top: 48px;
   padding-left: 62px;
   font-family: var(--font-ui);
-  font-size: 32px; font-weight: 600;
-  color: var(--color-body);
+  /* Bumped from 32→36 and from --color-body to --color-text. v4
+     feedback: the source line was too quiet relative to the quote.
+     The attribution carries the credibility — it needs to read. */
+  font-size: 36px; font-weight: 600;
+  color: var(--color-text);
   letter-spacing: 0.02em;
 }
 .slide--quote[data-bg="black"] blockquote,
 .slide--quote[data-bg="terracotta"] blockquote { color: var(--color-cream); }
 .slide--quote[data-bg="black"] .attribution,
-.slide--quote[data-bg="terracotta"] .attribution { color: rgba(255,255,255,0.85); }
+.slide--quote[data-bg="terracotta"] .attribution {
+  /* Sharp contrast on dark — bumped from rgba 0.85 to full cream. */
+  color: var(--color-cream); opacity: 1;
+}
 
 /* Image */
 .slide--image { padding: 0; }
@@ -398,14 +418,21 @@ html, body {
   text-align: center; opacity: 0.85;
 }
 /* Emoji / headline-only "image" — used for memes and punchline slides.
-   No caption, no subtitle. The glyph carries the whole slide. */
+   No caption, no subtitle. The glyph carries the whole slide.
+   v4 feedback: long-form headlines (e.g. "So fühlt es sich an, wenn man
+   unterwegs alles in Voice Notes spricht") overflowed at 320px. Switched
+   to a viewport-relative clamp + text-wrap balance. Single emoji still
+   renders big (~9vw ≈ 173px); long sentences scale + wrap inside the
+   1700px max-width. The overflow check in renderSlides catches the
+   residual tail. */
 .slide--image .img-headline {
   font-family: var(--font-headline);
-  font-size: 320px; font-weight: 700;
-  line-height: 1; letter-spacing: -0.02em;
+  font-size: clamp(72px, 9vw, 200px); font-weight: 700;
+  line-height: 1.08; letter-spacing: -0.02em;
   text-align: center;
+  text-wrap: balance;
   color: var(--color-text);
-  max-width: 90%;
+  max-width: 1700px;
   padding: 0 80px;
 }
 .slide--image[data-bg="black"] .img-headline,
@@ -505,7 +532,9 @@ html, body {
 .slide--big-number[data-bg="terracotta"] .eyebrow { color: var(--color-cream); opacity: 0.85; }
 .slide--big-number .big-number {
   font-family: var(--font-headline);
-  font-size: 320px; font-weight: 700;
+  /* v4 feedback: 320px was 30% too big and overflowed for multi-digit
+     numbers like "100x". Capped at 220 with viewport-relative scaling. */
+  font-size: clamp(120px, 14vw, 220px); font-weight: 700;
   line-height: 0.95; letter-spacing: -0.04em;
   color: var(--color-terracotta);
   margin-bottom: 32px;
@@ -545,9 +574,14 @@ html, body {
   font-size: 28px; line-height: 1.5;
 }
 .slide--comparison .comparison-muted {
-  background: rgba(0,0,0,0.07);
-  color: var(--color-body);
-  border-left: 4px solid var(--color-subtle);
+  /* v4 feedback: contrast on the muted column was too soft — body-on-light-gray
+     looked washed out. Bumped bg darker (0.07→0.05 = lighter actually, but
+     paired with --color-text the contrast is sharper) and switched text to
+     --color-text. The "muted" still reads as the less-emphasized side because
+     the accent column has the terracotta border and shadow. */
+  background: rgba(0,0,0,0.05);
+  color: var(--color-text);
+  border-left: 4px solid var(--color-muted);
 }
 .slide--comparison .comparison-accent {
   background: var(--color-cream);
@@ -561,7 +595,7 @@ html, body {
   line-height: 1.15;
   margin-bottom: 16px;
 }
-.slide--comparison .comparison-muted h3 { color: var(--color-text); opacity: 0.65; }
+.slide--comparison .comparison-muted h3 { color: var(--color-text); opacity: 0.85; }
 .slide--comparison .comparison-accent h3 { color: var(--color-text); }
 .slide--comparison .comparison-col ul { list-style: none; padding: 0; margin-top: 12px; }
 .slide--comparison .comparison-col li {
@@ -613,6 +647,265 @@ html, body {
 .ev-accent { color: var(--color-terracotta); }
 .ev-quote-bar { border-left: 4px solid var(--color-terracotta); padding-left: 24px; }
 
+/* ─── @type: html canvas + typography (auto-wrap target) ───────────────── */
+/* The renderer wraps every @type: html body in <div class="ev-canvas"> by
+   default, so authors don't reinvent padding + body font on every slide. */
+.ev-canvas {
+  width: 100%;
+  font-family: var(--font-body);
+  color: var(--color-body);
+  display: flex; flex-direction: column;
+  gap: 24px;
+}
+.ev-h2 {
+  font-family: var(--font-headline);
+  font-size: 56px; font-weight: 700;
+  line-height: 1.15; letter-spacing: -0.015em;
+  color: var(--color-text);
+  margin-bottom: 12px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+.ev-rule {
+  display: block;
+  width: 60px; height: 3px;
+  background: var(--color-terracotta);
+}
+.ev-lead {
+  font-family: var(--font-body);
+  font-size: 26px; line-height: 1.5;
+  /* Per the small-text rule (Phase 5): 26px is borderline, but on cream
+     --color-body still reads — bumping to --color-text would be heavy
+     for narrative text. Tuneable. */
+  color: var(--color-body);
+  max-width: 1400px;
+  /* NOT centered — v4 slide 5 used `margin: 0 auto` on a similar lead,
+     producing a centered paragraph under a flush-left headline. Looked
+     broken. Default to flush-left. */
+}
+.ev-foot {
+  font-family: var(--font-body);
+  font-size: 24px; line-height: 1.45;
+  color: var(--color-text);
+  text-align: center;
+  max-width: 1400px;
+  margin: 24px auto 0;
+}
+
+/* ─── .ev-flow — horizontal step process (replaces hand-rolled .proz-*) ─ */
+.ev-flow {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0;
+  padding: 32px 0;
+}
+.ev-flow-step {
+  flex: 0 0 auto;
+  min-width: 180px; height: 180px;
+  background: var(--color-light);
+  /* v4 lesson: --color-warm-gray-300 borders were invisible on cream.
+     Use --color-text alpha for a visible-but-soft outline. */
+  border: 2px solid color-mix(in srgb, var(--color-text) 18%, transparent);
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 22px; font-weight: 600;
+  color: var(--color-text);
+  padding: 0 20px;
+}
+.ev-flow-line {
+  flex: 1 1 0;
+  position: relative;
+  height: 180px;
+  display: flex; align-items: center;
+  min-width: 80px;
+}
+.ev-flow-line::before {
+  content: ''; display: block; width: 100%;
+  height: 4px;
+  background: color-mix(in srgb, var(--color-text) 25%, transparent);
+}
+.ev-flow-line[data-label]::after {
+  content: attr(data-label);
+  position: absolute; left: 50%; top: calc(50% - 36px);
+  transform: translateX(-50%);
+  font-family: var(--font-ui); font-size: 18px; font-weight: 700;
+  color: var(--color-terracotta);
+  letter-spacing: 0.08em; text-transform: uppercase;
+  white-space: nowrap;
+}
+.ev-flow-line[data-dock]::before {
+  background: color-mix(in srgb, var(--color-text) 25%, transparent);
+}
+.ev-flow-line[data-dock] > .ev-flow-dock {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--color-terracotta);
+  box-shadow: 0 0 0 6px var(--color-cream);
+}
+
+/* ─── .ev-spectrum — axis with marker + shift arrow + endpoint labels ──── */
+.ev-spectrum {
+  position: relative;
+  padding: 80px 80px 60px;
+}
+.ev-spectrum-axis {
+  height: 6px; border-radius: 3px;
+  background: color-mix(in srgb, var(--color-text) 22%, transparent);
+  position: relative;
+}
+.ev-spectrum-marker {
+  position: absolute; top: -16px; left: var(--at, 50%);
+  transform: translateX(-50%);
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--color-text);
+  box-shadow: 0 0 0 8px var(--color-cream);
+}
+.ev-spectrum-shift {
+  position: absolute; left: var(--from, 32%); top: 50%;
+  width: calc(var(--to, 68%) - var(--from, 32%));
+  height: 6px; transform: translateY(-50%);
+  background: var(--color-terracotta); border-radius: 3px;
+}
+.ev-spectrum-shift::after {
+  content: '';
+  position: absolute; right: -16px; top: 50%;
+  transform: translateY(-50%);
+  width: 0; height: 0;
+  border-left: 18px solid var(--color-terracotta);
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+}
+.ev-spectrum-shift-label {
+  position: absolute; left: calc(var(--from, 32%) + (var(--to, 68%) - var(--from, 32%)) / 2);
+  top: 80px; transform: translateX(-50%);
+  font-family: var(--font-ui); font-size: 22px; font-weight: 700;
+  color: var(--color-terracotta);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.ev-spectrum-ends {
+  display: flex; justify-content: space-between;
+  margin-top: 56px;
+  font-family: var(--font-headline);
+  font-size: 30px; font-weight: 700;
+  color: var(--color-text);
+}
+.ev-spectrum-ends > div { max-width: 360px; }
+.ev-spectrum-ends > div:last-child { text-align: right; }
+.ev-spectrum-ends span {
+  display: block; margin-top: 8px;
+  font-family: var(--font-body); font-size: 22px; font-weight: 400;
+  color: var(--color-body);
+}
+
+/* ─── .ev-tiers — 3-column offer ladder with emphasized middle ─────────── */
+.ev-tiers {
+  display: grid; grid-template-columns: 1fr 1.25fr 1fr;
+  gap: 24px;
+  align-items: stretch;
+  padding: 24px 0;
+}
+.ev-tier {
+  background: var(--color-light);
+  border: 2px solid color-mix(in srgb, var(--color-text) 14%, transparent);
+  border-radius: 16px;
+  padding: 28px 30px;
+  display: flex; flex-direction: column;
+}
+.ev-tier--emphasized {
+  background: var(--color-cream);
+  border: 3px solid var(--color-terracotta);
+  padding: 32px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+  transform: translateY(-16px);
+}
+.ev-tier-eyebrow {
+  font-family: var(--font-ui); font-size: 16px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+  margin-bottom: 8px;
+}
+.ev-tier--emphasized .ev-tier-eyebrow {
+  color: var(--color-terracotta);
+}
+.ev-tier-title {
+  font-family: var(--font-headline);
+  font-size: 24px; font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-text);
+  margin-bottom: 20px;
+}
+.ev-tier--emphasized .ev-tier-title { font-size: 26px; }
+.ev-tier-offer + .ev-tier-offer {
+  border-top: 1px solid color-mix(in srgb, var(--color-text) 12%, transparent);
+  padding-top: 14px; margin-top: 14px;
+}
+.ev-tier-offer-title {
+  font-family: var(--font-headline);
+  font-size: 22px; font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+.ev-tier-offer-meta {
+  font-family: var(--font-body);
+  font-size: 18px;
+  color: var(--color-body);
+}
+
+/* ─── .ev-mult-row — multiplier visualization (1× → 10× → 100×) ────────── */
+.ev-mult-row {
+  display: flex; align-items: flex-end; justify-content: center;
+  gap: 48px;
+  height: 480px;
+  margin: 24px 0;
+}
+.ev-mult-col {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 16px;
+}
+.ev-mult-num {
+  font-family: var(--font-headline);
+  /* Default — author can override per-step by combining .ev-accent or
+     adding a sizing modifier class. Avoid inline font-size. */
+  font-size: 88px; font-weight: 700;
+  line-height: 1;
+  color: var(--color-text);
+}
+.ev-mult-num.ev-mult-num--lg { font-size: 112px; }
+.ev-mult-num.ev-mult-num--xl { font-size: 144px; }
+.ev-mult-box {
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
+  font-family: var(--font-ui); font-size: 22px;
+  border-radius: 8px;
+  padding: 0 20px;
+}
+.ev-mult-box.ev-mult-box--sm {
+  width: 140px; height: 140px;
+  background: var(--color-light);
+  border: 2px solid color-mix(in srgb, var(--color-text) 18%, transparent);
+  color: var(--color-text);
+}
+.ev-mult-box.ev-mult-box--md {
+  width: 200px; height: 240px;
+  background: var(--color-cream);
+  border: 2px solid var(--color-terracotta);
+  color: var(--color-text);
+}
+.ev-mult-box.ev-mult-box--lg {
+  width: 260px; height: 340px;
+  background: var(--color-black);
+  color: var(--color-cream);
+  font-size: 24px;
+}
+.ev-mult-arrow {
+  font-family: var(--font-headline);
+  font-size: 64px;
+  color: color-mix(in srgb, var(--color-text) 50%, transparent);
+  padding-bottom: 60px;
+}
+
 /* Brand mark in footer corner — auto-variant by background.
    On cream slides "Escape" is dark for readable contrast; on dark/terracotta
    slides "Escape" is light. "Velocity" stays accented in all variants. */
@@ -631,10 +924,14 @@ html, body {
 .slide-num {
   position: absolute; bottom: 48px; left: 80px;
   font-family: var(--font-ui); font-size: 18px; font-weight: 600;
-  color: var(--color-subtle); letter-spacing: 0.08em;
+  /* v4 feedback: --color-subtle on cream gave a gray-on-cream wash
+     that was barely legible. Switched to --color-text with reduced
+     opacity — still recedes but doesn't disappear. */
+  color: var(--color-text); opacity: 0.55;
+  letter-spacing: 0.08em;
 }
 .slide[data-bg="terracotta"] .slide-num,
-.slide[data-bg="black"] .slide-num { color: rgba(255,255,255,0.72); }
+.slide[data-bg="black"] .slide-num { color: var(--color-cream); opacity: 0.75; }
 .slide--title .slide-num, .slide--section .slide-num { display: none; }
 
 /* Per-slide chrome override: `<!-- @chrome: none -->` suppresses the
@@ -699,7 +996,7 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
     <div class="title-author">Tommi Enenkel · Escape Velocity Consulting · 28. Mai 2026</div>
   
     </div>
-    <div class="slide-num">1 / 10</div>
+    <div class="slide-num">1 / 14</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
@@ -713,7 +1010,7 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
     <div class="attribution">Ein Anwalt, LinkedIn, 2026</div>
   
     </div>
-    <div class="slide-num">2 / 10</div>
+    <div class="slide-num">2 / 14</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
@@ -728,7 +1025,7 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
     <div class="section-sub">Drei Schritte vom Hype zur Hebelwirkung.</div>
   
     </div>
-    <div class="slide-num">3 / 10</div>
+    <div class="slide-num">3 / 14</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
@@ -748,14 +1045,45 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
 </div>
   
     </div>
-    <div class="slide-num">4 / 10</div>
+    <div class="slide-num">4 / 14</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--html"
+           data-bg="cream"
+           
+           data-index="5">
+    <div class="slide-inner">
+      
+    <h2 class="ev-h2">Aber in Teil zwei verrennt er sich<span class="ev-rule"></span></h2>
+    <div class="ev-canvas"><p class="ev-lead">Wenn KI dich zehnfach produktiv macht, macht sie auch jeden in deinem Team zehnfach produktiv. <strong>Falls du sie lässt.</strong></p>
+<div class="ev-mult-row">
+  <div class="ev-mult-col">
+    <div class="ev-mult-num">1×</div>
+    <div class="ev-mult-box ev-mult-box--sm">heute</div>
+  </div>
+  <div class="ev-mult-arrow">→</div>
+  <div class="ev-mult-col">
+    <div class="ev-mult-num ev-mult-num--lg ev-accent">10×</div>
+    <div class="ev-mult-box ev-mult-box--md">mit KI</div>
+  </div>
+  <div class="ev-mult-arrow">→</div>
+  <div class="ev-mult-col">
+    <div class="ev-mult-num ev-mult-num--xl">100×</div>
+    <div class="ev-mult-box ev-mult-box--lg">10 Leute, Kompounding</div>
+  </div>
+</div>
+<p class="ev-foot"><strong>Mehr Output pro Kopf. Nicht null Köpfe.</strong></p></div>
+  
+    </div>
+    <div class="slide-num">5 / 14</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--big-number"
            data-bg="cream"
            
-           data-index="5">
+           data-index="6">
     <div class="slide-inner">
       
     <div class="eyebrow">Produktivitäts-Multiplier</div>
@@ -764,14 +1092,39 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
 </div>
   
     </div>
-    <div class="slide-num">5 / 10</div>
+    <div class="slide-num">6 / 14</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--html"
+           data-bg="cream"
+           
+           data-index="7">
+    <div class="slide-inner">
+      
+    <h2 class="ev-h2">Das Enablement-Spektrum<span class="ev-rule"></span></h2>
+    <div class="ev-canvas"><div class="ev-spectrum" style="--from: 32%; --to: 68%; --at: 32%;">
+  <div class="ev-spectrum-axis">
+    <div class="ev-spectrum-marker"></div>
+    <div class="ev-spectrum-shift"></div>
+  </div>
+  <div class="ev-spectrum-shift-label">KI verschiebt den Punkt</div>
+  <div class="ev-spectrum-ends">
+    <div>Alles auslagern<span>IT-Firmen, Agenturen</span></div>
+    <div>Alles selber machen<span>eigenes Team, eigene Tools</span></div>
+  </div>
+</div>
+<p class="ev-foot">Regular People können jetzt mehr selbst tun.</p></div>
+  
+    </div>
+    <div class="slide-num">7 / 14</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--section"
            data-bg="black"
            
-           data-index="6">
+           data-index="8">
     <div class="slide-inner">
       
     
@@ -779,14 +1132,14 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
     <div class="section-sub">7 Tipps · 1 Bonus · 75 Minuten</div>
   
     </div>
-    <div class="slide-num">6 / 10</div>
+    <div class="slide-num">8 / 14</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--cards"
            data-bg="cream"
            
-           data-index="7">
+           data-index="9">
     <div class="slide-inner">
       
     <h2>Operationalisierung: Werkzeuge</h2><div class="accent-rule"></div>
@@ -823,25 +1176,48 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
   </div>
   
     </div>
-    <div class="slide-num">7 / 10</div>
+    <div class="slide-num">9 / 14</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--html"
+           data-bg="cream"
+           
+           data-index="10">
+    <div class="slide-inner">
+      
+    <h2 class="ev-h2">Prozesse: Wie KI integrieren?<span class="ev-rule"></span></h2>
+    <div class="ev-canvas"><div class="ev-flow">
+  <div class="ev-flow-step">Input</div>
+  <div class="ev-flow-line" data-label="KI-Andock" data-dock><span class="ev-flow-dock"></span></div>
+  <div class="ev-flow-step">Verarbeitung</div>
+  <div class="ev-flow-line" data-label="KI-Andock" data-dock><span class="ev-flow-dock"></span></div>
+  <div class="ev-flow-step">Entscheidung</div>
+  <div class="ev-flow-line"></div>
+  <div class="ev-flow-step">Output</div>
+</div>
+<p class="ev-foot">KI ersetzt eure Prozesse nicht. Sie wird in sie integriert.</p></div>
+  
+    </div>
+    <div class="slide-num">10 / 14</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--image"
            data-bg="cream"
            data-chrome="none"
-           data-index="8">
+           data-index="11">
     <div class="slide-inner">
       <div class="img-headline">🥋</div>
     </div>
-    <div class="slide-num">8 / 10</div>
+    <div class="slide-num">11 / 14</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
   <section class="slide slide--comparison"
            data-bg="cream"
            
-           data-index="9">
+           data-index="12">
     <div class="slide-inner">
       
     <h2>Orientierung</h2><div class="accent-rule"></div>
@@ -865,35 +1241,69 @@ body.print-mode .hud, body.print-mode .hud-hint { display: none; }
     </div>
   
     </div>
-    <div class="slide-num">9 / 10</div>
+    <div class="slide-num">12 / 14</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 
-  <section class="slide slide--title"
-           data-bg="terracotta"
+  <section class="slide slide--html"
+           data-bg="cream"
            
-           data-index="10">
+           data-index="13">
     <div class="slide-inner">
       
-    <div class="title-chrome">
-      <div class="title-logo">Escape <span>Velocity</span></div>
+    <h2 class="ev-h2">Wie es weitergeht<span class="ev-rule"></span></h2>
+    <div class="ev-canvas"><div class="ev-tiers">
+  <div class="ev-tier">
+    <div class="ev-tier-eyebrow">Hilf mir lernen</div>
+    <div class="ev-tier-title">Richtung selber machen</div>
+    <div class="ev-tier-offer">
+      <div class="ev-tier-offer-title">Use Case Consultation</div>
+      <div class="ev-tier-offer-meta">€250, oder kostenlos mit YouTube-Aufnahme</div>
     </div>
-    <div class="title-body">
+  </div>
+  <div class="ev-tier ev-tier--emphasized">
+    <div class="ev-tier-eyebrow">Lass uns gemeinsam bauen</div>
+    <div class="ev-tier-title">Mein eigentlicher Modus</div>
+    <div class="ev-tier-offer">
+      <div class="ev-tier-offer-title">1:1 Coaching Setup</div>
+      <div class="ev-tier-offer-meta">€500 pro Session</div>
+    </div>
+    <div class="ev-tier-offer">
+      <div class="ev-tier-offer-title">Aha! Moment Workshop</div>
+      <div class="ev-tier-offer-meta">€2.500</div>
+    </div>
+  </div>
+  <div class="ev-tier">
+    <div class="ev-tier-eyebrow">Übernimm das für mich</div>
+    <div class="ev-tier-title">Richtung auslagern</div>
+    <div class="ev-tier-offer">
+      <div class="ev-tier-offer-title">Tech Upgrade</div>
+      <div class="ev-tier-offer-meta">Projekt-basiert</div>
+    </div>
+    <div class="ev-tier-offer">
+      <div class="ev-tier-offer-title">Fractional CTO</div>
+      <div class="ev-tier-offer-meta">Laufende Begleitung, Retainer</div>
+    </div>
+  </div>
+</div></div>
+  
+    </div>
+    <div class="slide-num">13 / 14</div>
+    <div class="slide-mark">Escape <span>Velocity</span></div>
+  </section>
+
+  <section class="slide slide--section"
+           data-bg="terracotta"
+           
+           data-index="14">
+    <div class="slide-inner">
       
-      <div class="accent-rule"></div>
-      <h1>Danke!</h1>
-      <div class="subtitle">tommi.enenkel@escapevelocity.consulting</div>
-    </div>
     
-    <div class="title-qr-slot">
-      <img src="qr-title.png" alt="" class="title-qr-image">
-      <div class="title-qr-caption">Get the slides!</div>
-    </div>
-  
-    <div class="title-author">Tommi Enenkel · Escape Velocity Consulting</div>
+    <h1>Danke!</h1>
+    <div class="section-sub">tommi.enenkel@escapevelocity.consulting</div>
   
     </div>
-    <div class="slide-num">10 / 10</div>
+    <div class="slide-num">14 / 14</div>
     <div class="slide-mark">Escape <span>Velocity</span></div>
   </section>
 

@@ -254,8 +254,8 @@ The presentation template (`render_slides` markdown mode) ships with named slide
 
 | Content shape | Use `@type:` |
 |---------------|--------------|
-| Deck cover (logo + title + author + QR auto-bakes on publish) | `title` |
-| Chapter / section divider (single word or short phrase) | `section` |
+| **Slide 1 only** — deck cover (logo + title + author + QR auto-bakes on publish) | `title` |
+| Chapter / section divider, "Tipp #N" intro, pause, closing thanks — anything mid-deck with a big word | `section` |
 | Narrative prose, ≤6 bullets, ≤80 words | `content` |
 | Symmetric A/B pair (e.g. "Optimierung" vs "Wachstum") | `two-col` |
 | Opinionated contrast (old way vs new way, before/after, generic vs branded) | `comparison` |
@@ -285,24 +285,149 @@ All directives use `<!-- @key: value -->` syntax, one per line, at the top of a 
 
 ### Authoring rules
 
-- **Section / chapter slides:** `# Title` is canonical. The parser also accepts `## Title` as a safety net, but write `#`.
+- **`@type: title` is slide-1-only.** Exactly one per deck, always the first slide. It carries the logo, author byline, and QR auto-bake slot. If you use `@type: title` on slide 2+, the renderer downgrades it to `@type: section` and pushes a `title_misuse` warning into `result.warnings` — your deck still renders, but you'll see the warning. For every chapter divider, "Tipp #N" intro, pause slide, or closing thanks slide, use `@type: section`.
+- **Section / chapter slides:** `# Title` is canonical. The parser also accepts `## Title` as a safety net, but write `#`. Sections have no logo, no byline, no QR — they're the big-word divider, on a `cream` / `black` / `terracotta` background.
 - **Quote slides:** put the quotation in `> ` lines. Attribute the source with either `<!-- @source: ... -->` (preferred) or a single line starting with an em-dash (`— Source · Date`). Never bury the source inside the blockquote.
-- **Custom HTML escape hatch (`@type: html`):** the *leading* `## Title` line is auto-extracted and rendered as a styled heading above the raw HTML. The rest is raw — markdown is **not** parsed inside. Prefer the utility classes below over inline `style="…"` attributes.
-- **Title slides** automatically get the logo, the author byline, and a QR placeholder. The publish step fills the QR with the detail-page URL of the publication.
+- **Custom HTML escape hatch (`@type: html`):** the *leading* `## Title` line is auto-extracted and rendered as a styled heading; the renderer also auto-wraps your body in `<div class="ev-canvas">` so you don't have to ship padding boilerplate. Markdown is **not** parsed inside. Use the `.ev-*` utility classes — see the recipe library below.
+- **Title slides** automatically get the logo, the author byline, and a QR placeholder. The publish step fills the QR with the detail-page URL of the publication. If your markdown already contains a byline-shaped line ("Tommi Enenkel, Escape Velocity Consulting"), the renderer auto-strips it from the subtitle to avoid duplication with the auto byline.
 
-### Utility classes inside `@type: html`
+### `@type: html` — recipes + utility palette
 
-Shipped with the presentation viewer — use these instead of inline styles when you must reach for the escape hatch:
+The canvas contract:
+1. Open with a `## Heading` line — the renderer extracts it and emits `<h2 class="ev-h2">Heading <span class="ev-rule"></span></h2>`.
+2. Write your body **without** padding wrappers — the renderer auto-wraps in `<div class="ev-canvas">`.
+3. Reach for `.ev-*` classes for visual patterns. **Never** inline `style="..."` for color, font-family, font-size, font-weight, or background — the renderer's linter pushes warnings into `result.warnings` for each violation.
+4. `TOKENS_CSS` is already injected at the slide level. Don't re-inject inside your `@type: html` block — the linter will warn.
+
+**Forbidden in `@type: html`:**
+- Inline `style="color: …; font-family: …; font-size: …; background: …"` — use `.ev-*` classes
+- Hardcoded hex colors (`#abc123`) outside `<svg>` — use `var(--color-*)`
+- Hardcoded font names (`'Inter'`, `'Space Grotesk'`) — use `var(--font-*)`
+- `var(--color-warm-gray-300)` for thin lines or small text — it disappears on cream. Use `var(--color-text)` with reduced opacity instead.
+
+#### Recipe — Multiplier (`1× → 10× → 100×`)
+
+```html
+<!-- @type: html -->
+## Aber in Teil zwei verrennt er sich
+
+<p class="ev-lead">Wenn KI dich zehnfach produktiv macht, macht sie auch jeden in deinem Team zehnfach produktiv.</p>
+<div class="ev-mult-row">
+  <div class="ev-mult-col">
+    <div class="ev-mult-num">1×</div>
+    <div class="ev-mult-box ev-mult-box--sm">heute</div>
+  </div>
+  <div class="ev-mult-arrow">→</div>
+  <div class="ev-mult-col">
+    <div class="ev-mult-num ev-mult-num--lg ev-accent">10×</div>
+    <div class="ev-mult-box ev-mult-box--md">mit KI</div>
+  </div>
+  <div class="ev-mult-arrow">→</div>
+  <div class="ev-mult-col">
+    <div class="ev-mult-num ev-mult-num--xl">100×</div>
+    <div class="ev-mult-box ev-mult-box--lg">10 Leute, Kompounding</div>
+  </div>
+</div>
+<p class="ev-foot"><strong>Mehr Output pro Kopf. Nicht null Köpfe.</strong></p>
+```
+
+#### Recipe — Process flow
+
+```html
+<!-- @type: html -->
+## Prozesse: Wie KI integrieren?
+
+<div class="ev-flow">
+  <div class="ev-flow-step">Input</div>
+  <div class="ev-flow-line" data-label="KI-Andock" data-dock><span class="ev-flow-dock"></span></div>
+  <div class="ev-flow-step">Verarbeitung</div>
+  <div class="ev-flow-line" data-label="KI-Andock" data-dock><span class="ev-flow-dock"></span></div>
+  <div class="ev-flow-step">Entscheidung</div>
+  <div class="ev-flow-line"></div>
+  <div class="ev-flow-step">Output</div>
+</div>
+<p class="ev-foot">KI ersetzt eure Prozesse nicht. Sie wird in sie integriert.</p>
+```
+
+#### Recipe — Spectrum (axis with marker + shift)
+
+```html
+<!-- @type: html -->
+## Das Enablement-Spektrum
+
+<div class="ev-spectrum" style="--from: 32%; --to: 68%; --at: 32%;">
+  <div class="ev-spectrum-axis">
+    <div class="ev-spectrum-marker"></div>
+    <div class="ev-spectrum-shift"></div>
+  </div>
+  <div class="ev-spectrum-shift-label">KI verschiebt den Punkt</div>
+  <div class="ev-spectrum-ends">
+    <div>Alles auslagern<span>IT-Firmen, Agenturen</span></div>
+    <div>Alles selber machen<span>eigenes Team, eigene Tools</span></div>
+  </div>
+</div>
+<p class="ev-foot">Regular People können jetzt mehr selbst tun.</p>
+```
+
+(The `--from`, `--to`, `--at` custom properties on the wrapper position the shift bar and marker as percentages along the axis — geometry-only, not visual styling, so they're acceptable inline.)
+
+#### Recipe — Tier ladder (emphasized middle)
+
+```html
+<!-- @type: html -->
+## Wie es weitergeht
+
+<div class="ev-tiers">
+  <div class="ev-tier">
+    <div class="ev-tier-eyebrow">Hilf mir lernen</div>
+    <div class="ev-tier-title">Richtung selber machen</div>
+    <div class="ev-tier-offer">
+      <div class="ev-tier-offer-title">Use Case Consultation</div>
+      <div class="ev-tier-offer-meta">€250</div>
+    </div>
+  </div>
+  <div class="ev-tier ev-tier--emphasized">
+    <div class="ev-tier-eyebrow">Lass uns gemeinsam bauen</div>
+    <div class="ev-tier-title">Mein eigentlicher Modus</div>
+    <div class="ev-tier-offer">
+      <div class="ev-tier-offer-title">1:1 Coaching</div>
+      <div class="ev-tier-offer-meta">€500 / Session</div>
+    </div>
+    <div class="ev-tier-offer">
+      <div class="ev-tier-offer-title">Aha! Workshop</div>
+      <div class="ev-tier-offer-meta">€2.500</div>
+    </div>
+  </div>
+  <div class="ev-tier">
+    <div class="ev-tier-eyebrow">Übernimm das für mich</div>
+    <div class="ev-tier-title">Richtung auslagern</div>
+    <div class="ev-tier-offer">
+      <div class="ev-tier-offer-title">Tech Upgrade</div>
+      <div class="ev-tier-offer-meta">Projektbasiert</div>
+    </div>
+  </div>
+</div>
+```
+
+#### Full utility class reference
 
 | Class | What it gives you |
 |-------|-------------------|
-| `.ev-card` | Cream-bg panel with terracotta left border and rounded corners. |
-| `.ev-card--dark` | Same shape on a dark background. |
-| `.ev-eyebrow` | Manrope 600 uppercase eyebrow text. |
-| `.ev-dash-list` | `<ul>` with the brand's terracotta dash bullets (no inline span hacks needed). |
+| `.ev-canvas` | Body-font, body-color wrapper. Auto-applied by the renderer. |
+| `.ev-h2` | Slide H2 — Space Grotesk 56px 700. Auto-emitted when your html block starts with `## Heading`. |
+| `.ev-rule` | 60×3px terracotta accent block. |
+| `.ev-lead` | Inter 26px lead paragraph (left-aligned, max-width 1400px). |
+| `.ev-foot` | 24px centered foot paragraph for closing line under a visual. |
+| `.ev-eyebrow` | Manrope 700 uppercase terracotta eyebrow text. |
+| `.ev-accent` | Terracotta text color (use on a single span for one-accent-per-slide). |
+| `.ev-card` / `.ev-card--dark` | Cream/dark panel with terracotta left border. |
+| `.ev-dash-list` | `<ul>` with terracotta dash bullets. |
 | `.ev-grid-2` / `.ev-grid-3` / `.ev-grid-4` | Equal-column grid containers. |
-| `.ev-accent` | Terracotta text color. |
-| `.ev-quote-bar` | Left terracotta border + matching padding. |
+| `.ev-quote-bar` | Left terracotta border + padding. |
+| `.ev-flow` + `.ev-flow-step` + `.ev-flow-line[data-label][data-dock]` | Horizontal step process. |
+| `.ev-spectrum` + axis + marker + shift + ends | Axis with point marker + shift arrow + endpoint labels. |
+| `.ev-tiers` + `.ev-tier` + `.ev-tier--emphasized` + `.ev-tier-offer*` | 3-column ladder, middle tier visually lifted. |
+| `.ev-mult-row` + `.ev-mult-col` + `.ev-mult-num[--lg|--xl]` + `.ev-mult-box[--sm|--md|--lg]` + `.ev-mult-arrow` | Multiplier visualization (1× → 10× → 100×). |
 
 ### Visual rules
 
@@ -310,6 +435,12 @@ Shipped with the presentation viewer — use these instead of inline styles when
 - **Density cap.** Content slides max ~6 bullets or ~80 words. If you exceed that, split into two slides instead of shrinking text.
 - **Lists vs. grids.** 3+ short parallel items with a `**Title** — body` shape → `cards`. One dense narrative list → `content`.
 - **Memes carry themselves.** Use `@type: image` with a single emoji or short headline. Pair with `@chrome: none` so the brand footer doesn't intrude on the punchline.
+
+### Density & overflow
+
+- **Content slides cap at ~6 bullets / ~80 words.** If you exceed that, the renderer's Playwright overflow check emits a `{type: 'overflow', slideIndex: N}` warning in `result.warnings`. Don't shrink text — split into multiple slides.
+- **Image-headline slides** auto-clamp to `clamp(72px, 9vw, 200px)` and use `text-wrap: balance`. Long sentence headlines still wrap into multiple lines; very long ones still overflow and warn.
+- **Big-number slides** cap at `clamp(120px, 14vw, 220px)` — 30% smaller than the previous cap. Long captions go in the body copy beneath, not in the number itself.
 
 ### Contrast adaptation (text color by background)
 
@@ -323,9 +454,11 @@ Backgrounds dictate which tokens are valid for text. The shipped slide CSS alrea
 
 Hard rules:
 
+- **Small-text rule (24px and below).** Any text smaller than ~24px on cream uses `--color-text`, not `--color-body` or `--color-subtle`. The brand templates already apply this to page numbers, quote attributions, byline, subtitle — but any custom HTML you write must respect it. On dark backgrounds, small text uses `--color-cream` (not `rgba(255,255,255, 0.7)` — too washed out, this was the v4 quote-attribution bug).
 - **`--color-subtle` (#807A74) is fg-on-cream only.** It is *not* valid on black or terracotta — it disappears.
 - **`--color-muted` (#C4BEB8) is a background tint, not body text.** Using it for foreground text on cream produces near-invisible labels (this was the page-number bug before).
-- **Quote attributions, page numbers, footers, captions** all need explicit per-bg color rules. Default to body color on light, ≥0.72 white on dark.
+- **`--color-warm-gray-300` is unsafe on cream for thin lines.** Use `var(--color-text)` with reduced opacity (the `.ev-flow-line` / `.ev-rule` / `.ev-spectrum-axis` utilities handle this automatically).
+- **Quote attributions, page numbers, footers, captions** all need explicit per-bg color rules. Default to `--color-text` on cream, `--color-cream` on dark.
 - **`<strong>` accents** stay terracotta on light backgrounds; on terracotta backgrounds they collapse to cream (they'd be invisible otherwise).
 
 ## HTML authoring rules
@@ -445,6 +578,9 @@ General:
 
 Slide-specific (markdown mode of `render_slides`):
 
+- ❌ **Using `@type: title` past slide 1.** Title chrome (logo + byline + QR slot + "Get the slides!" caption) is reserved for the deck cover. For chapter dividers, "Tipp #N" intros, pause slides, closing thanks — use `@type: section`. The renderer will downgrade misused titles to section and push a `title_misuse` warning into `result.warnings`.
+- ❌ **Repeating the author byline in the title-slide subtitle.** The title slide auto-renders "Tommi Enenkel · Escape Velocity Consulting" at the bottom. If your subtitle also includes that line, the renderer auto-strips it — but don't put it there in the first place; the subtitle is for the value-prop tagline.
+- ❌ **Re-injecting `{{ TOKENS_CSS }}` inside `@type: html`.** The presentation template already injects tokens at the document level. Re-injecting inside your fragment is wasteful and signals stale skill teaching; the linter warns.
 - ❌ **Writing custom HTML for a list of parallel items.** Use `@type: cards` — the layout auto-grids and styles each card.
 - ❌ **Adding a subtitle below a meme.** Use `@type: image` with a `# 🥋` headline + `@chrome: none`; no caption, no subtitle. The punchline lives alone.
 - ❌ **Using `##` for section/chapter slide titles** as a deliberate choice. The parser tolerates it as a safety net, but `#` is canonical for section/title slides.

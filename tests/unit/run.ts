@@ -10,6 +10,7 @@ import { generateSecret, sign, verify } from '../../src/mcp/shared/signedToken.j
 import { ArtifactStore } from '../../src/mcp/shared/artifactStore.js'
 import { constantTimeEqual } from '../../src/mcp/shared/bearerAuth.js'
 import { RefreshTokenStore, __testing as rtTesting } from '../../src/mcp/shared/refreshTokenStore.js'
+import { lintHtmlFragment } from '../../src/core/htmlLint.js'
 
 let failures = 0
 function check(label: string, cond: unknown, detail?: string) {
@@ -213,11 +214,108 @@ function testRefreshTokenStore() {
 
 // ─── runner ────────────────────────────────────────────────────────────────
 
+// ─── htmlLint ──────────────────────────────────────────────────────────────
+//
+// Regression coverage for the @type: html brand-sin linter. Picks up the
+// v4-deck class of failures: inline color/font/size styles, hex literals,
+// hardcoded font names, low-contrast token picks on cream.
+
+function testHtmlLint() {
+  console.log('\n# htmlLint')
+
+  // Clean snippet — recipe markup using utility classes only.
+  const clean = `
+    <p class="ev-lead">Wenn KI dich zehnfach produktiv macht...</p>
+    <div class="ev-mult-row">
+      <div class="ev-mult-col">
+        <div class="ev-mult-num">1×</div>
+      </div>
+    </div>
+  `
+  check('clean recipe produces no warnings', lintHtmlFragment(clean, 5).length === 0)
+
+  // Inline color/font/size — should trigger html_inline_style.
+  const inlineStyles = `
+    <div style="font-size: 88px; color: var(--color-text); padding: 64px 80px;">1×</div>
+  `
+  const w1 = lintHtmlFragment(inlineStyles, 5)
+  check('inline color+font+padding produces inline_style warning',
+    w1.some((w) => w.type === 'html_inline_style'),
+    `got ${w1.map((w) => w.type).join(',')}`)
+
+  // Hardcoded hex outside SVG.
+  const hex = `<div style="padding: 8px;">color me <span style="color: #c0392b">red</span></div>`
+  const w2 = lintHtmlFragment(hex, 5)
+  check('hex outside SVG produces hardcoded_color warning',
+    w2.some((w) => w.type === 'html_hardcoded_color'))
+
+  // Hex inside SVG should not warn for hardcoded_color (SVG is legitimate).
+  const svgHex = `<svg viewBox="0 0 10 10"><rect fill="#c0392b" /></svg>`
+  const w3 = lintHtmlFragment(svgHex, 5)
+  check('hex inside SVG does not warn', !w3.some((w) => w.type === 'html_hardcoded_color'))
+
+  // Hardcoded font-family.
+  const font = `<style>.x { font-family: 'Space Grotesk'; }</style><div class="x">hi</div>`
+  const w4 = lintHtmlFragment(font, 5)
+  check('hardcoded font-family produces hardcoded_font warning',
+    w4.some((w) => w.type === 'html_hardcoded_font'))
+
+  // Known low-contrast token pick on cream.
+  const lowContrast = `<div class="line" style="border: 2px solid var(--color-warm-gray-300);"></div>`
+  const w5 = lintHtmlFragment(lowContrast, 5)
+  check('warm-gray-300 produces low_contrast warning',
+    w5.some((w) => w.type === 'html_low_contrast'))
+
+  // Redundant TOKENS_CSS injection.
+  const redundant = `<style>{{ TOKENS_CSS | safe }}</style>`
+  const w6 = lintHtmlFragment(redundant, 5)
+  check('TOKENS_CSS re-injection produces redundant_tokens warning',
+    w6.some((w) => w.type === 'html_redundant_tokens'))
+
+  // Warning de-dup: 30 inline-style attrs produce one warning, not 30.
+  const spam = Array.from({ length: 30 }, () => `<div style="color: red; font-size: 12px;">x</div>`).join('')
+  const w7 = lintHtmlFragment(spam, 5)
+  const inlineCount = w7.filter((w) => w.type === 'html_inline_style').length
+  check('inline-style warnings dedupe to one', inlineCount === 1, `got ${inlineCount}`)
+}
+
+// ─── qrInject (regex regression) ───────────────────────────────────────────
+//
+// Standalone regression test for the v4-deck silent failure: a global regex
+// + `.test()` advancing lastIndex was suspected of breaking subsequent
+// `.replace()`. The current implementation uses a fresh regex per call —
+// confirm multi-placeholder HTML replaces ALL placeholders, not just the
+// first or some racy subset.
+
+function testQrPlaceholderReplace() {
+  console.log('\n# qrInject placeholder regex')
+
+  // Mimic the bake's replace step (decoupled from the file-system bake
+  // function, which has Playwright dependencies).
+  const QR_PATTERN = /<!--\s*ESCAPE_VELOCITY_QR_PLACEHOLDER\s*-->/g
+  const IMG = '<img src="qr-title.png" alt="" class="title-qr-image">'
+
+  const html = `
+    <section class="slide slide--title" data-index="1"><!-- ESCAPE_VELOCITY_QR_PLACEHOLDER --></section>
+    <section class="slide slide--content" data-index="2">no placeholder here</section>
+    <section class="slide slide--title" data-index="3"><!-- ESCAPE_VELOCITY_QR_PLACEHOLDER --></section>
+    <section class="slide slide--title" data-index="4"><!-- ESCAPE_VELOCITY_QR_PLACEHOLDER --></section>
+  `
+  const replaced = html.replace(new RegExp(QR_PATTERN.source, 'g'), IMG)
+  const remaining = (replaced.match(/ESCAPE_VELOCITY_QR_PLACEHOLDER/g) || []).length
+  const inserted = (replaced.match(/qr-title\.png/g) || []).length
+
+  check('all 3 placeholders replaced', remaining === 0, `${remaining} remain`)
+  check('exactly 3 img tags inserted', inserted === 3, `inserted=${inserted}`)
+}
+
 async function main() {
   testSignedToken()
   await testArtifactStore()
   testBearerAuth()
   testRefreshTokenStore()
+  testHtmlLint()
+  testQrPlaceholderReplace()
   console.log(`\n${failures === 0 ? 'All unit tests passed.' : `${failures} test(s) FAILED.`}`)
   process.exit(failures === 0 ? 0 : 1)
 }

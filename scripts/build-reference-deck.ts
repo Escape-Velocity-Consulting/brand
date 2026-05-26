@@ -51,11 +51,18 @@ async function main() {
       title: 'Reference Deck',
     }, paths, pool)
 
-    console.log('  slides=' + result.slideCount + '  pngs=' + result.pngs.length + '  hasPdf=' + !!result.pdf)
-    assert(result.slideCount === 10, 'rendered 10 slides')
-    assert(result.pngs.length === 10, 'got 10 slide PNGs')
+    console.log('  slides=' + result.slideCount + '  pngs=' + result.pngs.length + '  hasPdf=' + !!result.pdf + '  warnings=' + result.warnings.length)
+    assert(result.slideCount === 14, 'rendered 14 slides')
+    assert(result.pngs.length === 14, 'got 14 slide PNGs')
     assert(!!result.pdf, 'got PDF')
     assert(!!result.viewer, 'got viewer')
+    // The canonical reference deck must lint clean — no inline-style spam,
+    // no title misuse, no overflow. If this fails, somebody broke a recipe
+    // in SKILL.md or shipped a layout regression.
+    if (result.warnings.length > 0) {
+      console.log('  warnings: ' + JSON.stringify(result.warnings, null, 2))
+    }
+    assert(result.warnings.length === 0, 'reference deck renders with zero warnings')
 
     // Stage files in itemDir as if publish had just run.
     writeFileSync(join(itemDir, 'index.html'), result.viewer!.html, 'utf-8')
@@ -64,6 +71,9 @@ async function main() {
       const n = String(i + 1).padStart(2, '0')
       writeFileSync(join(itemDir, 'slides', `slide-${n}.png`), result.pngs[i])
     }
+    // Source markdown — committed alongside the rendered output so the
+    // skill bundle can link reference-deck.md as a copy-from example.
+    copyFileSync(resolve(BRAND_DIR, 'previews/decks/reference-deck.md'), join(itemDir, 'source.md'))
 
     const idxBefore = readFileSync(join(itemDir, 'index.html'), 'utf-8')
     assert(idxBefore.includes('ESCAPE_VELOCITY_QR_PLACEHOLDER'), 'pre-bake: title slide has the placeholder marker')
@@ -81,8 +91,12 @@ async function main() {
       pool,
       paths,
     })
-    console.log('  baked=' + bake.baked + '  added=' + JSON.stringify(bake.added) + '  updated=' + JSON.stringify(bake.updated))
+    console.log('  baked=' + bake.baked + '  added=' + JSON.stringify(bake.added) + '  updated=' + JSON.stringify(bake.updated) + '  warnings=' + bake.warnings.length)
+    if (bake.warnings.length > 0) {
+      console.log('  bake warnings: ' + JSON.stringify(bake.warnings, null, 2))
+    }
     assert(bake.baked, 'bake reported success')
+    assert(bake.warnings.length === 0, 'bake completed without warnings')
     assert(bake.added.includes('qr-title.png'), 'qr-title.png reported as added')
     assert(bake.updated.includes('index.html'), 'index.html reported as updated')
     assert(bake.updated.includes('slides/slide-01.png'), 'slide-01.png reported as updated')
@@ -116,7 +130,7 @@ async function main() {
     copyFileSync(join(itemDir, 'index.html'), join(previewDir, 'index.html'))
     copyFileSync(join(itemDir, 'qr-title.png'), join(previewDir, 'qr-title.png'))
     copyFileSync(join(itemDir, 'reference-deck.pdf'), join(previewDir, 'reference-deck.pdf'))
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 14; i++) {
       const n = String(i + 1).padStart(2, '0')
       const src = join(itemDir, 'slides', `slide-${n}.png`)
       if (existsSync(src)) copyFileSync(src, join(previewDir, 'slides', `slide-${n}.png`))

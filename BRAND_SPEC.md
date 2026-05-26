@@ -476,6 +476,17 @@ Auth lives on the **write** side only (publish/unpublish tools require the same 
 
 Persistence requires a host-volume mount at `/app/published` on the container — without it, published items survive process restarts inside the container but are wiped on redeploy.
 
+**Bake outcome surfacing.** When `publish_artifact` runs the QR auto-bake (decks, default-on), the response carries a `bakeStatus: { baked: boolean; reason?: string; warnings: string[] }` field. Soft failures inside the bake (Playwright screenshot timeouts on individual title slides, PDF page-swap errors, QR PNG generation failures) push entries into `warnings[]` rather than aborting the publish. Callers can detect partial failures without polling the rendered URLs afterwards.
+
+### 11.0b Slide rendering contract (`render_slides` markdown mode)
+
+The markdown-mode parser of `render_slides` enforces these contracts:
+
+- **`@type: title` is slide-1-only.** A second `@type: title` anywhere in the deck is silently downgraded to `@type: section` and a `title_misuse` warning is pushed into `result.warnings`. The deck still renders. Title chrome (logo + author byline + QR placeholder) is reserved for slide 1.
+- **`@type: html` canvas contract.** The body of every `@type: html` block is auto-wrapped in `<div class="ev-canvas">` unless the author already opens with one. The leading `## Heading` line (or `# Heading`) is auto-extracted and emitted as `<h2 class="ev-h2">…<span class="ev-rule"></span></h2>` above the canvas. `TOKENS_CSS` is injected once at the slide level — `@type: html` blocks must not re-inject it.
+- **Warnings channel.** `SlidesResult` carries `warnings: Array<{ type: string; slideIndex: number; message: string }>` (always present, empty when clean). Established types: `title_misuse`, `overflow`, `html_inline_style`, `html_hardcoded_color`, `html_low_contrast`, `html_hardcoded_font`, `html_redundant_tokens`. Warnings are non-blocking — the deck is rendered regardless. They exist so the agent can self-correct on the next iteration.
+- **Author dedup.** When the title slide auto-emits the default `Tommi Enenkel · Escape Velocity Consulting` byline, any subtitle line containing the author tokens is stripped to avoid duplication.
+
 ### 11.1 `pdf.ts` — Document Generator
 
 Converts Markdown to a branded A4 PDF using Playwright (Chromium). Replaces `md2pdf.py`.

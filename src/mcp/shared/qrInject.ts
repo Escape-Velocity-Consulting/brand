@@ -57,8 +57,15 @@ export async function generateQrPng(url: string, opts: QrOptions = {}): Promise<
   return qrPng
 }
 
-/** Marker emitted by the title slide at render time. Must match TITLE_QR_PLACEHOLDER in slides.ts. */
-const QR_PLACEHOLDER_RE = /<!--\s*ESCAPE_VELOCITY_QR_PLACEHOLDER\s*-->/g
+/**
+ * Marker emitted by the title slide at render time. Must match TITLE_QR_PLACEHOLDER
+ * in slides.ts. NOTE: this regex is constructed fresh inside the bake function
+ * rather than kept as a module constant — global regexes with `.test()` advance
+ * `lastIndex` and the resulting state confused earlier versions of this code.
+ * The current implementation uses `.replace()` once and inspects the return
+ * value, side-stepping that footgun entirely.
+ */
+const QR_PLACEHOLDER_PATTERN = /<!--\s*ESCAPE_VELOCITY_QR_PLACEHOLDER\s*-->/g
 
 const DEFAULT_SLIDE_W = 1920
 const DEFAULT_SLIDE_H = 1080
@@ -82,6 +89,14 @@ export interface BakeResult {
   reason?: string
   added: string[]
   updated: string[]
+  /**
+   * Soft failures collected during the bake. Empty when everything succeeded.
+   * Examples: `pdf_swap_failed: ...`, `screenshot_failed: slide 5: ...`,
+   * `qr_write_failed: ...`. Surfaced to the caller via `bakeStatus.warnings`
+   * on the publish response so silent regressions like the May-2026
+   * `lastIndex` bug can no longer hide.
+   */
+  warnings: string[]
 }
 
 /**
@@ -108,27 +123,39 @@ export async function bakeQrIntoPublishedDeck(opts: {
   const { itemDir, detailUrl, pool, paths } = opts
   const slideW = opts.slideWidth ?? DEFAULT_SLIDE_W
   const slideH = opts.slideHeight ?? DEFAULT_SLIDE_H
+  const warnings: string[] = []
 
   const htmlPath = join(itemDir, 'index.html')
   if (!existsSync(htmlPath)) {
-    return { baked: false, reason: 'no_index_html', added: [], updated: [] }
+    return { baked: false, reason: 'no_index_html', added: [], updated: [], warnings }
   }
   const originalHtml = readFileSync(htmlPath, 'utf-8')
-  if (!QR_PLACEHOLDER_RE.test(originalHtml)) {
-    QR_PLACEHOLDER_RE.lastIndex = 0
-    return { baked: false, reason: 'no_qr_placeholder', added: [], updated: [] }
+
+  // 1+2. Single-pass replace: build the patched HTML and check whether it
+  //   actually changed. Avoids the global-regex `lastIndex` footgun that
+  //   bit the May-2026 publish of `VAXBoXUg4Q` — `.test()` advances
+  //   `lastIndex`, and any code path that then called `.replace()` on the
+  //   same regex instance could skip matches.
+  const QR_IMG_TAG = '<img src="qr-title.png" alt="" class="title-qr-image">'
+  const patchedHtml = originalHtml.replace(new RegExp(QR_PLACEHOLDER_PATTERN.source, 'g'), QR_IMG_TAG)
+  if (patchedHtml === originalHtml) {
+    return { baked: false, reason: 'no_qr_placeholder', added: [], updated: [], warnings }
   }
-  QR_PLACEHOLDER_RE.lastIndex = 0
 
-  // 1. QR PNG
-  const qrPng = await generateQrPng(detailUrl)
-  writeFileSync(join(itemDir, 'qr-title.png'), qrPng)
-
-  // 2. Patch HTML
-  const patchedHtml = originalHtml.replace(
-    QR_PLACEHOLDER_RE,
-    '<img src="qr-title.png" alt="" class="title-qr-image">',
-  )
+  // QR PNG first (must exist before the HTML write — viewers that race the
+  // file system would otherwise serve a broken <img>).
+  try {
+    const qrPng = await generateQrPng(detailUrl)
+    writeFileSync(join(itemDir, 'qr-title.png'), qrPng)
+  } catch (err) {
+    return {
+      baked: false,
+      reason: 'qr_generate_failed',
+      added: [],
+      updated: [],
+      warnings: [`qr_generate_failed: ${err instanceof Error ? err.message : String(err)}`],
+    }
+  }
   writeFileSync(htmlPath, patchedHtml)
 
   const added = ['qr-title.png']
@@ -157,20 +184,30 @@ export async function bakeQrIntoPublishedDeck(opts: {
     const { page, context } = await pool.getPage({ width: slideW, height: slideH }, { deviceScaleFactor: 2 })
     try {
       for (const idx of titleIndices) {
-        const url = pathToFileURL(join(stageDir, 'index.html')).href + `?slide=${idx}`
-        await page.goto(url, { waitUntil: 'networkidle' })
-        await page.addStyleTag({ content: '.hud,.hud-hint{display:none !important} body{background:transparent !important} .slide{box-shadow:none !important} .slide.is-active{transform:translate(-50%,-50%) scale(1) !important}' })
-        await page.waitForTimeout(150)
-        const handle = await page.$('.slide.is-active')
-        if (!handle) continue
-        const slidePng = await handle.screenshot({ omitBackground: false })
-        slidePngs.set(idx, slidePng)
+        try {
+          const url = pathToFileURL(join(stageDir, 'index.html')).href + `?slide=${idx}`
+          await page.goto(url, { waitUntil: 'networkidle' })
+          await page.addStyleTag({ content: '.hud,.hud-hint{display:none !important} body{background:transparent !important} .slide{box-shadow:none !important} .slide.is-active{transform:translate(-50%,-50%) scale(1) !important}' })
+          await page.waitForTimeout(150)
+          const handle = await page.$('.slide.is-active')
+          if (!handle) {
+            warnings.push(`screenshot_failed: slide ${idx}: no .slide.is-active element`)
+            continue
+          }
+          const slidePng = await handle.screenshot({ omitBackground: false })
+          slidePngs.set(idx, slidePng)
 
-        const num = String(idx).padStart(2, '0')
-        const slidePath = join(itemDir, 'slides', `slide-${num}.png`)
-        if (existsSync(dirname(slidePath))) {
-          writeFileSync(slidePath, slidePng)
-          updated.push(`slides/slide-${num}.png`)
+          const num = String(idx).padStart(2, '0')
+          const slidePath = join(itemDir, 'slides', `slide-${num}.png`)
+          if (existsSync(dirname(slidePath))) {
+            writeFileSync(slidePath, slidePng)
+            updated.push(`slides/slide-${num}.png`)
+          }
+        } catch (err) {
+          // Per-slide isolation: one bad title slide can't take out the rest.
+          // The HTML viewer already has the new <img> from step 1; the worst
+          // outcome is a stale PNG/PDF page for this one slide.
+          warnings.push(`screenshot_failed: slide ${idx}: ${err instanceof Error ? err.message : String(err)}`)
         }
       }
     } finally {
@@ -201,8 +238,10 @@ export async function bakeQrIntoPublishedDeck(opts: {
           }
           writeFileSync(pdfPath, Buffer.from(await newDoc.save()))
           updated.push(pdfFile)
-        } catch {
-          // PDF swap is best-effort. HTML viewer already has the QR.
+        } catch (err) {
+          // PDF swap is best-effort — the HTML viewer already has the QR.
+          // Still record what went wrong so the publish response surfaces it.
+          warnings.push(`pdf_swap_failed: ${err instanceof Error ? err.message : String(err)}`)
         }
       }
     }
@@ -210,7 +249,7 @@ export async function bakeQrIntoPublishedDeck(opts: {
     try { rmSync(stageDir, { recursive: true, force: true }) } catch { /* ignore */ }
   }
 
-  return { baked: true, added, updated }
+  return { baked: true, added, updated, warnings }
 }
 
 /** File metadata used to refresh meta.json after a bake. */

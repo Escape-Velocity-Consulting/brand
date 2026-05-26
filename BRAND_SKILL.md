@@ -97,8 +97,8 @@ The presentation template ships these named layouts. Pick the layout that fits t
 
 | `@type:` | When to pick it |
 |----------|-----------------|
-| `title` | Deck cover. Auto-renders logo + author + QR placeholder. |
-| `section` | Chapter divider. Single word or short phrase as `# Title`. |
+| `title` | **Slide 1 only.** Deck cover — logo + author + QR placeholder. Renderer downgrades misuse to `section` + warns. |
+| `section` | Every other "big word" slide — chapter divider, "Tipp #N", pause, closing thanks. No chrome. |
 | `content` | Narrative prose ≤6 bullets, ≤80 words. Default for body slides. |
 | `two-col` | Symmetric A/B pair. Same visual weight on both sides. |
 | `comparison` | Opinionated A vs B. Left muted, right terracotta-accented. |
@@ -110,14 +110,28 @@ The presentation template ships these named layouts. Pick the layout that fits t
 
 ### Utility classes (inside `@type: html`)
 
-Shipped with `presentation.html` — reach for these instead of inline styles:
+Shipped with `presentation.html` — reach for these instead of inline styles. The renderer auto-wraps `@type: html` bodies in `.ev-canvas` and emits `<h2 class="ev-h2">` from any leading `## Heading` line.
 
-- `.ev-card` / `.ev-card--dark` — branded panel
-- `.ev-eyebrow` — Manrope uppercase eyebrow
+**Typography & layout**
+- `.ev-canvas` — body-font wrapper (auto-applied)
+- `.ev-h2` — slide H2 (Space Grotesk 56px) — auto-emitted from leading `## Heading`
+- `.ev-rule` — 60×3px terracotta accent block
+- `.ev-lead` — Inter 26px lead paragraph (left-aligned, max-width 1400px)
+- `.ev-foot` — 24px centered foot under a visual
+- `.ev-eyebrow` — Manrope 700 uppercase terracotta eyebrow
+- `.ev-accent` — terracotta text color (one per slide)
+- `.ev-card` / `.ev-card--dark` — panel with terracotta left border
 - `.ev-dash-list` — `<ul>` with terracotta dash bullets
 - `.ev-grid-2` / `.ev-grid-3` / `.ev-grid-4` — equal-column grids
-- `.ev-accent` — terracotta text color
 - `.ev-quote-bar` — left terracotta border + padding
+
+**Visual recipes** (replace hand-rolled HTML — see SKILL.md for full copy-paste markup)
+- `.ev-flow` + `.ev-flow-step` + `.ev-flow-line[data-label][data-dock]` — horizontal step process
+- `.ev-spectrum` + `.ev-spectrum-axis` + `.ev-spectrum-marker` + `.ev-spectrum-shift` + `.ev-spectrum-ends` — axis with marker, shift arrow, endpoint labels
+- `.ev-tiers` + `.ev-tier` + `.ev-tier--emphasized` + `.ev-tier-eyebrow` + `.ev-tier-title` + `.ev-tier-offer` + `.ev-tier-offer-meta` — 3-column offer ladder with emphasized middle
+- `.ev-mult-row` + `.ev-mult-col` + `.ev-mult-num[--lg|--xl]` + `.ev-mult-box[--sm|--md|--lg]` + `.ev-mult-arrow` — multiplier visualization
+
+**Forbidden inside `@type: html`**: inline `style="..."` for color/font/size/background, hex colors outside SVG, font-family literals, `var(--color-warm-gray-300)` for thin lines on cream. The renderer's linter pushes warnings into `result.warnings` for each violation.
 
 ### Slide directives
 
@@ -146,9 +160,27 @@ Shipped with `presentation.html` — reach for these instead of inline styles:
 
 Hard rules:
 
+- **Small-text rule.** Text below ~24px on cream uses `--color-text`, not `--color-body`. On dark backgrounds use `--color-cream` (not `rgba(255,255,255,0.7)` — washed out).
 - `--color-subtle` is **fg-on-cream only**. Don't use it on black or terracotta.
 - `--color-muted` is a **background tint**, not body text. Never use as fg color.
+- `--color-warm-gray-300` is **unsafe on cream for thin lines** — disappears. Use `var(--color-text)` with reduced opacity (utility classes handle this).
 - Quote attributions, page numbers, captions all need explicit per-bg color rules.
+
+### Render-time warnings
+
+`render_slides` returns `result.warnings: Array<{type, slideIndex, message}>`. Non-blocking — the deck renders regardless. Types:
+
+| Warning | What triggered it |
+|---------|-------------------|
+| `title_misuse` | `@type: title` used past slide 1 (downgraded to section) |
+| `overflow` | Content exceeded the slide viewport (split or shrink) |
+| `html_inline_style` | `style="..."` containing color/font/size/background in `@type: html` |
+| `html_hardcoded_color` | Hex color (`#abc123`) outside SVG in `@type: html` |
+| `html_low_contrast` | `var(--color-warm-gray-300)` on cream — known bad pick |
+| `html_hardcoded_font` | Font-family literal (`'Inter'`, `'Space Grotesk'`) in CSS |
+| `html_redundant_tokens` | `{{ TOKENS_CSS }}` re-injected inside an html fragment |
+
+`publish_artifact` returns `bakeStatus: { baked, warnings[] }` for QR-bake failures.
 
 ---
 

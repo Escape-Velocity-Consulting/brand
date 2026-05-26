@@ -25,6 +25,7 @@ import type { BrandPaths } from './paths.js'
 import { renderHtmlToPng } from './render.js'
 import { getTemplateEnv, renderStringTemplate } from './templates.js'
 import { loadTokensCss } from './tokens.js'
+import { lintHtmlFragment } from './htmlLint.js'
 
 // ─── Dimension presets ─────────────────────────────────────────────────────
 
@@ -65,6 +66,25 @@ interface RenderedFragment {
   html: string
   /** Per-slide chrome directive ('none' to suppress slide-mark + slide-num). */
   chrome?: string
+}
+
+/**
+ * Soft-fail diagnostic surfaced in `SlidesResult.warnings`. Non-blocking — the
+ * deck always renders, but the agent (or human) sees what needed cleanup.
+ *
+ * Established types:
+ *   - `title_misuse`        — `@type: title` used after slide 1; downgraded to section
+ *   - `overflow`            — slide content exceeded the viewport height
+ *   - `html_inline_style`   — `@type: html` block used inline style for color/font/size
+ *   - `html_hardcoded_color`— hex color outside a token reference
+ *   - `html_low_contrast`   — known bad token pick (e.g. `--color-warm-gray-300` on cream)
+ *   - `html_hardcoded_font` — font-family literal like 'Inter' / 'Space Grotesk'
+ *   - `html_redundant_tokens` — `{{ TOKENS_CSS }}` re-injected inside an html fragment
+ */
+export interface RenderWarning {
+  type: string
+  slideIndex: number
+  message: string
 }
 
 /** Default author byline on title slides when no `<!-- @author: -->` directive is present. */
@@ -130,11 +150,26 @@ function renderTitleFragment(raw: string, meta: Record<string, string>): string 
     if (line.startsWith('> ')) { eyebrow = line.slice(2).trim(); continue }
     if (h1) subtitle += (subtitle ? '\n' : '') + line
   }
-  const headlineHtml = h1 ? md.renderInline(h1) : ''
-  const subHtml = subtitle ? md.renderInline(subtitle) : ''
 
   const author = meta.author ?? DEFAULT_AUTHOR
   const date = meta.date ?? ''
+
+  // Author dedup: if the user already wrote "Escape Velocity Consulting" or
+  // the author's name into the subtitle, don't repeat it in the auto byline.
+  // This catches the v4-deck mistake of "Tommi Enenkel, Escape Velocity
+  // Consulting" appearing both in the markdown body AND in the auto byline.
+  const authorTokens = author.split(/[·\s,]+/).filter((t) => t.length >= 4)
+  const subtitleStripped = subtitle.split('\n')
+    .filter((l) => {
+      const low = l.toLowerCase()
+      return !authorTokens.some((t) => low.includes(t.toLowerCase()))
+    })
+    .join('\n')
+    .trim()
+
+  const headlineHtml = h1 ? md.renderInline(h1) : ''
+  const subHtml = subtitleStripped ? md.renderInline(subtitleStripped) : ''
+
   const byline = date ? `${author} · ${date}` : author
 
   const qrMode = (meta.qr ?? '').toLowerCase()
@@ -371,12 +406,20 @@ function renderComparisonFragment(raw: string): string {
   `
 }
 
-// ─── HTML passthrough with leading heading extraction ─────────────────────
+// ─── HTML passthrough with leading heading extraction + canvas auto-wrap ──
 //
 // Markdown is NOT parsed inside `@type: html` blocks. To let authors mix a
 // proper styled heading with their custom HTML, we peel a single leading
-// `## Title` (or `# Title`) line off the top before passing the rest through.
-function renderHtmlFragment(raw: string): string {
+// `## Title` (or `# Title`) line off the top and render it with `.ev-h2` +
+// `.ev-rule` above the body.
+//
+// New in this round (v4 feedback): the body is auto-wrapped in
+// `<div class="ev-canvas">…</div>` UNLESS the author already opens with one.
+// `.ev-canvas` owns the standard 64–80px padding + body font + body color,
+// so the agent no longer needs to ship its own `.wrap { padding: … }`
+// boilerplate on every slide. The body is also fed through `lintHtmlFragment`
+// to surface inline-style sins on the warnings channel.
+function renderHtmlFragment(raw: string, ctx: { slideIndex: number; warnings: RenderWarning[] }): string {
   const lines = raw.split('\n')
   let heading = ''
   let startIdx = 0
@@ -390,13 +433,28 @@ function renderHtmlFragment(raw: string): string {
     }
   }
   const body = lines.slice(startIdx).join('\n').trim()
+
+  // Lint the original body (pre-wrap). Authors see warnings for their
+  // markup, not for the canvas we add around it.
+  for (const w of lintHtmlFragment(body, ctx.slideIndex)) {
+    ctx.warnings.push(w)
+  }
+
+  // Auto-wrap in .ev-canvas unless the author already opened with one.
+  const alreadyCanvas = /^\s*<div[^>]*class="[^"]*\bev-canvas\b/.test(body)
+  const wrappedBody = alreadyCanvas ? body : `<div class="ev-canvas">${body}</div>`
+
   return `
-    ${heading ? `<h2 class="slide-heading">${escapeHtml(heading)}</h2><div class="accent-rule"></div>` : ''}
-    ${body}
+    ${heading ? `<h2 class="ev-h2">${escapeHtml(heading)}<span class="ev-rule"></span></h2>` : ''}
+    ${wrappedBody}
   `
 }
 
-function renderFragment(f: ParsedFragment, mdDir: string): RenderedFragment {
+function renderFragment(
+  f: ParsedFragment,
+  mdDir: string,
+  ctx: { slideIndex: number; warnings: RenderWarning[] },
+): RenderedFragment {
   const html = (() => {
     switch (f.type) {
       case 'title':       return renderTitleFragment(f.raw, f.meta)
@@ -407,7 +465,9 @@ function renderFragment(f: ParsedFragment, mdDir: string): RenderedFragment {
       case 'cards':       return renderCardsFragment(f.raw)
       case 'big-number':  return renderBigNumberFragment(f.raw)
       case 'comparison':  return renderComparisonFragment(f.raw)
-      case 'html':        return renderHtmlFragment(f.raw)
+      case 'html':        return renderHtmlFragment(f.raw, ctx)
+      // ctx is threaded so renderHtmlFragment can push lint warnings later;
+      // unused by other renderers today.
       case 'content':
       default:            return renderContentFragment(f.raw)
     }
@@ -453,6 +513,12 @@ export interface SlidesResult {
   slideCount: number
   width: number
   height: number
+  /**
+   * Soft-fail diagnostics — title misuse, overflow, html-mode brand sins.
+   * Always present (empty array when clean). Non-blocking: the deck is still
+   * rendered; warnings are the agent's feedback loop.
+   */
+  warnings: RenderWarning[]
 }
 
 // ─── Main entry ────────────────────────────────────────────────────────────
@@ -509,7 +575,32 @@ async function renderFromMarkdown(
   const mdDir = input.markdownDir ?? paths.brandDir
   const { fragments: parsed, title: parsedTitle } = parseDeckMarkdown(input.markdown!)
   const title = input.title || parsedTitle || 'deck'
-  const renderedFragments = parsed.map((f) => renderFragment(f, mdDir))
+
+  // Title slide is slide-1-only. Agents in the v4 deck (May-2026) reached for
+  // `@type: title` for every chapter divider (Enablement, Strategie,
+  // Werkzeuge, Tipp #1–#7, Bonus, closing) — 13 slides per deck — pulling in
+  // the title chrome (logo + byline + QR slot + "Get the slides!" caption)
+  // every time. Downgrade subsequent titles to section and warn so the agent
+  // self-corrects on the next iteration.
+  const warnings: RenderWarning[] = []
+  let titleEmitted = false
+  const renderedFragments = parsed.map((f, i) => {
+    const slideIndex = i + 1
+    let effective = f
+    if (f.type === 'title') {
+      if (titleEmitted) {
+        warnings.push({
+          type: 'title_misuse',
+          slideIndex,
+          message: `@type: title used on slide ${slideIndex} — downgraded to @type: section. Title chrome (logo, byline, QR) is reserved for slide 1. Use @type: section for chapter dividers.`,
+        })
+        effective = { ...f, type: 'section' }
+      } else {
+        titleEmitted = true
+      }
+    }
+    return renderFragment(effective, mdDir, { slideIndex, warnings })
+  })
 
   // Build viewer HTML (used for ALL three outputs in this mode)
   const tokensCss = loadTokensCss(paths, './fonts')
@@ -546,6 +637,7 @@ async function renderFromMarkdown(
       slideCount: renderedFragments.length,
       width: dims.width,
       height: dims.height,
+      warnings,
     }
 
     if (flags.wantViewer) {
@@ -578,9 +670,31 @@ async function renderFromMarkdown(
       const { page, context } = await pool.getPage({ width: dims.width, height: dims.height }, { deviceScaleFactor: 2 })
       try {
         for (let i = 0; i < renderedFragments.length; i++) {
-          await page.goto(pathToFileURL(viewerPath).href + `?slide=${i + 1}`, { waitUntil: 'networkidle' })
+          const slideIndex = i + 1
+          await page.goto(pathToFileURL(viewerPath).href + `?slide=${slideIndex}`, { waitUntil: 'networkidle' })
           await page.addStyleTag({ content: '.hud,.hud-hint{display:none !important} body{background:transparent !important} .slide{box-shadow:none !important} .slide.is-active{transform:translate(-50%,-50%) scale(1) !important}' })
           await page.waitForTimeout(100)
+
+          // Overflow check — content exceeding the slide viewport is the v4
+          // bug behind slide 12 ("Operationalisierung") and slide 15 (long
+          // meme headline). Non-blocking; surfaces as a warning so the agent
+          // can split or shrink on the next iteration.
+          try {
+            const overflowed: boolean = await page.evaluate(() => {
+              const active = document.querySelector('.slide.is-active')
+              if (!active) return false
+              const inner = active.querySelector('.slide-inner') ?? active
+              return inner.scrollHeight > inner.clientHeight + 4 || inner.scrollWidth > inner.clientWidth + 4
+            })
+            if (overflowed) {
+              warnings.push({
+                type: 'overflow',
+                slideIndex,
+                message: `Slide ${slideIndex} content exceeds viewport — split into multiple slides, shorten, or move to @type: cards / @type: html with .ev-canvas.`,
+              })
+            }
+          } catch { /* overflow detection is best-effort */ }
+
           const handle = await page.$('.slide.is-active')
           if (handle) {
             const buf = await handle.screenshot({ omitBackground: false })
@@ -670,6 +784,7 @@ async function renderFromPages(
     slideCount: pages.length,
     width: dims.width,
     height: dims.height,
+    warnings: [], // pages mode skips html-mode lint + title-misuse
   }
 
   if (flags.wantPdf) {

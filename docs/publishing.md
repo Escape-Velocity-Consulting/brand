@@ -37,9 +37,16 @@ If the bundle's TTL expires before publish, the publish call fails loudly with `
 ```
 publish_artifact({ bundleId, title?, type?, bakeQr? })
   → moves an ephemeral bundle into MCP_PUBLISHED_DIR/<id>/
-  → for decks: bakes a QR code (pointing to the detail page) onto the title slide
-    in the HTML viewer + PDF page 1. Suppress with bakeQr: false.
-  → returns { id, type, title, publishedAt, primaryUrl, thumbnailUrl, files }
+  → for decks: bakes a QR code (pointing to the detail page) onto every title
+    slide in the HTML viewer + matching PDF pages. Suppress with bakeQr: false.
+  → returns { id, type, title, publishedAt, primaryUrl, thumbnailUrl, files,
+              bakeStatus?: { baked, reason?, warnings[] } }
+  → bakeStatus is present whenever a bake was attempted. `baked: false` means
+    the deck published but the QR didn't get onto the title slides (the HTML
+    viewer still has the placeholder marker, qr-title.png may be missing).
+    `warnings[]` enumerates soft failures: `screenshot_failed: slide N: ...`,
+    `pdf_swap_failed: ...`, `qr_generate_failed: ...`. Use these to diagnose
+    silent failures rather than discovering them as 404s later.
   → bundleId is deleted (publishing twice from the same bundleId is a footgun)
 
 unpublish_artifact({ id })
