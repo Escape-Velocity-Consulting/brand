@@ -3,61 +3,131 @@ name: escape-velocity-brand
 description: |
   Use when creating or rendering any Escape Velocity branded asset —
   branded documents (letter, offer, invoice, tos, report), social images
-  (OG, LinkedIn banner, Twitter banner, quote/stats card), LinkedIn
-  carousels, slide decks, or ad-hoc on-brand HTML. Works with the
-  escape-velocity-brand MCP server registered for pixel-perfect rendering;
-  falls back to HTML-only authoring otherwise.
+  (OG, LinkedIn banner, Twitter banner, LinkedIn post, quote/stats card),
+  LinkedIn carousels, slide decks, on-brand website prototypes, or ad-hoc
+  on-brand HTML/SVG. The skill ships templates, tokens, fonts, logos, the
+  brand reference, and the canonical spec — it can author any of these
+  standalone. The escape-velocity-brand MCP server is an OPTIONAL extension
+  that adds pixel-perfect PNG/PDF rendering and publishing.
 ---
 
 # Escape Velocity Brand
 
 ## Mental model
 
-- **This skill = brand design system + HTML authoring + workflow routing.**
-  You know the brand tokens (colors, fonts, spacing), the template patterns,
-  and which tool fits which request.
-- **escape-velocity-brand = pixel-perfect rendering.** Warm Chromium server, HTML → PNG
-  or PDF. Registered separately by the user (one-time workstation setup).
+**I am the brand asset creator.** Templates, tokens, fonts, logos, the brand reference, and the canonical brand spec are bundled with me. I author HTML, SVG, and on-brand prototypes by reading my own files and substituting variables. The output works in any browser.
 
-If escape-velocity-brand is **not** registered, the skill still works — author the HTML
-using brand CSS vars and return it to the user. They can paste it into a
-browser or register the MCP later to get rendered artifacts.
+**The escape-velocity-brand MCP server is an optional extension** that adds two capabilities I don't have on my own:
 
-## The 9 tools (when escape-velocity-brand is registered)
+- **Pixel rendering** — Playwright-driven HTML → PNG / HTML → PDF
+- **Publishing** — promotes a render to a permanent public URL on the Brand Site
 
-**Render** (both transports):
+If the MCP is registered, prefer it for binary outputs (PDF, PNG) — the canonical templates render identically server-side. If the MCP isn't registered, I still produce the asset by handing the user finished HTML they can save and open in any browser.
+
+## What's inside this skill bundle
+
+```
+escape-velocity-brand/
+├── SKILL.md                    this file
+├── references/
+│   ├── brand-reference.md      token table, CSS vars, layout patterns, voice
+│   ├── brand-spec.md           canonical brand contract (BRAND_SPEC.md)
+│   └── templates.meta.json     template registry as JSON
+├── tokens/
+│   ├── tokens.css              CSS custom properties (--color-*, --font-*)
+│   └── tokens.json             same values as JSON for lookups
+├── templates/                  all 17 templates incl. _base.html, _recipient.html
+│   ├── letter.html, offer.html, invoice.html, tos.html, report.html
+│   ├── palette-sheet.html, presentation.html
+│   ├── social/*.html           OG, LinkedIn, Twitter, YouTube, quote, stats, announcement
+│   └── carousel/*.html         title, numbered-item, cta
+├── fonts/                      Space Grotesk, Inter, Manrope, JetBrains Mono (woff2)
+├── assets/logos/               brand wordmark + logo SVGs
+├── components/radar.js         portable JS used by some slide templates
+├── web/                        Brand Kit web bundle for prototyping
+│   ├── starter.html            starter page using brand CSS
+│   ├── README.md               dev guide
+│   ├── site.css                brand website CSS (matches escapevelocity.consulting)
+│   └── print.css               print-mode CSS
+└── press/
+    └── boilerplate.md          official "about us" boilerplate
+```
+
+## Capability matrix
+
+| I want to produce ... | Skill alone | + MCP registered |
+|---|---|---|
+| Branded HTML document (letter, offer, invoice, tos, report) | ✅ read `templates/<key>.html` + `_base.html`, fill vars, hand user finished HTML | ✅ `render_template` → PDF URL |
+| Social image as HTML | ✅ read `templates/social/<key>.html`, fill vars | ✅ `render_template` → PNG URL |
+| Carousel slides as HTML | ✅ fill each `templates/carousel/<key>.html`, concatenate | ✅ `render_slides` → PDF + PNGs |
+| Slide deck from markdown | ✅ author HTML from `templates/presentation.html` | ✅ `render_slides` with viewer |
+| Ad-hoc on-brand HTML | ✅ use tokens + reference patterns | ✅ `render_html_to_png/pdf` |
+| On-brand website prototype | ✅ start from `web/starter.html` + link `web/site.css` | ✅ same — render to PDF/PNG for sharing |
+| Inline brand mark / logo | ✅ read `assets/logos/*.svg` | ✅ same |
+| Read live token values | ✅ read `tokens/tokens.json` | ✅ `get_tokens` |
+| Discover templates | ✅ read `references/templates.meta.json` | ✅ `list_templates` |
+| PNG / PDF binary output | ❌ Playwright not available | ✅ |
+| Permanent public URL on Brand Site | ❌ no server | ✅ `publish_artifact` |
+
+## Authoring flow — skill-only (no MCP)
+
+For social and carousel templates (flat, no inheritance):
+
+1. Read `templates/<key>.html`.
+2. Read `tokens/tokens.css`.
+3. In the template's `<style>` block, replace `{{ TOKENS_CSS | safe }}` with the contents of tokens.css.
+4. Replace `{{ FONTS_URI }}` with `./fonts` — the path is relative to where the user saves the HTML.
+5. Substitute `{{ VAR }}` placeholders with the values you have; evaluate `{% if %}` / `{% for %}` blocks by hand.
+6. Hand the user the finished HTML. Tell them: "Save as `<name>.html` next to a copy of the `fonts/` folder, or in any directory if you don't need brand fonts to load."
+
+For document templates (letter, offer, invoice, tos, report) that use Nunjucks inheritance:
+
+1. Read `templates/<key>.html`. The first line will be `{% extends "_base.html" %}`.
+2. Read `templates/_base.html` — this is the page wrapper (letterhead, footer, font-face declarations).
+3. Read `templates/_recipient.html` if the document uses `{% import "_recipient.html" as r %}`.
+4. Compose the final HTML: take `_base.html` as the outer structure, and for every `{% block NAME %}{% endblock %}` placeholder in the base, slot in the matching `{% block NAME %}...{% endblock %}` content from the child template. The child's `{% block content %}` body goes inside the base's `{% block content %}` slot, etc.
+5. Expand any `{{ r.macro_name(args) }}` calls by reading `_recipient.html` and inlining the relevant macro output.
+6. Render the markdown body to HTML and substitute into `{{ CONTENT | safe }}`.
+7. Replace `{{ TOKENS_CSS | safe }}` → tokens.css contents, `{{ FONTS_URI }}` → `./fonts`.
+8. Hand the user the finished HTML.
+
+## Authoring flow — MCP registered
+
+If the escape-velocity-brand MCP is registered, prefer it for any binary output. The same templates exist server-side; just call:
+
+```
+render_template({ template: '<key>', vars: { ... }, markdown: '...' })
+```
+
+The MCP reads the canonical template (same files you have locally), substitutes variables, and renders with Playwright. Returns a signed URL. Don't author HTML yourself when the MCP is available — go through `render_template`. Only fall back to authoring inline HTML when no template matches the request.
+
+## MCP tools as extension
+
+When the escape-velocity-brand MCP is registered, these tools become available. They're the *rendering* and *publishing* layer on top of the skill's authoring capability.
+
+### Render
 
 | Tool | Use when |
 |------|----------|
-| **`render_template`**     | You want a standard branded asset (letter, OG image, invoice, carousel slide). Pick a template key, fill `vars`, optionally pass a markdown body. Output format is driven by the template registry. |
-| **`render_slides`**       | You have N discrete pages → want a viewer / combined PDF / per-page PNGs / any combination. Two input modes: `markdown` (presentation-style with `===` separators) or `pages` (carousel-style explicit HTML/template per page). Pass `persist: true` to also publish in one step (HTTP transport only). |
-| **`render_html_to_png`**  | You wrote custom HTML — want a single PNG screenshot. **Last-resort tool.** |
-| **`render_html_to_pdf`**  | You wrote custom HTML — want a PDF. Playwright auto-paginates long HTML. **Last-resort tool.** |
+| `render_template` | Pick a template key, fill vars (+ optional markdown body) → PNG or PDF |
+| `render_slides` | Multi-page output (carousel, slide deck) → viewer + PDF + PNGs |
+| `render_html_to_png` | Custom HTML you authored → PNG. Last-resort tool. |
+| `render_html_to_pdf` | Custom HTML → PDF. Last-resort tool. |
 
-**Publishing** (HTTP transport only — promotes ephemeral renders to a permanent, public URL on the Brand Site):
-
-| Tool | Use when |
-|------|----------|
-| **`publish_artifact`**    | The user says **"publish this"** after a `render_slides` call. Pass the `bundleId` from the render response. Returns the stable ID + URL. The deck appears on `escapevelocity.consulting/brand/decks/` immediately. |
-| **`unpublish_artifact`**  | The user says **"unpublish &lt;id&gt;"** with an ID they read from the Brand Site card. Pass the ID. Idempotent. |
-| **`list_published`**      | The user wants to see what's currently published. Optional `type` filter (`deck`, `document`, `image`, `carousel`). |
-
-**Introspection** (both transports):
+### Publishing (HTTP transport)
 
 | Tool | Use when |
 |------|----------|
-| **`list_templates`**      | Discover which templates exist + their metadata (output format, dims, required vars, tags). |
-| **`get_tokens`**          | Get the parsed `tokens.json` (colors, type, spacing values). |
+| `publish_artifact` | User says "publish this" after a `render_slides` call. Pass the `bundleId` from the render response. Returns the stable ID + URL. |
+| `unpublish_artifact` | User says "unpublish <id>" with an ID they read from the Brand Site card. Idempotent. |
+| `list_published` | User wants to see what's currently published. Optional `type` filter. |
 
-### When to publish
+### Introspection
 
-The publish flow exists because conversation-driven renders are ephemeral by default — they expire in 1h and don't appear on the Brand Site. Publishing is a deliberate second step:
-
-- **User says "publish this" / "make it permanent" / "put it on the site"** → call `publish_artifact({ bundleId })` with the bundleId from the previous render response. Or re-render with `persist: true`.
-- **User says "unpublish &lt;id&gt;"** → call `unpublish_artifact({ id })`. The ID is the short base64 chip on the deck card.
-- **User wants to browse what's already there** → call `list_published()` or point them at `escapevelocity.consulting/brand/decks/`.
-
-Only `render_slides` supports `persist: true` today. Other render tools (`render_template`, `render_html_to_png`, `render_html_to_pdf`) don't have a publish path yet — file a follow-up if the user asks.
+| Tool | Use when |
+|------|----------|
+| `list_templates` | Discover templates the MCP knows about (mirrors `references/templates.meta.json`). |
+| `get_tokens` | Read live tokens from server (mirrors `tokens/tokens.json`). |
 
 <!-- AUTO-GENERATED:CATALOG — edit templates.meta.ts and run `npm run build:skill` -->
 
@@ -135,16 +205,11 @@ If nothing matches and the request feels like it _should_ have a template, call 
 
 <!-- /AUTO-GENERATED:ROUTING -->
 
-## Other lookups
+## HTML authoring rules
 
-- **Don't have token values handy?** Call `get_tokens`, or check `references/brand-reference.md`.
-- **Suspect the catalog above is stale?** Call `list_templates` — the registry is the live source of truth.
+Whether using `render_template` (MCP) or authoring inline, the same rules apply:
 
-## HTML authoring rules (always, even without MCP)
-
-When writing HTML for the brand:
-
-- **Always inject brand tokens.** The MCP auto-injects `FONTS_URI` + `TOKENS_CSS` when calling render tools. In `<style>` blocks, write:
+- **Inject brand tokens.** In `<style>` blocks, write:
   ```html
   <style>
     {{ TOKENS_CSS | safe }}
@@ -152,30 +217,33 @@ When writing HTML for the brand:
     h1   { font-family: var(--font-headline); color: var(--color-terracotta); }
   </style>
   ```
-- **Color vars** (from `tokens.css`): `--color-cream`, `--color-black`, `--color-terracotta`, `--color-warm-gray-{100..900}`, etc.
+  Skill-only: replace `{{ TOKENS_CSS | safe }}` with the contents of `tokens/tokens.css`. The MCP does this substitution automatically — its `TOKENS_CSS` injection also includes resolved `@font-face` declarations so fonts load without needing the templates to declare them.
+- **Color vars** (from `tokens/tokens.css`): `--color-cream`, `--color-black`, `--color-terracotta`, `--color-accent`, `--color-light`, `--color-muted`, `--color-warm-gray-{100..900}`, etc.
 - **Font vars**: `--font-headline` (Space Grotesk), `--font-body` (Inter), `--font-ui` (Manrope), `--font-mono` (JetBrains Mono).
-- **Never** hardcode hex values, font names, or spacing values. If unsure of the exact name, call `get_tokens` or read `references/brand-reference.md`.
-- **Starting points**: pick the closest existing template (`list_templates`) and mutate. Don't start from scratch if a template is 80% there.
+- **Never** hardcode hex values, font names, or spacing values. Use the CSS vars.
+- **Starting points**: read `templates/` directly — the canonical files are bundled with you. Don't recreate a template from memory.
+- **Logos**: read `assets/logos/*.svg` and inline as needed. Use the `light` variants on dark backgrounds, `dark` variants on cream backgrounds.
+
+## Website prototyping
+
+The `web/` folder is the Brand Kit web bundle — a starter for building on-brand pages and prototypes that match `escapevelocity.consulting/brand/`.
+
+- `web/starter.html` — a minimal HTML page that links `tokens.css` + `site.css` and demonstrates the brand's hero pattern. Start here for any landing page or mockup.
+- `web/site.css` — the same CSS the production brand website uses. Layouts, components, vertical rhythm, color theming.
+- `web/print.css` — print-mode rules (light bg, no images, etc.).
+- `web/README.md` — short developer guide.
+
+When the user asks for a landing page, marketing prototype, or any web page mockup, fork from `web/starter.html`, drop in their content, and hand them the finished HTML. They open it in a browser and see something visually consistent with the production brand site.
 
 ## Output handling
 
-- **Remote HTTP MCP** (default — `https://mcp.escapevelocity.consulting/mcp`): every render call returns a `WriteResult` with `{ kind: 'url', url, expiresAt }`. URLs are HMAC-signed, valid for 1 hour, and download directly (no auth header needed for the artifact URL). Present them to the user as plain links.
-- **Local stdio MCP**: returns `{ kind: 'path', path }` with absolute paths in the conversation's working directory.
-
-Multi-output tools (`render_slides`) return nested results: `{ viewer, pdf, pngs: [...], slideCount, width, height }`. Toggle the outputs you don't need to keep responses small.
-
-## Workflow
-
-1. **Classify** the request → pick the right tool.
-2. If template-driven: **confirm the template name** via `list_templates` if unsure.
-3. If authoring HTML: read tokens via `get_tokens` (or the brand reference sidecar).
-4. **Author**: write HTML or fill template vars. Use brand CSS vars, never hardcode.
-5. **Render**: call the appropriate render tool.
-6. **Present**: return the signed URL (or file path) to the user. Iterate on their feedback by re-rendering.
+- **MCP path** — every render call returns a `WriteResult`. HTTP transport: `{ kind: 'url', url, expiresAt }` (signed URL, valid 1h, downloads directly). Stdio transport: `{ kind: 'path', path }` (absolute file path). Multi-output (`render_slides`) returns nested `{ viewer, pdf, pngs, ... }`.
+- **Skill-only path** — return the final HTML as a string in your reply, plus a suggested filename and a note: "Save this and open in a browser. Copy the `fonts/` folder from the skill bundle next to the file if you want brand fonts to load — otherwise the page falls back to system fonts."
 
 ## Examples
 
-### Branded letter (PDF)
+### Letter — MCP path
+
 ```
 render_template({
   template: "letter",
@@ -186,29 +254,30 @@ render_template({
 })
 ```
 
-### OG image (PNG)
+### Letter — skill-only path
+
+1. Read `templates/letter.html`, `_base.html`, `_recipient.html`, `tokens/tokens.css`.
+2. In `_base.html`, find `{% block content %}{% endblock %}`. Replace with the content block from `letter.html`. Do the same for `{% block styles %}`.
+3. Render the markdown body → HTML, substitute into `{{ CONTENT | safe }}`.
+4. Inline the recipient via the `r.macro` calls from `_recipient.html`.
+5. Replace `{{ TOKENS_CSS | safe }}` with tokens.css contents and `{{ FONTS_URI }}` with `./fonts`.
+6. Hand user the HTML. Suggested filename: `letter-anna-muster-2026-05-25.html`.
+
+### LinkedIn post — MCP path
+
 ```
 render_template({
-  template: "social/og",
-  vars: { TITLE: "Process-Review", SUBTITLE: "CIO-level clarity in 5 days" }
+  template: "social/linkedin-post-portrait",
+  vars: { EYEBROW: "Process-Review", HEADLINE: "CIO-level clarity in 5 days", BODY: "...", CTA: "escapevelocity.consulting/quiz" }
 })
 ```
 
-### Custom HTML → PNG (ad-hoc design)
-```
-render_html_to_png({
-  html: `<!doctype html><html><head><style>
-    {{ TOKENS_CSS | safe }}
-    body{margin:0;width:1200px;height:1200px;display:grid;place-items:center;
-         font-family:var(--font-headline);background:var(--color-cream);}
-    .big{font-size:240px;color:var(--color-terracotta);font-weight:700;}
-  </style></head><body><div class="big">+27%</div></body></html>`,
-  width: 1200,
-  height: 1200
-})
-```
+### LinkedIn post — skill-only path
 
-### LinkedIn carousel (3 slides, PDF + PNGs)
+Read `templates/social/linkedin-post-portrait.html`, inline tokens, substitute `{{ EYEBROW }}` / `{{ HEADLINE }}` / `{{ BODY }}` / `{{ CTA }}`, hand user the HTML. The template already has `@font-face` declarations using `{{ FONTS_URI }}` — replace that with `./fonts`.
+
+### LinkedIn carousel (3 slides)
+
 ```
 render_slides({
   pages: [
@@ -221,7 +290,10 @@ render_slides({
 })
 ```
 
-### Slide deck from markdown (viewer + PDF)
+Skill-only path: fill each carousel template, hand the user three HTML files (or one combined preview). No PDF without the MCP.
+
+### Slide deck from markdown
+
 ```
 render_slides({
   markdown: "<!-- @type: title -->\n# Process-Review\n\n===\n\n## Why\n\nSMBs lack CIO-level clarity.",
@@ -230,15 +302,30 @@ render_slides({
 })
 ```
 
+### Website prototype
+
+User asks: "make me an on-brand landing page for the Process-Review service."
+
+1. Read `web/starter.html`, `web/site.css`, `web/print.css`, `tokens/tokens.css`.
+2. Adapt `starter.html` — replace placeholder content with the user's copy. Keep the `<link rel="stylesheet" href="./site.css">` and tokens import.
+3. Hand the user three files (`index.html`, `site.css`, `print.css`) plus the `fonts/` folder. They drop the bundle into a directory and open `index.html`.
+
 ## Anti-patterns
 
-- ❌ **Writing custom HTML for a standard asset type.** If the user's request matches *any* phrasing in the Routing table above (LinkedIn banner, OG image, quote post, letter, offer, invoice, etc.), call the mapped template tool — don't author HTML. Custom HTML is only for designs no template covers.
-- ❌ Hardcoding hex values (`#c0392b`) or font names (`'Space Grotesk'`) in HTML you write. Use `var(--color-terracotta)` / `var(--font-headline)`.
-- ❌ Calling N times for a multi-page render. Use `render_slides` with output toggles — one round trip.
-- ❌ Writing full slide HTML from scratch for a presentation. Use markdown input mode with `===` separators + `<!-- @type: title|content|two-col|quote|image -->` directives.
-- ❌ Calling `list_templates` on the hot path just to discover templates. The catalog above is already in your context — only call `list_templates` if you suspect drift.
+- ❌ **Writing custom HTML for a standard asset type.** If the user's request matches any phrasing in the Routing table above, use the mapped template — don't author HTML from scratch. Custom HTML is only for designs no template covers.
+- ❌ **Recreating a template from memory.** The canonical files are bundled with you under `templates/`. Read them.
+- ❌ **Hardcoding hex values** (`#c0392b`) or font names (`'Space Grotesk'`) in HTML you write. Use `var(--color-terracotta)` / `var(--font-headline)`.
+- ❌ **Calling N times for a multi-page render.** Use `render_slides` with output toggles — one round trip.
+- ❌ **Calling `list_templates` on the hot path.** The catalog above is already in your context — only call it if you suspect drift.
 
 ## See also
 
-- `references/brand-reference.md` — token table, CSS vars, design patterns
-- `brand/docs/mcp-server.md` § Registering the MCP server — how to register escape-velocity-brand on your workstation (Claude Code or Claude Desktop)
+- `references/brand-reference.md` — token table, CSS vars, design patterns, voice
+- `references/brand-spec.md` — canonical brand contract (BRAND_SPEC.md)
+- `references/templates.meta.json` — template registry as JSON
+- `tokens/tokens.css` and `tokens/tokens.json` — design tokens
+- `templates/` — canonical template files
+- `web/` — Brand Kit web bundle for prototyping
+- `assets/logos/` — brand mark SVGs
+- `components/radar.js` — radar chart component used in some slides
+- `press/boilerplate.md` — official "about us" copy

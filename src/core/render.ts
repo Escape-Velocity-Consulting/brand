@@ -76,7 +76,7 @@ function resolveHtml(input: HtmlInput, paths: BrandPaths): { raw: string; rootDi
 function templateHtml(raw: string, rootDir: string, paths: BrandPaths, input: HtmlInput): string {
   if (input.skipTemplating) return raw
   const fontsUri = pathToFileURL(paths.fontsDir).href
-  const tokensCss = loadTokensCss(paths)
+  const tokensCss = loadTokensCss(paths, fontsUri)
   return renderStringTemplate(rootDir, raw, {
     FONTS_URI: fontsUri,
     TOKENS_CSS: tokensCss,

@@ -247,8 +247,8 @@ export interface RenderDocumentInput {
  */
 export function renderDocumentHtml(input: RenderDocumentInput, paths: BrandPaths): string {
   const lang = input.lang ?? 'de'
-  const tokensCss = loadTokensCss(paths)
   const fontsUri = pathToFileURL(paths.fontsDir).href
+  const tokensCss = loadTokensCss(paths, fontsUri)
   const showMeta = !!(input.recipient || input.ref || input.confidential)
   const rec = input.recipient ?? null
   const legacyRecipient = rec

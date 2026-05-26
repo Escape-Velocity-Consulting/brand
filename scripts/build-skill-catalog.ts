@@ -178,7 +178,23 @@ function replaceBlock(
   return `${before}\n\n${body}\n\n${after}`
 }
 
+function emitJson(outPath: string) {
+  // Serialize the registry to JSON so the skill bundle (which can't execute
+  // tsx) can read the canonical template metadata as plain data.
+  writeFileSync(outPath, JSON.stringify(TEMPLATE_REGISTRY, null, 2) + '\n', 'utf-8')
+  console.log(`[build-skill-catalog] emitted: ${outPath}`)
+}
+
 function main() {
+  const args = process.argv.slice(2)
+  const jsonIdx = args.indexOf('--emit-json')
+  if (jsonIdx >= 0) {
+    const outPath = args[jsonIdx + 1]
+    if (!outPath) throw new Error('--emit-json requires a path argument')
+    emitJson(resolve(outPath))
+    return
+  }
+
   const src = readFileSync(skillMdPath, 'utf-8')
   let next = src
   next = replaceBlock(next, CATALOG_START, CATALOG_END, renderCatalog(), 'CATALOG')

@@ -149,7 +149,7 @@ brand/
 ├── tests/
 │   └── mcp/                  ← JSON-fixture E2E suite
 ├── templates/                ← document/social/carousel/presentation templates
-├── skill/escape-velocity-brand/  ← deployed skill source
+├── skill/escape-velocity-brand/  ← deployed skill source (bundled with templates, tokens, fonts, logos, brand spec, web kit at build time; skill = author + design system, MCP = renderer + publisher)
 ├── site/                     ← Brand Site source (11ty)
 ├── web/                      ← Brand Kit web-bundle authored sources
 ├── dist/                     ← Brand Distribution (gitignored)
