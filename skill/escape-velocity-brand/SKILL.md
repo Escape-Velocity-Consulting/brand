@@ -255,7 +255,9 @@ The presentation template (`render_slides` markdown mode) ships with named slide
 | Content shape | Use `@type:` |
 |---------------|--------------|
 | **Slide 1 only** — deck cover (logo + title + author + QR auto-bakes on publish) | `title` |
-| Chapter / section divider, "Tipp #N" intro, pause, closing thanks — anything mid-deck with a big word | `section` |
+| **Last slide only** — end-card mirroring the title chrome (logo + author + QR) | `closing` |
+| Chapter / section divider, "Tipp #N" intro, pause slide — anything mid-deck with a big word | `section` |
+| Bold single-sentence impact statement or one-word punch — centered, chrome visible | `statement` |
 | Narrative prose, ≤6 bullets, ≤80 words | `content` |
 | Symmetric A/B pair (e.g. "Optimierung" vs "Wachstum") | `two-col` |
 | Opinionated contrast (old way vs new way, before/after, generic vs branded) | `comparison` |
@@ -276,20 +278,22 @@ All directives use `<!-- @key: value -->` syntax, one per line, at the top of a 
 | `@bg:` | all | Background variant: `cream` (default), `light`, `black`, `terracotta`. Foreground colors auto-adapt. |
 | `@chrome:` | all | `none` suppresses the wordmark + page-number footer (image / meme / hero slides). |
 | `@notes:` | all | Speaker notes (not rendered in viewer; kept for export). |
-| `@author:` | `title` | Override the default author byline (`Tommi Enenkel · Escape Velocity Consulting`). |
-| `@date:` | `title` | Appends ` · <date>` to the author byline. Keeps the date out of the subtitle. |
-| `@qr:` | `title` | `none` suppresses the QR slot; an explicit URL bakes that destination; default leaves a placeholder that `publish_artifact` fills with the publication's detail-page URL. |
-| `@qr-image:` | `title` | Static image (e.g. project mark) in the right-hand slot instead of a QR. |
-| `@qr-caption:` | `title` | Override the caption beneath the QR (default: `Get the slides!`). |
+| `@author:` | `title`, `closing` | Override the default author byline (`Tommi Enenkel`). |
+| `@date:` | `title`, `closing` | Appends ` · <date>` to the author byline. Keeps the date out of the subtitle. |
+| `@qr:` | `title`, `closing` | `none` suppresses the QR slot; an explicit URL bakes that destination; default leaves a placeholder that `publish_artifact` fills with the publication's detail-page URL. |
+| `@qr-image:` | `title`, `closing` | Static image (e.g. project mark) in the right-hand slot instead of a QR. |
+| `@qr-caption:` | `title`, `closing` | Override the caption beneath the QR (default: `Get the slides!`). |
 | `@source:` | `quote` | Attribution line. Alternative to writing `— Source · Author` with an em-dash. |
 
 ### Authoring rules
 
-- **`@type: title` is slide-1-only.** Exactly one per deck, always the first slide. It carries the logo, author byline, and QR auto-bake slot. If you use `@type: title` on slide 2+, the renderer downgrades it to `@type: section` and pushes a `title_misuse` warning into `result.warnings` — your deck still renders, but you'll see the warning. For every chapter divider, "Tipp #N" intro, pause slide, or closing thanks slide, use `@type: section`.
+- **`@type: title` is slide-1-only.** Exactly one per deck, always the first slide. It carries the logo, author byline, and QR auto-bake slot. If you use `@type: title` on slide 2+, the renderer downgrades it to `@type: section` and pushes a `title_misuse` warning into `result.warnings` — your deck still renders, but you'll see the warning.
+- **`@type: closing` is for the last slide.** It mirrors the title chrome exactly — logo, author byline, QR auto-bake slot — but carries a "Danke!" or CTA headline instead of the deck title. Use `<!-- @bg: terracotta -->` for a strong end-card. Both title and closing slides are baked with the QR on publish.
+- **`@type: statement` is a centered impact slide.** One sentence or one word, rendered large (`clamp(52px, 6vw, 96px)`), chrome (logo + page number) visible. Use `**bold**` in the `# Headline` to accent one word in terracotta (cream on dark/terracotta bg). An optional second paragraph becomes a smaller subtitle. Good for: thesis statements, provocations, pause moments.
 - **Section / chapter slides:** `# Title` is canonical. The parser also accepts `## Title` as a safety net, but write `#`. Sections have no logo, no byline, no QR — they're the big-word divider, on a `cream` / `black` / `terracotta` background.
 - **Quote slides:** put the quotation in `> ` lines. Attribute the source with either `<!-- @source: ... -->` (preferred) or a single line starting with an em-dash (`— Source · Date`). Never bury the source inside the blockquote.
 - **Custom HTML escape hatch (`@type: html`):** the *leading* `## Title` line is auto-extracted and rendered as a styled heading; the renderer also auto-wraps your body in `<div class="ev-canvas">` so you don't have to ship padding boilerplate. Markdown is **not** parsed inside. Use the `.ev-*` utility classes — see the recipe library below.
-- **Title slides** automatically get the logo, the author byline, and a QR placeholder. The publish step fills the QR with the detail-page URL of the publication. If your markdown already contains a byline-shaped line ("Tommi Enenkel, Escape Velocity Consulting"), the renderer auto-strips it from the subtitle to avoid duplication with the auto byline.
+- **Title and closing slides** automatically get the logo, the author byline (`Tommi Enenkel`), and a QR placeholder. The publish step fills the QR with the detail-page URL. If your markdown already contains a byline-shaped line, the renderer auto-strips it from the subtitle to avoid duplication.
 
 ### `@type: html` — recipes + utility palette
 
@@ -578,8 +582,10 @@ General:
 
 Slide-specific (markdown mode of `render_slides`):
 
-- ❌ **Using `@type: title` past slide 1.** Title chrome (logo + byline + QR slot + "Get the slides!" caption) is reserved for the deck cover. For chapter dividers, "Tipp #N" intros, pause slides, closing thanks — use `@type: section`. The renderer will downgrade misused titles to section and push a `title_misuse` warning into `result.warnings`.
-- ❌ **Repeating the author byline in the title-slide subtitle.** The title slide auto-renders "Tommi Enenkel · Escape Velocity Consulting" at the bottom. If your subtitle also includes that line, the renderer auto-strips it — but don't put it there in the first place; the subtitle is for the value-prop tagline.
+- ❌ **Using `@type: title` past slide 1.** Title chrome (logo + byline + QR slot) is reserved for the deck cover. For chapter dividers, "Tipp #N" intros, and pause slides, use `@type: section`. The renderer will downgrade misused titles to section and push a `title_misuse` warning into `result.warnings`.
+- ❌ **Using `@type: section` for the closing / thank-you slide.** The last slide should be `@type: closing` — it mirrors the title chrome (logo + author + QR). `@type: section` has no chrome and won't get the QR bake.
+- ❌ **Using `@type: section` for a single-word punchline or thesis statement.** Sections are chrome-free dividers. If the content is a punchy sentence with emphasis (`**bold**`), use `@type: statement` — it has chrome and accent support.
+- ❌ **Repeating the author byline in the title-slide subtitle.** The title and closing slides auto-render "Tommi Enenkel" at the bottom. If your subtitle also includes that line, the renderer auto-strips it — but don't put it there in the first place; the subtitle is for the value-prop tagline or CTA.
 - ❌ **Re-injecting `{{ TOKENS_CSS }}` inside `@type: html`.** The presentation template already injects tokens at the document level. Re-injecting inside your fragment is wasteful and signals stale skill teaching; the linter warns.
 - ❌ **Writing custom HTML for a list of parallel items.** Use `@type: cards` — the layout auto-grids and styles each card.
 - ❌ **Adding a subtitle below a meme.** Use `@type: image` with a `# 🥋` headline + `@chrome: none`; no caption, no subtitle. The punchline lives alone.
@@ -593,17 +599,22 @@ Slide-specific (markdown mode of `render_slides`):
 
 ### Worked example: `previews/decks/reference-deck.md`
 
-The repo ships a canonical 10-slide example exercising every type and directive. It's the right starting point when authoring a new deck — read it before composing from scratch. The reference covers:
+The repo ships a canonical 23-slide type catalog exercising every layout and directive. It's the right starting point when authoring a new deck — read it before composing from scratch. The reference covers all types in all bg variants (`cream` / `black` / `terracotta`):
 
-- Light-themed title slide with `**accent**` h1, `@date:`, QR auto-bake
-- Dark quote with `@source:`
-- `@type: section` (cream + black variants)
-- `@type: content` with bullets + bold accent
-- `@type: big-number` with eyebrow + caption
-- `@type: cards` (6-up auto-grid)
-- `@type: image` + `@chrome: none` (emoji punchline)
-- `@type: comparison` (muted vs. accent)
-- Terracotta closing title with QR + email subtitle
+- `@type: title` — cream, `**accent**` h1, `@date:`, QR auto-bake slot
+- `@type: section` — cream with eyebrow (`> Step 1`), black, terracotta
+- `@type: statement` — cream (accent word), black (single bold word), terracotta
+- `@type: content` — bullets with `**bold**` + `*italic*`, H3 eyebrow variant
+- `@type: cards` — 6-up auto-grid
+- `@type: two-col` — symmetric pair
+- `@type: comparison` — opinionated before/after
+- `@type: quote` — black with `@source:`, cream
+- `@type: big-number` — black, eyebrow + caption
+- `@type: image` — chrome on vs. `@chrome: none` (full-bleed)
+- `@type: html` — multiplier, spectrum, flow, tier ladder, canvas utilities
+- `@type: closing` — terracotta, `**accent**` h1, QR auto-bake slot
+
+Published live: `https://mcp.escapevelocity.consulting/published/pXInP8D115/`
 
 Render locally:
 ```
