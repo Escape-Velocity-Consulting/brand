@@ -597,9 +597,11 @@ Slide-specific (markdown mode of `render_slides`):
 - ❌ **`--color-subtle` (#807A74) or `--color-muted` (#C4BEB8) as foreground on dark backgrounds.** They render as low-contrast smudges. Use `--color-cream` / `rgba(255,255,255,0.72+)` on dark, `--color-body` / `--color-subtle` on light. See the contrast pair table above.
 - ❌ **Putting the date in the title-slide subtitle.** Use `<!-- @date: ... -->` — it appends to the author byline at the bottom of the slide so the subtitle stays a clean tagline.
 
-### Worked example: `previews/decks/reference-deck.md`
+### Worked example: `examples/reference-deck.md`
 
-The repo ships a canonical 23-slide type catalog exercising every layout and directive. It's the right starting point when authoring a new deck — read it before composing from scratch. The reference covers all types in all bg variants (`cream` / `black` / `terracotta`):
+The skill bundles a canonical 23-slide type catalog at `examples/reference-deck.md`. **Read it before authoring a new deck** — it shows every layout in all bg variants with correct syntax. When starting a new deck, copy from it rather than writing from memory.
+
+It covers all types in all bg variants (`cream` / `black` / `terracotta`):
 
 - `@type: title` — cream, `**accent**` h1, `@date:`, QR auto-bake slot
 - `@type: section` — cream with eyebrow (`> Step 1`), black, terracotta

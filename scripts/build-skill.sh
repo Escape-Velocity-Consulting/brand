@@ -100,6 +100,16 @@ mkdir -p "$STAGE_DIR/press"
 cp "$BRAND_DIR/press/boilerplate.md" "$STAGE_DIR/press/boilerplate.md"
 echo "  Copied press boilerplate"
 
+# ── 10b. Examples ────────────────────────────────────────────────────────────
+#
+# The reference deck is the canonical copy-from example for @type: html and
+# all slide types. Bundle it so remote agents (HTTP MCP, Claude Desktop) can
+# read it directly from the skill without needing access to the brand repo.
+
+mkdir -p "$STAGE_DIR/examples"
+cp "$BRAND_DIR/previews/decks/reference-deck.md" "$STAGE_DIR/examples/reference-deck.md"
+echo "  Copied examples (reference-deck.md)"
+
 # ── 11. Package as .skill (ZIP) ──────────────────────────────────────────────
 
 mkdir -p "$DIST_DIR"
