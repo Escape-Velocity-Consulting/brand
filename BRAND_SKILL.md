@@ -98,7 +98,9 @@ The presentation template ships these named layouts. Pick the layout that fits t
 | `@type:` | When to pick it |
 |----------|-----------------|
 | `title` | **Slide 1 only.** Deck cover — logo + author + QR placeholder. Renderer downgrades misuse to `section` + warns. |
-| `section` | Every other "big word" slide — chapter divider, "Tipp #N", pause, closing thanks. No chrome. |
+| `closing` | **Last slide.** End-card mirroring title chrome (logo + author + QR auto-bake). Use `@bg: terracotta` for a strong finish. |
+| `statement` | Centered impact statement. Big headline `clamp(52px, 6vw, 96px)`, chrome visible. `**bold**` → terracotta accent word. Optional subtitle paragraph below. |
+| `section` | Chapter divider, "Tipp #N" intro, pause slide. Big word, no chrome. Supports `> eyebrow` before `# Title`. |
 | `content` | Narrative prose ≤6 bullets, ≤80 words. Default for body slides. |
 | `two-col` | Symmetric A/B pair. Same visual weight on both sides. |
 | `comparison` | Opinionated A vs B. Left muted, right terracotta-accented. |
