@@ -207,6 +207,16 @@ h1 {
         Download Markdown
       </a>
       {% endif %}
+      {% if SLIDES_ZIP_URL %}
+      <a href="{{ SLIDES_ZIP_URL }}" class="btn btn-secondary">
+        ↓ Slides ZIP
+      </a>
+      {% endif %}
+      {% if PACKAGE_ZIP_URL %}
+      <a href="{{ PACKAGE_ZIP_URL }}" class="btn btn-secondary">
+        ↓ Full Package ZIP
+      </a>
+      {% endif %}
     </div>
 
     {% if THUMBNAILS and THUMBNAILS.length %}

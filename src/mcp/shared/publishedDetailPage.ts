@@ -73,6 +73,16 @@ export function renderPublishedDetailPage(
     for (const f of thumbPngs) thumbUrls.push(urlFor(f.relativeName))
   }
 
+  // Zip download URLs (deck + carousel only).
+  const isSlideDeck = item.type === 'deck' || item.type === 'carousel'
+  const hasSlides = item.files.some((f) => /^slides\/slide-\d+\.png$/.test(f.relativeName))
+  const slidesZipUrl = (isSlideDeck && hasSlides)
+    ? `${base}/published/${item.id}/slides.zip`
+    : undefined
+  const packageZipUrl = isSlideDeck
+    ? `${base}/published/${item.id}/package.zip`
+    : undefined
+
   const env = getTemplateEnv(paths.templatesDir)
   const tokensCss = loadTokensCss(paths)
 
@@ -89,6 +99,8 @@ export function renderPublishedDetailPage(
     THUMBNAILS: thumbnails,
     THUMB_URLS: thumbUrls,
     THUMBNAIL_URL: item.thumbnailFile ? urlFor(item.thumbnailFile) : undefined,
+    SLIDES_ZIP_URL: slidesZipUrl,
+    PACKAGE_ZIP_URL: packageZipUrl,
     TOKENS_CSS: tokensCss,
   })
 }

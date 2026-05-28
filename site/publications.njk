@@ -177,6 +177,15 @@ subtitle: All published brand outputs — decks, images, documents, and more.
         pdfBtn.textContent = 'PDF';
         actions.appendChild(pdfBtn);
       }
+      var hasSlideFiles = item.files.some(function (f) { return /^slides\/slide-\d+\.png$/.test(f.relativeName); });
+      if (hasSlideFiles) {
+        var slidesZipBtn = el('a', { class: 'btn-secondary-light', href: MCP_BASE + '/published/' + item.id + '/slides.zip', rel: 'noopener' });
+        slidesZipBtn.textContent = '↓ Slides ZIP';
+        actions.appendChild(slidesZipBtn);
+      }
+      var pkgZipBtn = el('a', { class: 'btn-secondary-light', href: MCP_BASE + '/published/' + item.id + '/package.zip', rel: 'noopener' });
+      pkgZipBtn.textContent = '↓ Full Package';
+      actions.appendChild(pkgZipBtn);
     }
     var md = item.files.find(function (f) { return f.mime === 'text/markdown'; });
     if (md) {

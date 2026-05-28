@@ -3,7 +3,8 @@ import { createServer as createHttpServer, type IncomingMessage, type ServerResp
 import { createReadStream, mkdirSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import { tmpdir } from 'node:os'
-import { resolve } from 'node:path'
+import { resolve, basename } from 'node:path'
+import archiver from 'archiver'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js'
 import { BrowserPool } from '../core/browserPool.js'
@@ -521,6 +522,61 @@ async function route(
       createReadStream(resolved.absPath).pipe(res)
       return
     }
+    // Case 4a: `/published/<id>/slides.zip` → flat zip of all slide PNGs.
+    if (relativeNameRaw === 'slides.zip') {
+      const item = publishedStore.get(id)
+      if (!item) {
+        res.writeHead(404, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'not_found' }))
+        return
+      }
+      const slideFiles = item.files.filter((f) => /^slides\/slide-\d+\.png$/.test(f.relativeName))
+      if (slideFiles.length === 0) {
+        res.writeHead(404, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'no_slides' }))
+        return
+      }
+      const stem = (item.title ?? item.id).toLowerCase().replace(/\s+/g, '-').slice(0, 40)
+      res.writeHead(200, {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename="${sanitizeFilename(stem + '-slides.zip')}"`,
+        ...corsHeaders(),
+      })
+      const arc = archiver('zip')
+      arc.pipe(res)
+      for (const f of slideFiles) {
+        const resolved = publishedStore.resolveFile(id, f.relativeName)
+        if (resolved) arc.file(resolved.absPath, { name: basename(f.relativeName) })
+      }
+      arc.finalize()
+      return
+    }
+
+    // Case 4b: `/published/<id>/package.zip` → zip of all files except thumbs/.
+    if (relativeNameRaw === 'package.zip') {
+      const item = publishedStore.get(id)
+      if (!item) {
+        res.writeHead(404, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'not_found' }))
+        return
+      }
+      const packageFiles = item.files.filter((f) => !f.relativeName.startsWith('thumbs/'))
+      const stem = (item.title ?? item.id).toLowerCase().replace(/\s+/g, '-').slice(0, 40)
+      res.writeHead(200, {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename="${sanitizeFilename(stem + '-package.zip')}"`,
+        ...corsHeaders(),
+      })
+      const arc = archiver('zip')
+      arc.pipe(res)
+      for (const f of packageFiles) {
+        const resolved = publishedStore.resolveFile(id, f.relativeName)
+        if (resolved) arc.file(resolved.absPath, { name: f.relativeName })
+      }
+      arc.finalize()
+      return
+    }
+
     // Decode and reject any decoded path that starts with '/' or contains '..' segments.
     let relativeName: string
     try {
