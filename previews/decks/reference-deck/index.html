@@ -508,12 +508,11 @@ html, body {
    rather than pressing against the top. Dense slides (tiers, long text)
    still look fine because flex centering with overflow visible. */
 .slide--html .slide-inner {
-  /* Horizontal padding lives here (matches the 130px raster of content/cards/
-     comparison slides) so the auto-extracted .ev-h2 heading — a direct child of
-     .slide-inner, sibling to .ev-canvas — aligns with the canvas body instead of
-     sitting flush to the edge. Vertical padding stays 0 so content centers. */
-  padding: 0 130px;
-  justify-content: center;
+  /* Same padding raster as content/cards/comparison (top 100px, sides 130px) so
+     the auto-extracted .ev-h2 heading sits at the SAME x AND y as every other
+     slide type's heading — top-aligned, not vertically centered. The canvas
+     below grows to fill the remaining height and centers its visual content. */
+  padding: 100px 130px;
 }
 .slide--html h2,
 .slide--html .slide-heading {
@@ -722,10 +721,12 @@ html, body {
 /* The renderer wraps every @type: html body in <div class="ev-canvas"> by
    default, so authors don't reinvent padding + body font on every slide. */
 .ev-canvas {
-  /* Padding is owned by .slide--html .slide-inner (horizontal raster) +
-     justify-content: center (vertical). The canvas itself adds none, so the
-     auto-extracted .ev-h2 heading (sibling, outside the canvas) and the canvas
-     body share the exact same left edge. */
+  /* Padding is owned by .slide--html .slide-inner. The heading (.ev-h2) sits
+     pinned at the top as a sibling; this canvas grows to fill the height below
+     it and centers its visual content vertically — so diagrams/multipliers/
+     spectrums sit centered in their area while the heading stays at the top. */
+  flex: 1;
+  justify-content: center;
   width: 100%;
   box-sizing: border-box;
   font-family: var(--font-body);
