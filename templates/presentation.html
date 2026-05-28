@@ -436,7 +436,11 @@ html, body {
    rather than pressing against the top. Dense slides (tiers, long text)
    still look fine because flex centering with overflow visible. */
 .slide--html .slide-inner {
-  padding: 0;
+  /* Horizontal padding lives here (matches the 130px raster of content/cards/
+     comparison slides) so the auto-extracted .ev-h2 heading — a direct child of
+     .slide-inner, sibling to .ev-canvas — aligns with the canvas body instead of
+     sitting flush to the edge. Vertical padding stays 0 so content centers. */
+  padding: 0 130px;
   justify-content: center;
 }
 .slide--html h2,
@@ -646,8 +650,11 @@ html, body {
 /* The renderer wraps every @type: html body in <div class="ev-canvas"> by
    default, so authors don't reinvent padding + body font on every slide. */
 .ev-canvas {
+  /* Padding is owned by .slide--html .slide-inner (horizontal raster) +
+     justify-content: center (vertical). The canvas itself adds none, so the
+     auto-extracted .ev-h2 heading (sibling, outside the canvas) and the canvas
+     body share the exact same left edge. */
   width: 100%;
-  padding: 100px 130px;
   box-sizing: border-box;
   font-family: var(--font-body);
   color: var(--color-body);
