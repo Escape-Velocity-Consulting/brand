@@ -478,6 +478,10 @@ Persistence requires a host-volume mount at `/app/published` on the container â€
 
 **Bake outcome surfacing.** When `publish_artifact` runs the QR auto-bake (decks, default-on), the response carries a `bakeStatus: { baked: boolean; reason?: string; warnings: string[] }` field. Soft failures inside the bake (Playwright screenshot timeouts on individual title slides, PDF page-swap errors, QR PNG generation failures) push entries into `warnings[]` rather than aborting the publish. Callers can detect partial failures without polling the rendered URLs afterwards.
 
+**Both publish paths bake identically.** The QR bake runs through one shared helper (`bakeQrForPublishedItem`) called by both `publish_artifact` AND `render_slides` with `persist: true`. The persist path previously skipped the bake, shipping decks with a 404 `qr-title.png` and a dangling caption (the `kCvrg5SeCa` regression); both paths now carry `bakeStatus`.
+
+**Graceful QR degradation.** The "Get the slides!" caption is `display: none` by default and only revealed by `.title-qr-slot:has(img.title-qr-image)`. When the bake fails or is skipped, the placeholder stays an invisible HTML comment, no `<img>` is present, and the caption never shows â€” the title slide reads clean instead of pointing at a broken QR.
+
 ### 11.0b Slide rendering contract (`render_slides` markdown mode)
 
 The markdown-mode parser of `render_slides` enforces these contracts:

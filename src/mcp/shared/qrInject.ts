@@ -252,6 +252,56 @@ export async function bakeQrIntoPublishedDeck(opts: {
   return { baked: true, added, updated, warnings }
 }
 
+/**
+ * Shared QR-bake orchestration for the two publish entrypoints
+ * (`publish_artifact` and `render_slides` with `persist: true`). Both must
+ * bake identically — the May-2026 regression where persist-published decks
+ * (e.g. `kCvrg5SeCa`) shipped with no QR happened precisely because the persist
+ * path skipped this step. Keep the bake in ONE place so they can't drift.
+ *
+ * Best-effort: any failure is captured in the returned `bakeStatus` and logged,
+ * never thrown — the deck is already on disk and reachable.
+ *
+ * Returns `undefined` when no bake was attempted (non-deck, or `bakeQr` false).
+ */
+export async function bakeQrForPublishedItem(opts: {
+  item: { id: string; type: string }
+  store: {
+    getItemDir(id: string): string | null
+    refreshMeta(id: string, addedFiles: Array<{ relativeName: string; filename: string; mime: string }>): void
+  }
+  pool: BrowserPool
+  paths: BrandPaths
+  publicBaseUrl: string
+  bakeQr?: boolean
+  log?: (evt: string, data: Record<string, unknown>) => void
+}): Promise<{ baked: boolean; reason?: string; warnings: string[] } | undefined> {
+  const { item, store, pool, paths, publicBaseUrl, log } = opts
+  const shouldBake = opts.bakeQr ?? (item.type === 'deck')
+  if (!shouldBake || item.type !== 'deck') return undefined
+
+  const itemDir = store.getItemDir(item.id)
+  if (!itemDir) return undefined
+
+  try {
+    const detailUrl = `${publicBaseUrl.replace(/\/+$/, '')}/published/${item.id}`
+    const result = await bakeQrIntoPublishedDeck({ itemDir, detailUrl, pool, paths })
+    if (result.baked) {
+      store.refreshMeta(item.id, [
+        { relativeName: 'qr-title.png', filename: 'qr-title.png', mime: 'image/png' },
+      ])
+      log?.('qr_bake_ok', { id: item.id, added: result.added, updated: result.updated, warnings: result.warnings.length })
+    } else {
+      log?.('qr_bake_skip', { id: item.id, reason: result.reason })
+    }
+    return { baked: result.baked, reason: result.reason, warnings: result.warnings }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    log?.('qr_bake_fail', { id: item.id, err: msg })
+    return { baked: false, reason: 'exception', warnings: [msg] }
+  }
+}
+
 /** File metadata used to refresh meta.json after a bake. */
 export interface FileSizeInfo {
   relativeName: string

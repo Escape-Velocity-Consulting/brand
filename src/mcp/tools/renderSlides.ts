@@ -6,7 +6,9 @@ import { renderSlides, SLIDE_DIMENSIONS, type DimensionsInput } from '../../core
 import { writeBundleEntry, type WriteResult } from '../shared/outputSinks.js'
 import type { BundleType } from '../shared/bundleStore.js'
 import { publishedItemToApi } from '../shared/publishedApi.js'
+import { bakeQrForPublishedItem } from '../shared/qrInject.js'
 import { runTool, successResult } from '../shared/toolResult.js'
+import { log } from '../shared/logger.js'
 
 const PageSchema = z.object({
   template: z.string().optional().describe('Path under brand/ to a full-page template (e.g. "templates/carousel/title.html").'),
@@ -178,14 +180,28 @@ export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
     }
 
     // One-shot publish: skip the second round-trip when the caller already
-    // knows they want the result persisted.
+    // knows they want the result persisted. This path MUST bake the QR the
+    // same way publish_artifact does — otherwise persist-published decks ship
+    // with a dead "Get the slides!" caption and a 404 qr-title.png (the
+    // kCvrg5SeCa regression). Bake via the shared helper so the two can't drift.
     let published: ReturnType<typeof publishedItemToApi> | undefined
+    let bakeStatus: { baked: boolean; reason?: string; warnings: string[] } | undefined
     if (args.persist && bundleId && ctx.publishedStore && ctx.publicBaseUrl) {
       const item = ctx.publishedStore.publish(bundleId, {
         title: args.title,
         type: bundleType,
       })
-      published = publishedItemToApi(item, ctx.publicBaseUrl)
+      bakeStatus = await bakeQrForPublishedItem({
+        item,
+        store: ctx.publishedStore,
+        pool: ctx.pool,
+        paths: ctx.paths,
+        publicBaseUrl: ctx.publicBaseUrl,
+        log,
+      })
+      // Re-fetch so meta.json updates from the bake (qr-title.png) are reflected.
+      const fresh = ctx.publishedStore.get(item.id) ?? item
+      published = publishedItemToApi(fresh, ctx.publicBaseUrl)
     }
 
     return successResult({
@@ -198,6 +214,7 @@ export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
       height: result.height,
       bundleId: bundleId || undefined,
       published,
+      ...(bakeStatus ? { bakeStatus } : {}),
     })
   }))
 }

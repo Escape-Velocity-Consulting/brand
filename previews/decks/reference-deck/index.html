@@ -181,7 +181,14 @@ html, body {
   font-size: 26px; font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--color-terracotta);
+  /* Graceful degradation: the caption only makes sense next to a real QR.
+     Hidden by default; revealed only when the slot actually contains a QR
+     image (baked at publish, or a static @qr-image). If the QR bake fails or
+     is skipped, the placeholder stays an invisible HTML comment and this
+     caption never shows — no dangling "Get the slides!" pointing at nothing. */
+  display: none;
 }
+.slide--title .title-qr-slot:has(img.title-qr-image) .title-qr-caption { display: block; }
 .slide--title[data-bg="black"] .title-qr-caption,
 .slide--title[data-bg="terracotta"] .title-qr-caption { color: var(--color-cream); }
 

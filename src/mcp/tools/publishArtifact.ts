@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ServerContext } from '../shared/createServer.js'
 import { runTool, successResult, errorResult } from '../shared/toolResult.js'
 import { publishedItemToApi } from '../shared/publishedApi.js'
-import { bakeQrIntoPublishedDeck } from '../shared/qrInject.js'
+import { bakeQrForPublishedItem } from '../shared/qrInject.js'
 import { log } from '../shared/logger.js'
 
 const BUNDLE_TYPES = ['deck', 'document', 'image', 'carousel', 'html-pdf', 'html-png'] as const
@@ -44,36 +44,17 @@ export function registerPublishArtifact(server: McpServer, ctx: ServerContext) {
       // Best-effort QR bake: default on for decks. Failure logs but never aborts
       // the publish — the deck is already on disk and reachable; only the QR
       // would be missing. Outcome is surfaced to the caller via `bakeStatus`
-      // so silent regressions become visible.
-      let bakeStatus: { baked: boolean; reason?: string; warnings: string[] } | undefined
-      const bakeQr = args.bakeQr ?? (item.type === 'deck')
-      if (bakeQr && item.type === 'deck') {
-        const itemDir = ctx.publishedStore!.getItemDir(item.id)
-        if (itemDir) {
-          try {
-            const detailUrl = `${ctx.publicBaseUrl!.replace(/\/+$/, '')}/published/${item.id}`
-            const result = await bakeQrIntoPublishedDeck({
-              itemDir,
-              detailUrl,
-              pool: ctx.pool,
-              paths: ctx.paths,
-            })
-            bakeStatus = { baked: result.baked, reason: result.reason, warnings: result.warnings }
-            if (result.baked) {
-              ctx.publishedStore!.refreshMeta(item.id, [
-                { relativeName: 'qr-title.png', filename: 'qr-title.png', mime: 'image/png' },
-              ])
-              log('qr_bake_ok', { id: item.id, added: result.added, updated: result.updated, warnings: result.warnings.length })
-            } else {
-              log('qr_bake_skip', { id: item.id, reason: result.reason })
-            }
-          } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err)
-            bakeStatus = { baked: false, reason: 'exception', warnings: [msg] }
-            log('qr_bake_fail', { id: item.id, err: err instanceof Error ? err : String(err) })
-          }
-        }
-      }
+      // so silent regressions become visible. Shared with render_slides'
+      // persist path so the two can't drift.
+      const bakeStatus = await bakeQrForPublishedItem({
+        item,
+        store: ctx.publishedStore!,
+        pool: ctx.pool,
+        paths: ctx.paths,
+        publicBaseUrl: ctx.publicBaseUrl!,
+        bakeQr: args.bakeQr,
+        log,
+      })
 
       // Re-fetch the item so meta.json updates from the bake are reflected.
       const fresh = ctx.publishedStore!.get(item.id) ?? item
