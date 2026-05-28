@@ -730,6 +730,10 @@ html, body {
   width: 100%;
   box-sizing: border-box;
   font-family: var(--font-body);
+  /* Base body size so plain <p> inside an html canvas reads at the same weight
+     as content-slide copy (36px). Without this, unclassed paragraphs inherited
+     a tiny ~16px default. Direct .ev-lead / .ev-foot rules override per-element. */
+  font-size: 32px; line-height: 1.5;
   color: var(--color-body);
   display: flex; flex-direction: column;
   gap: 24px;
@@ -749,10 +753,10 @@ html, body {
 }
 .ev-lead {
   font-family: var(--font-body);
-  font-size: 26px; line-height: 1.5;
-  /* Per the small-text rule (Phase 5): 26px is borderline, but on cream
-     --color-body still reads — bumping to --color-text would be heavy
-     for narrative text. Tuneable. */
+  /* Matches content-slide body copy (36px) so an html slide's primary prose
+     reads at the same size as a content slide's. Was 26px, which looked
+     noticeably smaller side-by-side. */
+  font-size: 36px; line-height: 1.5;
   color: var(--color-body);
   max-width: 1400px;
   /* NOT centered — v4 slide 5 used `margin: 0 auto` on a similar lead,
@@ -761,7 +765,7 @@ html, body {
 }
 .ev-foot {
   font-family: var(--font-body);
-  font-size: 24px; line-height: 1.45;
+  font-size: 28px; line-height: 1.45;
   color: var(--color-text);
   text-align: center;
   max-width: 1400px;
