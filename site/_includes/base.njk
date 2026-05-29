@@ -18,13 +18,25 @@
   </div>
 </div>
 
+{%- set currentNavLabel = "Menü" -%}
+{%- for item in nav -%}
+  {%- if (item.slug == navSlug) or (item.slug == parentSlug) -%}
+    {%- set currentNavLabel = item.label -%}
+  {%- endif -%}
+{%- endfor -%}
 <nav class="demo-nav">
   <div class="container">
-    {% for item in nav %}
-      {%- set href = ('/' + item.slug + (('/') if item.slug else '')) | url -%}
-      {%- set isActive = (item.slug == navSlug) or (item.slug == parentSlug) -%}
-      <a href="{{ href }}" class="{{ 'active' if isActive }}{{ ' nav-highlight' if item.highlight }}">{{ item.label }}</a>
-    {% endfor %}
+    <button class="nav-toggle" aria-expanded="false" aria-controls="demo-nav-links" aria-label="Menü öffnen">
+      <span class="nav-toggle-icon" aria-hidden="true">☰</span>
+      <span class="nav-current">{{ currentNavLabel }}</span>
+    </button>
+    <div class="demo-nav-links" id="demo-nav-links">
+      {% for item in nav %}
+        {%- set href = ('/' + item.slug + (('/') if item.slug else '')) | url -%}
+        {%- set isActive = (item.slug == navSlug) or (item.slug == parentSlug) -%}
+        <a href="{{ href }}" class="{{ 'active' if isActive }}{{ ' nav-highlight' if item.highlight }}">{{ item.label }}</a>
+      {% endfor %}
+    </div>
   </div>
 </nav>
 
@@ -62,6 +74,16 @@
 </div>
 
 <script>
+  // Mobile nav toggle — hamburger button shows/hides the nav links below 640px.
+  document.addEventListener("click", function (e) {
+    var toggle = e.target.closest(".nav-toggle");
+    if (!toggle) return;
+    var links = document.getElementById("demo-nav-links");
+    if (!links) return;
+    var open = links.classList.toggle("open");
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+
   // Copy button for demo blocks — see partials/demo.njk
   document.addEventListener("click", function (e) {
     var btn = e.target.closest("[data-copy]");

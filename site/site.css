@@ -16,6 +16,7 @@ a { color: var(--color-terracotta); }
 
 /* Layout */
 .container { max-width: 1100px; margin: 0 auto; padding: 0 40px; }
+@media (max-width: 640px) { .container { padding: 0 20px; } }
 section { padding: 60px 0; border-bottom: 1px solid rgba(0,0,0,0.06); }
 section:last-child { border-bottom: none; }
 
@@ -39,7 +40,21 @@ section:last-child { border-bottom: none; }
   border-bottom: 2px solid transparent;
 }
 .demo-nav a:hover { color: var(--color-light); }
-.demo-nav a.active { color: var(--color-light); border-bottom-color: var(--color-terracotta); }
+.demo-nav a.active { color: var(--color-light); background: rgba(212,120,74,0.22); border-radius: 6px; border-bottom-color: transparent; }
+.demo-nav-links { display: flex; gap: 0; }
+.nav-toggle { display: none; align-items: center; gap: 12px; width: 100%; background: none; border: none; padding: 14px 0; cursor: pointer; font-family: var(--font-ui); }
+.nav-toggle-icon { color: var(--color-terracotta); font-size: 22px; line-height: 1; }
+.nav-current { color: var(--color-light); font-size: 14px; font-weight: 600; }
+
+/* Mobile: collapse primary nav behind the hamburger toggle. The toggle is a
+   full-width bar showing the current page; the links drop below it when open. */
+@media (max-width: 640px) {
+  .demo-nav .container { flex-wrap: wrap; }
+  .nav-toggle { display: flex; }
+  .demo-nav-links { display: none; flex-direction: column; width: 100%; padding-bottom: 8px; }
+  .demo-nav-links.open { display: flex; }
+  .demo-nav a.nav-highlight { margin: 4px 0 0; }
+}
 
 /* Section headings */
 h2 { font-family: var(--font-headline); font-weight: 700; font-size: 22px; color: var(--color-text); margin-bottom: 24px; }
@@ -54,6 +69,7 @@ h3:first-child { margin-top: 0; }
 
 /* Swatches */
 .swatches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+@media (max-width: 640px) { .swatches { grid-template-columns: repeat(2, 1fr); } }
 .swatch { border-radius: 12px; overflow: hidden; border: 1px solid rgba(0,0,0,0.06); }
 .swatch-color { height: 80px; }
 .swatch-info { padding: 10px 12px; background: white; }
@@ -67,6 +83,7 @@ h3:first-child { margin-top: 0; }
 
 /* Nav cards */
 .nav-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+@media (max-width: 640px) { .nav-cards { grid-template-columns: 1fr; } }
 .nav-card {
   background: white;
   border-radius: 12px;
@@ -126,6 +143,7 @@ h3:first-child { margin-top: 0; }
 .button-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 
 .cards-row { display: grid; grid-template-columns: 1.2fr 0.9fr 0.9fr; gap: 20px; }
+@media (max-width: 640px) { .cards-row { grid-template-columns: 1fr; } }
 .card-dark { background: var(--color-black); border: 1px solid rgba(212,120,74,0.3); border-radius: 12px; padding: 32px; }
 .card-dark .card-title { font-family: var(--font-headline); font-weight: 700; font-size: 20px; color: var(--color-light); margin-bottom: 8px; }
 .card-dark .card-body { font-family: var(--font-body); font-size: 14px; line-height: 1.6; color: var(--color-muted); }
@@ -166,7 +184,7 @@ h3:first-child { margin-top: 0; }
 .action-bar a { font-family: var(--font-ui); font-size: 13px; font-weight: 500; color: var(--color-terracotta); text-decoration: none; }
 .action-bar a:hover { text-decoration: underline; }
 pre { background: var(--color-black); color: var(--color-light); padding: 16px 20px; border-radius: 8px; font-size: 13px; overflow-x: auto; margin-top: 12px; line-height: 1.6; font-family: var(--font-mono), monospace; }
-code { font-family: var(--font-mono), monospace; }
+code { font-family: var(--font-mono), monospace; overflow-wrap: break-word; }
 
 .doc-card { background: white; border-radius: 12px; padding: 32px; border: 1px solid rgba(0,0,0,0.06); margin-bottom: 32px; }
 .doc-card h3 { margin-top: 0; }
@@ -182,6 +200,11 @@ code { font-family: var(--font-mono), monospace; }
 .links-list a { font-family: var(--font-ui); font-size: 14px; }
 
 table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+/* Wide data tables scroll horizontally on mobile instead of widening the page.
+   display:block turns each table into its own overflow-x:auto scroll container. */
+@media (max-width: 640px) {
+  table, .type-table, .spec-table, .params-table, .ref-templates-table { display: block; overflow-x: auto; }
+}
 table th { font-family: var(--font-ui); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--color-terracotta); color: var(--color-text); }
 table td { font-size: 14px; padding: 10px 12px; border-bottom: 1px solid rgba(0,0,0,0.06); color: var(--color-body); }
 table td code { font-size: 12px; background: rgba(0,0,0,0.04); padding: 2px 6px; border-radius: 3px; }
@@ -255,6 +278,7 @@ table td code { font-size: 12px; background: rgba(0,0,0,0.04); padding: 2px 6px;
 .deck-card:hover { border-color: var(--color-terracotta); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
 
 .deck-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 12px; background: var(--color-light); }
+@media (max-width: 640px) { .deck-thumbs { grid-template-columns: repeat(2, 1fr); } }
 .deck-thumb { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; border-radius: 4px; border: 1px solid rgba(0,0,0,0.08); background: white; image-rendering: auto; }
 
 .deck-meta { padding: 18px 22px 22px; }
@@ -354,6 +378,7 @@ table td code { font-size: 12px; background: rgba(0,0,0,0.04); padding: 2px 6px;
   font-size: 13px;
 }
 .demo-subnav .container { display: flex; gap: 0; padding-top: 0; padding-bottom: 0; }
+@media (max-width: 640px) { .demo-subnav .container { flex-wrap: wrap; } }
 .demo-subnav a {
   display: block;
   padding: 10px 20px;
@@ -363,7 +388,7 @@ table td code { font-size: 12px; background: rgba(0,0,0,0.04); padding: 2px 6px;
   font-weight: 500;
 }
 .demo-subnav a:hover { color: var(--color-text); }
-.demo-subnav a.active { color: var(--color-text); border-bottom-color: var(--color-terracotta); font-weight: 600; }
+.demo-subnav a.active { color: var(--color-terracotta); background: rgba(212,120,74,0.10); border-radius: 6px; border-bottom-color: transparent; font-weight: 600; }
 
 /* ===== Overview hero ===== */
 .overview-hero {
@@ -390,31 +415,48 @@ table td code { font-size: 12px; background: rgba(0,0,0,0.04); padding: 2px 6px;
   margin-top: 6px;
 }
 
-/* ===== Identity anchor nav ===== */
+/* ===== In-page jump links (Layer 3) =====
+   Styled as "Auf dieser Seite" chips so they read as section jumps within the
+   current page — visually distinct from the Layer 2 page tabs (.demo-subnav). */
 .identity-anchors {
   display: flex;
-  gap: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   border-bottom: 1px solid rgba(0,0,0,0.08);
   background: var(--color-cream);
   position: sticky;
   top: 0;
   z-index: 10;
-  font-family: var(--font-ui);
-  font-size: 13px;
-  padding: 0 40px;
+  padding: 14px 40px;
   max-width: 1100px;
   margin: 0 auto;
 }
-.identity-anchors a {
-  padding: 12px 20px;
-  color: var(--color-body);
-  text-decoration: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  font-weight: 500;
-  white-space: nowrap;
+.identity-anchors::before {
+  content: "Auf dieser Seite";
+  flex-basis: 100%;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--color-terracotta);
 }
-.identity-anchors a:hover { color: var(--color-text); border-bottom-color: var(--color-terracotta); }
+.identity-anchors a {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-subtle);
+  text-decoration: none;
+  padding: 4px 12px;
+  background: white;
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 999px;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.identity-anchors a:hover { color: var(--color-terracotta); border-color: var(--color-terracotta); }
+@media (max-width: 640px) { .identity-anchors { padding: 14px 20px; } }
 
 /* ===== Press / Photos (moved from press.njk inline style) ===== */
 .prose h1 { font-size: 1.75rem; margin: 1.5rem 0 0.5rem; }
@@ -484,6 +526,9 @@ table td code { font-size: 12px; background: rgba(0,0,0,0.04); padding: 2px 6px;
 @media (max-width: 640px) {
   .overview-chapter { grid-template-columns: 1fr; gap: 10px; }
 }
+/* min-width:0 lets the body shrink below its <pre> content so the pre's
+   own overflow-x:auto scrolls the code instead of widening the page. */
+.overview-chapter-body { min-width: 0; }
 .overview-chapter-label {
   font-family: var(--font-ui);
   font-size: 11px;
