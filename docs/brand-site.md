@@ -93,7 +93,7 @@ npm run build:tokens ← tokens.ts → tokens.css + tokens.json
 npm run build:assets ← regenerate rasters + document previews + showcase decks
 npm run build:site   ← render site/ → dist/site/
 npm run build:kit    ← assemble dist/brand-kit/ + zip it
-npm run build:dist   ← meta: tokens → assets → site → kit (full publishable build)
+npm run build:dist   ← meta: tokens → assets → skill → site → kit (full publishable build)
 ```
 
 Use `npm run dev` for iteration (skips the slow asset/kit builds). Use `npm run build:dist` before a release.

@@ -32,7 +32,7 @@ Every asset in the kit derives from existing canonical sources — never duplica
 ## Update flow
 
 1. Edit a canonical source (tokens, logos, boilerplate, license, etc.).
-2. `npm run build:dist` — full chain: tokens → assets → site → kit.
+2. `npm run build:dist` — full chain: tokens → assets → skill → site → kit.
 3. Verify locally: unzip `dist/brand-kit.zip` and inspect; run `npm run dev` and open `/brand/download/`.
 4. Commit + push the brand repo.
 5. Bump the submodule in `website/`. Website CI rebuilds everything and `escapevelocity.consulting/brand/brand-kit.zip` updates.
@@ -45,7 +45,7 @@ Every asset in the kit derives from existing canonical sources — never duplica
 scripts/
 ├── build-tokens.ts                ← tokens.ts → tokens.css + tokens.json
 ├── build-site.sh                  ← render Brand Site → dist/site/
-├── build-dist.sh                  ← meta: tokens → assets → site → kit
+├── build-dist.sh                  ← meta: tokens → assets → skill → site → kit
 ├── build-kit.ts                   ← assemble dist/brand-kit/ + zip it
 ├── export-assets.ts               ← regenerate rasters + document previews
 ├── generate-palette-pdf.ts        ← A4 swatch sheet → palette.pdf

@@ -117,8 +117,10 @@ cd "$BRAND_DIR/dist/.stage"
 rm -f "$DIST_DIR/escape-velocity-brand.skill"
 
 # Use Python's zipfile (forward-slash separators per ZIP spec).
+# `python` on Windows/Git-Bash, `python3` on Linux CI runners.
+PYTHON=$(command -v python || command -v python3)
 WIN_DEST=$(cygpath -w "$DIST_DIR/escape-velocity-brand.skill" 2>/dev/null || echo "$DIST_DIR/escape-velocity-brand.skill")
-python -c "
+"$PYTHON" -c "
 import os, zipfile
 src = 'escape-velocity-brand'
 dest = r'$WIN_DEST'

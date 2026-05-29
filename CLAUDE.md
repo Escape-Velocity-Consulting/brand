@@ -85,7 +85,7 @@ Full text + coverage table: [docs/rules.md § Brand-Site Coverage Rule](docs/rul
 | `build:assets` | `tsx scripts/export-assets.ts` | Regenerate all rasters + document previews. Slow (Playwright). |
 | `build:site` | `bash scripts/build-site.sh` | Render Brand Site → `dist/site/` |
 | `build:kit` | `tsx scripts/build-kit.ts` | Assemble `dist/brand-kit/` + `dist/brand-kit.zip` |
-| `build:dist` | `bash scripts/build-dist.sh` | **Meta:** tokens → assets → site → kit |
+| `build:dist` | `bash scripts/build-dist.sh` | **Meta:** tokens → assets → skill → site → kit |
 | `build:skill` | `bash scripts/build-skill.sh` | Package `dist/escape-velocity-brand.skill` |
 | `build:mcp` | `tsc -p tsconfig.mcp.json` | Compile MCP server + core to `dist/` |
 | `pdf` | `tsx generators/pdf.ts` | Branded PDF from Markdown |

@@ -17,13 +17,17 @@ npm run build:tokens
 # 2. Assets (rasters + document previews). Slow — Playwright renders.
 npm run build:assets
 
-# 3. Brand Site
+# 3. Claude skill — must run before build:site, which shadow-copies
+#    dist/escape-velocity-brand.skill into dist/site/ for the download link.
+npm run build:skill
+
+# 4. Brand Site
 npm run build:site
 
-# 4. Brand Kit (depends on tokens, assets, previews, dist/site/)
+# 5. Brand Kit (depends on tokens, assets, previews, dist/site/)
 npm run build:kit
 
-# 5. Ship the kit alongside the site
+# 6. Ship the kit alongside the site
 if [ -f "$KIT_ZIP" ]; then
   cp "$KIT_ZIP" "$DIST_SITE/brand-kit.zip"
   echo "Copied kit zip into dist/site/brand-kit.zip"
