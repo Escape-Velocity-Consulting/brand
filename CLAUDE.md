@@ -8,6 +8,7 @@ Agent-facing operational reference for the brand repo. Holds the **rules** (beca
 | Read the rules in full | [docs/rules.md](docs/rules.md) |
 | Add/modify a template | [docs/templates.md](docs/templates.md) |
 | Work on the MCP server | [docs/mcp-server.md](docs/mcp-server.md) |
+| Change the slide/template render path | [docs/mcp-server.md § asset-URL invariant](docs/mcp-server.md#asset-url-invariant-read-before-touching-the-slidetemplate-render-path) — served HTML must use absolute asset URLs, never relative `./fonts/` |
 | Publish a deck / item | [docs/publishing.md](docs/publishing.md) |
 | Iterate the Brand Site | [docs/brand-site.md](docs/brand-site.md) |
 | Assemble the Brand Kit | [docs/brand-kit.md](docs/brand-kit.md) |

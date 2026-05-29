@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createServer as createHttpServer, type IncomingMessage, type ServerResponse } from 'node:http'
-import { createReadStream, mkdirSync } from 'node:fs'
+import { createReadStream, existsSync, mkdirSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { resolve, basename } from 'node:path'
@@ -604,6 +604,37 @@ async function route(
       'Cache-Control': 'public, max-age=300',
     })
     createReadStream(resolved.absPath).pipe(res)
+    return
+  }
+
+  // Static brand fonts. Served same-origin as /published/ so that published
+  // deck viewers can load fonts via an absolute URL instead of a relative
+  // './fonts' path (which 404s once the HTML leaves the staging dir — fonts
+  // are not bundled per-deck). Hosted once, immutable, cached hard. The font
+  // files ship in the container image at paths.fontsDir (Dockerfile COPY fonts).
+  if (path.startsWith('/fonts/') && method === 'GET') {
+    const name = path.slice('/fonts/'.length)
+    // Whitelist is the path-traversal guard: a flat woff2 filename only — no
+    // subdirs, no '..', no other extensions.
+    if (!/^[a-z0-9-]+\.woff2$/i.test(name)) {
+      log('http_404', { path, method })
+      res.writeHead(404, { 'Content-Type': 'application/json', ...corsHeaders() })
+      res.end(JSON.stringify({ error: 'not_found' }))
+      return
+    }
+    const absPath = resolve(paths.fontsDir, name)
+    if (!absPath.startsWith(paths.fontsDir) || !existsSync(absPath)) {
+      log('http_404', { path, method })
+      res.writeHead(404, { 'Content-Type': 'application/json', ...corsHeaders() })
+      res.end(JSON.stringify({ error: 'not_found' }))
+      return
+    }
+    res.writeHead(200, {
+      'Content-Type': 'font/woff2',
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      ...corsHeaders(),
+    })
+    createReadStream(absPath).pipe(res)
     return
   }
 

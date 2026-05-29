@@ -85,6 +85,7 @@ Multi-output tools (`render_slides`) return nested objects of these (`{ viewer, 
 | `DELETE /mcp` | same | Terminate a session. |
 | `GET /artifacts/<token>` | signed URL only (HMAC + expiry encoded in token) | Download a rendered ephemeral artifact. |
 | `GET /published/<id>/<file>` | none | Download a published file. Path-traversal guarded. See [publishing.md](publishing.md). |
+| `GET /fonts/<name>.woff2` | none | Static brand fonts, served same-origin as `/published/`. Immutable, cached 1 year, CORS `*`. Filename whitelisted to `^[a-z0-9-]+\.woff2$` (the path-traversal guard). Files ship in the image at `paths.fontsDir` (Dockerfile `COPY fonts`). |
 | `GET /api/published[?type=]` | none | JSON listing of published items. CORS `*`. |
 | `GET /api/published/<id>` | none | JSON metadata for one published item. |
 | `GET /health` | none | Liveness probe (`{ "status": "ok" }`). |
@@ -94,6 +95,27 @@ Multi-output tools (`render_slides`) return nested objects of these (`{ viewer, 
 | `GET /oauth/google/callback` | none | Google calls back here; we mint our own auth code. |
 | `POST /token` | none (PKCE) | Exchange `grant_type=authorization_code` (auth-code grant) or `grant_type=refresh_token` (rotating refresh) for a JWT access token. |
 | `POST /register` | none | RFC 7591 Dynamic Client Registration. |
+
+### Asset-URL invariant (read before touching the slide/template render path)
+
+**Published (served) HTML must reference fonts and other runtime assets via an absolute
+same-origin URL (`${publicBaseUrl}/fonts/...`), never a relative `./fonts/` path.**
+
+Relative asset paths only work for local Playwright capture, where the renderer stages the
+HTML in a temp dir next to a copied `fonts/` (and `components/`) dir and navigates via
+`file://`. The moment that HTML is *published*, the relative path 404s — the publish bundle
+ships only `index.html` + `<stem>.pdf` + `slides/` + `thumbs/` + `source.md`, **no asset
+dirs**. That's the bug behind decks rendering in a fallback font for anyone without the brand
+fonts installed locally.
+
+The fix (and the reason the code looks the way it does): in
+[`src/core/slides.ts`](../src/core/slides.ts) `renderFromMarkdown` renders the viewer HTML
+**twice** — `stageHtml` with `./fonts` (for the offline Playwright PDF/PNG capture) and
+`viewerHtml` with the absolute `viewerFontsUri` (for the served `index.html`). The remote MCP
+tool ([`src/mcp/tools/renderSlides.ts`](../src/mcp/tools/renderSlides.ts)) sets
+`viewerFontsUri = ${publicBaseUrl}/fonts`; the `/fonts` route above serves the files. Do not
+collapse the two renders back into one. (The same gap still exists for `/components/` — see
+[troubleshooting.md](troubleshooting.md).)
 
 ## OAuth (Google-delegated, embedded AS)
 

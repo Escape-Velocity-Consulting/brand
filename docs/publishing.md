@@ -97,6 +97,14 @@ URLs in API responses are computed at read time from `MCP_PUBLIC_BASE_URL`, not 
 
 ID generation: `randomBytes(8).toString('base64url').slice(0, 10)`. Collision-checked on allocation; retry up to 8 times before throwing.
 
+> **No asset dirs in the bundle.** A published item contains only the files listed above —
+> there is **no `fonts/` or `components/` directory**. Served HTML therefore must reference
+> those assets by **absolute same-origin URL**, not a relative `./fonts/` path (which 404s once
+> published). Fonts are served by `GET /fonts/<name>.woff2`; the slide renderer points the
+> served viewer at `${publicBaseUrl}/fonts`. See the asset-URL invariant in
+> [mcp-server.md](mcp-server.md#asset-url-invariant-read-before-touching-the-slidetemplate-render-path).
+> `/components/` has the same gap and isn't solved yet — see [troubleshooting.md](troubleshooting.md).
+
 ## Bundle types
 
 | Type | Produced by | Primary file | Thumbnail |

@@ -101,6 +101,63 @@ async function spawnLocalServer(): Promise<SpawnedServer> {
   throw new Error('Server did not respond on /health within 15s')
 }
 
+/**
+ * Direct checks of the static /fonts route (served by server-http, not an MCP
+ * tool). Returns synthetic TestResults so they fold into the summary + report.
+ */
+async function checkFontsRoute(baseOrigin: string): Promise<TestResult[]> {
+  const out: TestResult[] = []
+
+  // Happy path: a real woff2 → 200, font/woff2, non-trivial body.
+  {
+    const t0 = Date.now()
+    const details: string[] = []
+    let ok = false
+    try {
+      const r = await fetch(`${baseOrigin}/fonts/space-grotesk.woff2`)
+      const ct = r.headers.get('content-type') ?? ''
+      const body = Buffer.from(await r.arrayBuffer())
+      if (r.status !== 200) details.push(`expected 200, got ${r.status}`)
+      if (!ct.includes('font/woff2')) details.push(`expected content-type font/woff2, got "${ct}"`)
+      if (body.length < 1000) details.push(`expected font body > 1000 bytes, got ${body.length}`)
+      ok = details.length === 0
+    } catch (err) {
+      details.push(`fetch threw: ${(err as Error).message}`)
+    }
+    out.push({
+      name: 'serves space-grotesk.woff2', tool: 'GET /fonts/', ok, details, ms: Date.now() - t0,
+      request: { method: 'GET', url: `${baseOrigin}/fonts/space-grotesk.woff2` },
+      response: { isError: !ok },
+    })
+  }
+
+  // Guard: a non-whitelisted name → 404 (path-traversal / arbitrary-file guard).
+  {
+    const t0 = Date.now()
+    const details: string[] = []
+    let ok = false
+    try {
+      const r = await fetch(`${baseOrigin}/fonts/..%2f..%2ftokens.css`)
+      if (r.status !== 404) details.push(`expected 404 for non-woff2 name, got ${r.status}`)
+      ok = details.length === 0
+    } catch (err) {
+      details.push(`fetch threw: ${(err as Error).message}`)
+    }
+    out.push({
+      name: 'rejects non-woff2 name with 404', tool: 'GET /fonts/', ok, details, ms: Date.now() - t0,
+      request: { method: 'GET', url: `${baseOrigin}/fonts/..%2f..%2ftokens.css` },
+      response: { isError: !ok },
+    })
+  }
+
+  for (const r of out) {
+    process.stdout.write(`  ${r.tool}${r.name} … `)
+    console.log(r.ok ? `PASS (${r.ms}ms)` : `FAIL (${r.ms}ms)`)
+    if (!r.ok) for (const d of r.details) console.log(`      ${d}`)
+  }
+  return out
+}
+
 async function main() {
   const args = process.argv.slice(2)
   const verbose = args.includes('--verbose') || args.includes('-v')
@@ -173,6 +230,13 @@ async function main() {
   }
 
   await client.close().catch(() => {})
+
+  // Static /fonts route check — not an MCP tool, so it can't be a fixture.
+  // Verifies published deck viewers can load fonts over HTTP (the relative
+  // './fonts' path 404s once published). Runs against whichever server we're
+  // pointed at (local spawn or external).
+  const baseOrigin = serverUrl.replace(/\/mcp$/, '')
+  results.push(...await checkFontsRoute(baseOrigin))
 
   const passed = results.filter((r) => r.ok).length
   const failed = results.length - passed

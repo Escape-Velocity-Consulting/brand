@@ -541,6 +541,15 @@ export interface SlidesInput {
   title?: string
   /** Theme name for the viewer / printable PDF (passed to presentation.html). Default 'cream'. */
   theme?: string
+  /**
+   * Absolute base URL the *published* viewer's `@font-face` rules should point at
+   * (e.g. `https://mcp.escapevelocity.consulting/fonts`). Set by the remote MCP
+   * transport so served decks load fonts over HTTP instead of a relative `./fonts`
+   * path that 404s once the HTML is detached from the staging dir. When omitted
+   * (local/stdio mode) the viewer keeps the relative path. See `renderFromMarkdown`
+   * for why the screenshot HTML and the served HTML are rendered with different URIs.
+   */
+  viewerFontsUri?: string
 }
 
 export interface SlidesResult {
@@ -656,18 +665,29 @@ async function renderFromMarkdown(
     return renderFragment(f, mdDir, { slideIndex: i + 1, warnings })
   })
 
-  // Build viewer HTML (used for ALL three outputs in this mode)
-  const tokensCss = loadTokensCss(paths, './fonts')
+  // Build viewer HTML. NOTE: this is rendered TWICE on purpose, with two
+  // different font URIs — do not "simplify" back into one render:
+  //   • stageHtml  uses './fonts' (relative) and is written to the temp stage
+  //     dir next to a copied fonts/ dir, so Playwright (file://) loads fonts
+  //     locally — offline, deterministic — for the PDF + PNG capture below.
+  //   • viewerHtml is what the caller publishes as index.html. A relative
+  //     './fonts' path 404s once the HTML is detached from the stage dir
+  //     (the publish bundle ships only index.html + pdf + slides/ + thumbs/ +
+  //     source.md — no fonts/). So when the caller supplies an absolute
+  //     viewerFontsUri (remote transport), the served HTML points at it.
+  // When no viewerFontsUri is given (local/stdio), the two are identical.
   const env = getTemplateEnv(paths.templatesDir)
-  const viewerHtml = env.render('presentation.html', {
+  const renderViewer = (fontsUri: string) => env.render('presentation.html', {
     TITLE: title,
     LANG: 'de',
     SLIDE_W: dims.width,
     SLIDE_H: dims.height,
-    FONTS_URI: './fonts',
-    TOKENS_CSS: tokensCss,
+    FONTS_URI: fontsUri,
+    TOKENS_CSS: loadTokensCss(paths, fontsUri),
     SLIDES: renderedFragments,
   })
+  const stageHtml = renderViewer('./fonts')
+  const viewerHtml = input.viewerFontsUri ? renderViewer(input.viewerFontsUri) : stageHtml
 
   // For viewer/pdf/pngs that need the viewer file accessible on disk (Playwright
   // navigates via file://, and the viewer expects fonts/ and components/ next to it),
@@ -683,7 +703,10 @@ async function renderFromMarkdown(
     if (existsSync(paths.componentsDir)) cpSync(paths.componentsDir, componentsDir, { recursive: true })
 
     const viewerPath = resolve(stageDir, 'index.html')
-    writeFileSync(viewerPath, viewerHtml, 'utf-8')
+    // Stage the './fonts' variant — Playwright loads fonts from the copied
+    // fonts/ dir alongside this file. The published variant (viewerHtml) is
+    // returned via result.viewer below.
+    writeFileSync(viewerPath, stageHtml, 'utf-8')
 
     const result: SlidesResult = {
       pngs: [],

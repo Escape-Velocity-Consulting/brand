@@ -70,6 +70,28 @@ All MCP-HTTP events are logged to **stderr** in a structured key=value format. T
 
 ## Common failure modes
 
+### Published deck renders with a fallback font
+
+**Symptom:** A published deck (`/published/<id>/`) shows the right fonts on one machine but a
+generic sans-serif on another. Headlines that should be Space Grotesk look wrong.
+
+**Cause:** The served `index.html` referenced fonts via a **relative `./fonts/...woff2`** path.
+That path 404s once published — the publish bundle ships no `fonts/` dir. It only *looked*
+right on the first machine because that OS had the brand fonts installed, so the browser
+silently substituted the local copy. `evt=http_404 path=/published/<id>/fonts/...` in the logs
+is the smoking gun.
+
+**Fix (already in place):** fonts are served at `GET /fonts/<name>.woff2` (same origin as
+`/published/`), and the slide renderer points the *served* viewer's `@font-face` at the
+absolute `${publicBaseUrl}/fonts`. See the asset-URL invariant in
+[mcp-server.md](mcp-server.md#asset-url-invariant-read-before-touching-the-slidetemplate-render-path).
+Decks published **before** this fix stay broken until re-published.
+
+**Related (not yet fixed):** decks that use JS **components** (e.g. radar charts) reference
+`./components/...`, which has the identical gap — components aren't bundled on publish either.
+Either add a `/components/` route mirroring `/fonts/`, or inline component JS into the served
+HTML at publish time.
+
 ### Token refresh broken
 
 **Symptom:** Connector reports "user's connection to this connector was invalidated" in Claude Desktop mid-conversation. Clients keep needing to re-OAuth.

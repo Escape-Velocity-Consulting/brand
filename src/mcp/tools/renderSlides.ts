@@ -62,6 +62,15 @@ export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
     },
   }, async (args) => runTool(async () => {
     const dims = args.dimensions as DimensionsInput
+    // On the remote transport the published viewer is served from the MCP
+    // origin, so its @font-face rules must use an absolute same-origin URL
+    // (the relative './fonts' path 404s once published — fonts aren't bundled).
+    // Fonts are served by the /fonts route (see server-http.ts). Derived from
+    // publicBaseUrl so it stays correct even if that ever carries a path prefix.
+    const viewerFontsUri =
+      ctx.outputSink.kind === 'remote' && ctx.publicBaseUrl
+        ? `${ctx.publicBaseUrl.replace(/\/$/, '')}/fonts`
+        : undefined
     const result = await renderSlides({
       markdown: args.markdown,
       pages: args.pages,
@@ -69,6 +78,7 @@ export function registerRenderSlides(server: McpServer, ctx: ServerContext) {
       outputs: args.outputs,
       title: args.title,
       theme: args.theme,
+      viewerFontsUri,
     }, ctx.paths, ctx.pool)
 
     const stem = args.title?.toLowerCase().replace(/\s+/g, '-').slice(0, 40) || 'deck'
