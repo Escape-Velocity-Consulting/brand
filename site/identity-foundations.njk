@@ -8,11 +8,82 @@ subtitle: "Color palette, typography scale, spacing rules, and logo variants."
 ---
 
 <div class="identity-anchors">
+  <a href="#logos">Logos</a>
   <a href="#colors">Colors</a>
   <a href="#typography">Typography</a>
   <a href="#spacing">Spacing</a>
-  <a href="#logos">Logos</a>
 </div>
+
+<section id="logos">
+  <div class="container">
+    <div class="eyebrow">Logos</div>
+    <h2>Logo Variants</h2>
+    <p class="section-intro">Every logo is one combination of three choices: the <strong>mark</strong> (how the wordmark is composed), the <strong>frame</strong> (canvas shape &amp; padding), and the <strong>surface</strong> (background &amp; ink). Pick a combination below to preview and download it, or open the full gallery to scan all {{ logos.count }} variants. SVGs are outlined — they render without the font installed.</p>
+
+    {# Variant data + asset base for the picker JS #}
+    <script type="application/json" id="logoData">{{ logos.variants | dump | safe }}</script>
+
+    <div class="logo-picker"
+         data-asset-base="{{ '/assets/' | url }}"
+         data-default="{{ logos.default }}">
+      <div class="logo-picker-controls">
+        <div class="logo-axis" data-axis="mark">
+          <span class="logo-axis-label">Mark</span>
+          <div class="logo-axis-options">
+            {% for m in logos.marks %}<button type="button" class="logo-toggle" data-axis="mark" data-value="{{ m.key }}">{{ m.label }}</button>{% endfor %}
+          </div>
+        </div>
+        <div class="logo-axis" data-axis="frame">
+          <span class="logo-axis-label">Frame</span>
+          <div class="logo-axis-options">
+            {% for f in logos.frames %}<button type="button" class="logo-toggle" data-axis="frame" data-value="{{ f.key }}">{{ f.label }}</button>{% endfor %}
+          </div>
+        </div>
+        <div class="logo-axis" data-axis="surface">
+          <span class="logo-axis-label">Surface</span>
+          <div class="logo-axis-options">
+            {% for s in logos.surfaces %}<button type="button" class="logo-toggle" data-axis="surface" data-value="{{ s.key }}">{{ s.label }}</button>{% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="logo-picker-stage">
+        <div class="logo-stage-canvas" id="logoStageCanvas">
+          <img id="logoStageImg" src="" alt="">
+        </div>
+        <div class="logo-stage-meta">
+          <div class="logo-stage-caption" id="logoStageCaption"></div>
+          <div class="logo-stage-aspect" id="logoStageAspect"></div>
+          <div class="logo-stage-downloads">
+            <a class="logo-dl-primary" id="logoStageSvg" href="#">Download SVG</a>
+            <div class="logo-dl-pngs" id="logoStagePngs"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <details class="logo-gallery">
+      <summary>All {{ logos.count }} variants</summary>
+      {% for m in logos.marks %}
+        <h3 class="logo-gallery-heading">{{ m.label }}</h3>
+        <div class="logo-gallery-grid">
+          {% for v in logos.variants %}{% if v.mark == m.key %}
+            <figure class="logo-gallery-item">
+              <div class="logo-tile{% if v.checker %} checker-{{ v.checker }}{% endif %}">
+                <img src="{{ ('/assets/raster/' + v.name + '-512.png') | url }}" alt="{{ v.caption }}" loading="lazy" decoding="async">
+              </div>
+              <figcaption>{{ v.surfaceLabel }} · {{ v.frameLabel }}</figcaption>
+              <div class="action-bar">
+                <a href="{{ ('/assets/logos/' + v.svg) | url }}">SVG →</a>
+                <a href="{{ ('/assets/raster/' + (v.pngs | last)) | url }}">PNG →</a>
+              </div>
+            </figure>
+          {% endif %}{% endfor %}
+        </div>
+      {% endfor %}
+    </details>
+  </div>
+</section>
 
 <section id="colors">
   <div class="container">
@@ -107,44 +178,82 @@ subtitle: "Color palette, typography scale, spacing rules, and logo variants."
   </div>
 </section>
 
-{%- set logoGroups = [
-  { heading: "Dark Background", bg: "dark", items: [
-    { svg: "ev-wordmark.svg",       png: "ev-wordmark-300.png",       width: 150, height: 150, caption: "EV Wordmark — Square monogram, dark bg" },
-    { svg: "logo-dark.svg",         png: "logo-dark-300.png",         width: 250, height: 125, caption: "Full Wordmark — Wide, dark bg" },
-    { svg: "logo-dark-square.svg",  png: "logo-dark-square-300.png",  width: 150, height: 150, caption: "Full Wordmark — Square, dark bg" }
-  ]},
-  { heading: "Light Background", bg: "", items: [
-    { svg: "ev-wordmark-light.svg",       png: "ev-wordmark-light-300.png",       width: 150, height: 150, caption: "EV Wordmark — Square monogram, light bg" },
-    { svg: "logo-light.svg",              png: "logo-light-300.png",              width: 250, height: 125, caption: "Full Wordmark — Wide, light bg" },
-    { svg: "logo-light-square.svg",       png: "logo-light-square-300.png",       width: 150, height: 150, caption: "Full Wordmark — Square, light bg" }
-  ]},
-  { heading: "Transparent", bg: "transparent", items: [
-    { svg: "ev-wordmark-transparent.svg",  png: "ev-wordmark-transparent-300.png",  width: 150, height: 150, caption: "EV Wordmark — Square monogram, transparent" },
-    { svg: "logo-transparent.svg",         png: "logo-transparent-300.png",         width: 250, height: 125, caption: "Full Wordmark — Wide, transparent" }
-  ]}
-] -%}
+<script>
+(function () {
+  var root = document.querySelector(".logo-picker");
+  var dataEl = document.getElementById("logoData");
+  if (!root || !dataEl) return;
 
-<section id="logos">
-  <div class="container">
-    <div class="eyebrow">Logos</div>
-    <h2>Logo Variants</h2>
+  var variants = JSON.parse(dataEl.textContent);
+  var base = root.getAttribute("data-asset-base") || "/assets/";
 
-    {% for group in logoGroups %}
-      <h3>{{ group.heading }}</h3>
-      <div class="previews-grid">
-        {% for item in group.items %}
-          <div>
-            <div class="logo-preview-box{% if group.bg %} {{ group.bg }}{% endif %}">
-              <img src="{{ ('/assets/logos/' + item.svg) | url }}" alt="{{ item.caption }}" width="{{ item.width }}" height="{{ item.height }}">
-            </div>
-            <div class="preview-caption">{{ item.caption }}</div>
-            <div class="action-bar">
-              <a href="{{ ('/assets/logos/' + item.svg) | url }}">SVG →</a>
-              <a href="{{ ('/assets/raster/' + item.png) | url }}">PNG →</a>
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    {% endfor %}
-  </div>
-</section>
+  // Index by mark|surface|frame for O(1) lookup.
+  var index = {};
+  variants.forEach(function (v) { index[v.mark + "|" + v.surface + "|" + v.frame] = v; });
+
+  // Initial state from the default variant.
+  var def = variants.find(function (v) { return v.name === root.getAttribute("data-default"); }) || variants[0];
+  var state = { mark: def.mark, surface: def.surface, frame: def.frame };
+
+  var img = document.getElementById("logoStageImg");
+  var canvas = document.getElementById("logoStageCanvas");
+  var caption = document.getElementById("logoStageCaption");
+  var aspect = document.getElementById("logoStageAspect");
+  var svgLink = document.getElementById("logoStageSvg");
+  var pngWrap = document.getElementById("logoStagePngs");
+
+  function gcd(a, b) { return b ? gcd(b, a % b) : a; }
+  function ratio(w, h) {
+    var g = gcd(w, h) || 1;
+    var rw = Math.round((w / g) * 10) / 10, rh = Math.round((h / g) * 10) / 10;
+    // Normalise to a readable "x : 1" when not a clean small integer ratio.
+    if (rw > 12 || rh > 12) return (Math.round((w / h) * 100) / 100) + " : 1";
+    return rw + " : " + rh;
+  }
+
+  function render() {
+    var v = index[state.mark + "|" + state.surface + "|" + state.frame];
+    if (!v) return;
+
+    img.src = base + "logos/" + v.svg;
+    img.alt = v.caption;
+
+    // Surface backdrop: neutral for solid (the SVG carries its own background,
+    // so its footprint reads against it); a contrasting checkerboard for
+    // transparent — dark behind light ink, light behind dark ink.
+    canvas.classList.remove("checker-light", "checker-dark");
+    if (v.checker) canvas.classList.add("checker-" + v.checker);
+
+    caption.textContent = v.caption;
+    aspect.textContent = (v.frame === "square" ? "Square · 1 : 1" : "Aspect " + ratio(v.w, v.h)) + " · scalable SVG";
+
+    svgLink.href = base + "logos/" + v.svg;
+    svgLink.setAttribute("download", "");
+
+    pngWrap.innerHTML = "";
+    (v.pngs || []).forEach(function (png) {
+      var m = png.match(/-(\d+)\.png$/);
+      if (!m) return;
+      var a = document.createElement("a");
+      a.href = base + "raster/" + png;
+      a.textContent = m[1] + "px";
+      a.setAttribute("download", "");
+      pngWrap.appendChild(a);
+    });
+
+    // Sync active states.
+    root.querySelectorAll(".logo-toggle").forEach(function (btn) {
+      btn.classList.toggle("active", state[btn.getAttribute("data-axis")] === btn.getAttribute("data-value"));
+    });
+  }
+
+  root.addEventListener("click", function (e) {
+    var btn = e.target.closest(".logo-toggle");
+    if (!btn) return;
+    state[btn.getAttribute("data-axis")] = btn.getAttribute("data-value");
+    render();
+  });
+
+  render();
+})();
+</script>

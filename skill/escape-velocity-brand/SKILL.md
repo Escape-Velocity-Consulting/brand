@@ -194,7 +194,7 @@ Call as `render_template({ template: KEY, vars: { ... } })`.
 
 | Key | Dimensions | Use for | Optional vars |
 |-----|------------|---------|---------------|
-| `social/og` | 1200×630 | Open Graph image (1200×630). For website / blog post sharing. | `TITLE`, `SUBTITLE`, `EYEBROW` |
+| `social/og` | 1200×630 | Open Graph image (1200×630). For website / blog post sharing. SUBTITLE accepts inline markup — wrap a phrase in <span class="accent">…</span> to color just that part terracotta. | `TITLE`, `SUBTITLE` |
 | `social/linkedin-banner` | 1584×396 | LinkedIn profile banner (1584×396). | `TITLE`, `SUBTITLE` |
 | `social/twitter-banner` | 1500×500 | Twitter/X profile banner (1500×500). | `TITLE`, `SUBTITLE` |
 | `social/youtube-banner` | 2560×1440 | YouTube channel banner (2560×1440, safe area ~1546×423). | `TITLE`, `SUBTITLE` |
@@ -477,12 +477,12 @@ Whether using `render_template` (MCP) or authoring inline, the same rules apply:
     h1   { font-family: var(--font-headline); color: var(--color-terracotta); }
   </style>
   ```
-  Skill-only: replace `{{ TOKENS_CSS | safe }}` with the contents of `tokens/tokens.css`. The MCP does this substitution automatically — its `TOKENS_CSS` injection also includes resolved `@font-face` declarations so fonts load without needing the templates to declare them.
+  Skill-only (no MCP): replace `{{ TOKENS_CSS | safe }}` with the contents of `tokens/tokens.css`. Via the MCP (`render_html_to_png` / `render_html_to_pdf`): the brand tokens + resolved `@font-face` declarations are injected into the output **automatically**, so `var(--color-*)` and brand font-families resolve even with no `{{ TOKENS_CSS }}` placeholder and no font declarations at all. Including the placeholder is still fine for explicit placement. **Do not** react to a styling problem by stripping your token/font CSS *and* switching to bare `var(--color-*)` while assuming the vars are predefined — and do not hardcode hex/font values to "force" a color; the auto-inject already covers you.
 - **Color vars** (from `tokens/tokens.css`): `--color-cream`, `--color-black`, `--color-terracotta`, `--color-accent`, `--color-light`, `--color-muted`, `--color-warm-gray-{100..900}`, etc.
 - **Font vars**: `--font-headline` (Space Grotesk), `--font-body` (Inter), `--font-ui` (Manrope), `--font-mono` (JetBrains Mono).
 - **Never** hardcode hex values, font names, or spacing values. Use the CSS vars.
 - **Starting points**: read `templates/` directly — the canonical files are bundled with you. Don't recreate a template from memory.
-- **Logos**: read `assets/logos/*.svg` and inline as needed. Use the `light` variants on dark backgrounds, `dark` variants on cream backgrounds.
+- **Logos**: read `assets/logos/*.svg` and inline as needed. They are outlined (no font dependency). Names follow `{mark}-{surface}-{frame}` — mark `monogram|stacked|inline`, frame `square|margin|padded|bare`, surface `dark|light|terracotta|transparent-light|transparent-dark|transparent-mono-light|transparent-mono-dark`. Pick by surface: `*-dark-*` on dark backgrounds, `*-light-*` on cream, `*-terracotta-*` on terracotta, `transparent-light`/`transparent-dark` (two-tone, accent kept) over photos, `transparent-mono-light`/`transparent-mono-dark` (flat single-colour knockouts) for graphics. Legacy names (`logo-dark.svg`, `ev-wordmark.svg`, …) still resolve as aliases.
 
 ## Website prototyping
 

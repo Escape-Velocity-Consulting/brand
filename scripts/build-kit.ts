@@ -99,7 +99,7 @@ copyDirFiltered(resolve(BRAND_DIR, 'assets', 'logos'), logosSvg, (n) => n.endsWi
 copyDirFiltered(
   resolve(BRAND_DIR, 'assets', 'raster'),
   logosPng,
-  (n) => /^(logo|ev-wordmark)[\w-]*-(?:300|512|1024|2048)\.png$/.test(n),
+  (n) => /^(logo|ev-wordmark|monogram|stacked|inline)[\w-]*-(?:300|512|1024|2048)\.png$/.test(n),
 )
 console.log('Staged: logos/')
 

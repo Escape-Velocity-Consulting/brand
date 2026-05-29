@@ -6,6 +6,7 @@
   },
   "scripts": {
     "build:tokens": "tsx scripts/build-tokens.ts",
+    "build:logos": "tsx scripts/generate-logos.ts",
     "build:assets": "tsx scripts/export-assets.ts",
     "build:site": "bash scripts/build-site.sh",
     "build:kit": "tsx scripts/build-kit.ts",
@@ -13,7 +14,7 @@
     "build:skill": "bash scripts/build-skill.sh",
     "build:skill-catalog": "tsx scripts/build-skill-catalog.ts",
     "build:mcp": "tsc -p tsconfig.mcp.json",
-    "dev": "npm run build:tokens && npm run build:site && eleventy --config=site/.eleventy.cjs --input=site --serve --port=3000",
+    "dev": "npm run build:tokens && npm run build:logos && npm run build:site && eleventy --config=site/.eleventy.cjs --input=site --serve --port=3000",
     "pdf": "tsx generators/pdf.ts",
     "image": "tsx generators/image.ts",
     "carousel": "tsx generators/carousel.ts",

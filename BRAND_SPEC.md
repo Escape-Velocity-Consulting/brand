@@ -94,8 +94,18 @@ Use extremely sparingly — only when there is a genuine semantic reason (e.g., 
 ### Logo Treatment
 
 - Text: `Escape ` in primary color + `Velocity` in `terracotta` (light bg) or `accent` (dark bg)
-- Font: Space Grotesk 700
-- No icon/mark exists yet — wordmark only
+- Font: Space Grotesk 700, outlined to vector paths (logos render without the font installed)
+- Marks: **monogram** (`EV`), **stacked** (two-line), **inline** (one-line). The monogram colours `E` in ink + `V` in accent.
+
+The full logo set is the matrix **mark × frame × surface**, generated — never hand-drawn:
+
+| Axis | Values |
+|------|--------|
+| Mark | `monogram` · `stacked` · `inline` |
+| Frame | `square` (1:1) · `margin` (clear-space) · `padded` (generous margin) · `bare` (tight crop, no padding) |
+| Surface | `dark` · `light` · `terracotta` (cream ink) · `transparent-light` (light ink + accent) · `transparent-dark` (dark ink + accent) · `transparent-mono-light` (all light) · `transparent-mono-dark` (all dark) |
+
+= 84 variants (3 × 4 × 7). On terracotta the wordmark is single-colour cream — the terracotta accent is never used on a terracotta surface. The two-tone transparent surfaces keep the "Velocity" accent; the `*-mono-*` ones are flat single-colour knockouts for graphics. See § Logos for the generation pipeline.
 
 ---
 
@@ -403,16 +413,26 @@ Generators reference fonts at `../website/fonts/` by relative path (valid when b
 
 ### Logos
 
-SVGs are the source of truth. Raster exports are generated artifacts — never edit PNGs directly.
+Logos are **generated**, not hand-drawn. The pipeline:
 
-| File | Format | Variant | Source | How generated |
-|------|--------|---------|--------|---------------|
-| `assets/logos/ev-wordmark.svg` | SVG | Wordmark, light bg | hand-crafted | — |
-| `assets/logos/logo-dark.svg` | SVG | Wordmark, dark bg | hand-crafted | — |
-| `assets/logos/logo-dark-square.svg` | SVG | Square crop, dark bg | hand-crafted | — |
-| `assets/raster/ev-wordmark-300.png` | PNG 300px | Light bg | above SVG | `export-assets.ts` |
-| `assets/raster/logo-dark-300.png` | PNG 300px | Dark bg | above SVG | `export-assets.ts` |
-| `assets/raster/ev-wordmark-300-v2.png` | PNG 300px | Light bg v2 | above SVG | review — may be superseded |
+```
+logos.config.ts            ← declares the mark × frame × surface matrix + colour mapping (from tokens.ts)
+assets/logos/_glyphs.json  ← Space Grotesk 700 glyph outlines (one-time: scripts/extract-glyphs.py)
+        │  npm run build:logos  (scripts/generate-logos.ts — pure Node)
+        ▼
+assets/logos/<mark>-<surface>-<frame>.svg   ← 54 self-contained outlined SVGs
+assets/logos/<legacy>.svg                    ← back-compat aliases (ev-wordmark.svg, logo-dark.svg, …)
+assets/logos.manifest.json                   ← drives raster (export-assets.ts) + Brand Site picker
+        │  npm run build:assets
+        ▼
+assets/raster/<name>-{300,512,1024,2048,4096}.png  ← rasters for every variant + alias
+```
+
+Rules:
+- **SVGs are generated artifacts** — edit `logos.config.ts` / `tokens.ts` and re-run `build:logos`, never edit SVGs or PNGs by hand.
+- Naming: `{mark}-{surface}-{frame}` (e.g. `inline-dark-margin`, `monogram-transparent-light-square`).
+- Legacy filenames (`ev-wordmark*.svg`, `logo-dark*.svg`, `logo-*-wide.svg`, …) are kept as aliases so existing consumers and download URLs keep working; `legacyAliases` in `logos.config.ts` maps each to a matrix cell.
+- Re-run `extract-glyphs.py` only if the wordmark text or font changes (regenerate `fonts/SpaceGrotesk-700.ttf` first).
 
 ### Social & Generated Assets
 
@@ -604,6 +624,8 @@ npx tsx brand/generators/image.ts --input <file> --type <html|svg> -o <output.pn
 - SVG → PNG: `sharp` (fast, no browser needed)
 - HTML → PNG: Playwright `page.screenshot()` with fixed viewport — always runs Nunjucks rendering before screenshotting, regardless of whether the template uses variables (no-op if no variables present)
 
+**Brand-style auto-injection (HTML → PNG/PDF):** The core `renderHtmlToPng` / `renderHtmlToPdf` primitives (and therefore the `render_html_to_png` / `render_html_to_pdf` MCP tools) guarantee the brand tokens + `@font-face` block end up in the output. Templates that include the `{{ TOKENS_CSS }}` placeholder carry them as before; ad-hoc HTML that uses `var(--color-*)` / brand font-families **without** the placeholder gets a `<style>` block injected automatically (`ensureBrandStyles` in `src/core/render.ts`). The sentinel is the token *definition* `--color-terracotta:` — if it is already present (placeholder used, or hand-written `:root`), nothing is injected. This means ad-hoc HTML never silently renders with a white background / system serif. Authors **may** still include `{{ TOKENS_CSS | safe }}` + `{{ FONTS_URI }}` explicitly for full control over placement; both paths are supported.
+
 **Standard output sizes:**
 
 | Preset | Dimensions | Use |
@@ -668,10 +690,10 @@ npm run image -- --input templates/social/og.html --type html --preset og \
 
 **og.html** (1200×630):
 
-| Variable | Required | Default |
-|----------|----------|---------|
-| `TITLE` | no | "Digitalisierung & Prozessoptimierung" |
-| `SUBTITLE` | no | "" |
+| Variable | Required | Default | Notes |
+|----------|----------|---------|-------|
+| `TITLE` | no | "Digitalisierung & Prozessoptimierung" | — |
+| `SUBTITLE` | no | "" | `\| safe` — accepts inline markup; wrap a phrase in `<span class="accent">…</span>` to color just that part terracotta |
 
 **linkedin-banner.html** (1584×396):
 

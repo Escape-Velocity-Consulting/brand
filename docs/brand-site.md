@@ -15,7 +15,8 @@ The multi-page reference at `/brand/` (overview, identity, components, documents
 | Path | Source | Notes |
 |---|---|---|
 | `/brand/` | `site/index.njk` | Overview, links to other pages |
-| `/brand/identity/` | `site/identity.njk` | Colors, type scale, logo treatment |
+| `/brand/identity/` | `site/identity.njk` | Identity hub |
+| `/brand/identity/foundations/` | `site/identity-foundations.njk` + `_data/logos.cjs` | Colors, type scale, spacing, and the **logo picker + gallery** — auto-generated from `logos.manifest.json` (mark × frame × surface). Not hand-curated; regenerate via `build:logos`. |
 | `/brand/components/` | `site/components.njk` | UI patterns (buttons, cards, eyebrows, etc.) |
 | `/brand/documents/` | `site/documents.njk` + `_data/documents.cjs` | Auto-discovered from `previews/*-preview.png` |
 | `/brand/social/` | `site/social.njk` + `_data/social.cjs` | Auto-discovered from `templates/social/*.html` |

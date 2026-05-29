@@ -1,9 +1,10 @@
-import { mkdirSync, unlinkSync, writeFileSync } from 'node:fs'
+import { mkdirSync, unlinkSync, writeFileSync, readFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { execSync } from 'node:child_process'
 import sharp from 'sharp'
 import { chromium } from 'playwright'
+import { rasterSizes, legacyAliases } from '../logos.config'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const BRAND_DIR = resolve(__dirname, '..')
@@ -15,35 +16,39 @@ mkdirSync(RASTER_DIR, { recursive: true })
 mkdirSync(PREVIEWS_DIR, { recursive: true })
 
 // --- SVG → PNG exports ---
-// Emit each logo at multiple sizes so the Brand Kit can ship a range.
-// File pattern: <stem>-<size>.png (e.g. logo-dark-300.png, logo-dark-1024.png).
+// Raster every generated logo variant (from logos.manifest.json) plus the
+// legacy-named aliases, at multiple sizes so the Brand Kit can ship a range.
+// File pattern: <stem>-<size>.png (e.g. stacked-dark-margin-300.png).
+// Run `npm run build:logos` first to (re)generate the SVGs + manifest.
 
-const LOGO_SVGS = [
-  'ev-wordmark.svg',
-  'ev-wordmark-light.svg',
-  'ev-wordmark-transparent.svg',
-  'logo-dark.svg',
-  'logo-dark-square.svg',
-  'logo-light.svg',
-  'logo-light-square.svg',
-  'logo-transparent.svg',
-]
-const LOGO_SIZES = [300, 512, 1024, 2048] as const
+interface LogoManifestEntry { name: string; svg: string }
+const logoManifest: LogoManifestEntry[] = JSON.parse(
+  readFileSync(resolve(BRAND_DIR, 'assets', 'logos.manifest.json'), 'utf8'),
+)
 
-for (const svg of LOGO_SVGS) {
-  const stem = svg.replace(/\.svg$/, '')
-  const inputPath = resolve(LOGOS_DIR, svg)
-  for (const width of LOGO_SIZES) {
-    const output = `${stem}-${width}.png`
-    const outputPath = resolve(RASTER_DIR, output)
-    // density scales with target width so SVG rasterises crisp at large sizes
-    await sharp(inputPath, { density: Math.max(72, Math.round(width / 4)) })
-      .resize(width)
+async function rasterLogo(svgFile: string, stem: string) {
+  const inputPath = resolve(LOGOS_DIR, svgFile)
+  // Derive density from the SVG's own intrinsic size so the pre-resize raster is
+  // crisp (≥ target) but bounded (the viewBox is in 1000-em units, ~8000px wide,
+  // which would explode a naïve density). The longest side renders to ~2× the
+  // target, capped at 4096, then we downscale to the requested width.
+  const meta = await sharp(inputPath).metadata()
+  const intrinsic = Math.max(meta.width ?? 1000, meta.height ?? 1000)
+  for (const width of rasterSizes) {
+    const renderLonger = Math.min(Math.max(2 * width, 600), 4096)
+    const density = Math.max(72, (72 * renderLonger) / intrinsic)
+    await sharp(inputPath, { density })
+      .resize({ width })
       .png()
-      .toFile(outputPath)
-    console.log(`Exported: ${output}`)
+      .toFile(resolve(RASTER_DIR, `${stem}-${width}.png`))
   }
+  console.log(`Exported: ${stem}-{${rasterSizes.join(',')}}.png`)
 }
+
+// Canonical systematic variants
+for (const entry of logoManifest) await rasterLogo(entry.svg, entry.name)
+// Legacy-named aliases (keep old download URLs / kit names working)
+for (const a of legacyAliases) await rasterLogo(a.file, a.file.replace(/\.svg$/, ''))
 
 // --- LinkedIn banner ---
 

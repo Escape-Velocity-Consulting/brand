@@ -14,6 +14,9 @@ cd "$BRAND_DIR"
 # 1. Tokens (cheap, always run)
 npm run build:tokens
 
+# 1b. Logo variants — regenerate SVGs + manifest before assets raster them.
+npm run build:logos
+
 # 2. Assets (rasters + document previews). Slow — Playwright renders.
 npm run build:assets
 
