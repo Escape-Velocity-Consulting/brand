@@ -38,10 +38,29 @@ subtitle: "Social assets, banners, and graphic templates."
   <div class="container">
     <div class="eyebrow">QR</div>
     <h2>QR Codes</h2>
+    <p style="font-size: 14px; color: var(--color-body); margin-top: 8px; max-width: 60ch;">
+      All four encode <a href="https://escapevelocity.consulting/hi/" target="_blank">escapevelocity.consulting/hi/</a> (the digital business card).
+      Cream variants match the brand background; transparent variants drop onto any surface (slides, dark documents, print).
+      The logo tile keeps a cream quiet-zone plate so it stays scannable on either background.
+    </p>
 
-    <img src="{{ '/assets/qr/qr-hi.png' | url }}" alt="QR Code → /hi/" style="max-width: 200px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06);">
-    <div class="preview-caption" style="margin-top: 8px;">QR → /hi/ (digital business card)</div>
-    <div class="action-bar"><a href="{{ '/assets/qr/qr-hi.png' | url }}">Download PNG →</a></div>
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; margin-top: 24px;">
+      {% set qrVariants = [
+        { file: "qr-hi.png", label: "Cream + logo", note: "Canonical" },
+        { file: "qr-hi-plain.png", label: "Cream, no logo", note: "" },
+        { file: "qr-hi-transparent.png", label: "Transparent + logo", note: "" },
+        { file: "qr-hi-transparent-plain.png", label: "Transparent, no logo", note: "" }
+      ] %}
+      {% for q in qrVariants %}
+        <div style="width: 200px;">
+          <div style="background-image: linear-gradient(45deg, #e8e8e8 25%, transparent 25%), linear-gradient(-45deg, #e8e8e8 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e8e8e8 75%), linear-gradient(-45deg, transparent 75%, #e8e8e8 75%); background-size: 16px 16px; background-position: 0 0, 0 8px, 8px -8px, -8px 0; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06);">
+            <img src="{{ ('/assets/qr/' + q.file) | url }}" alt="QR → /hi/ — {{ q.label }}" style="display: block; width: 100%; border-radius: 8px;">
+          </div>
+          <div class="preview-caption" style="margin-top: 8px;">{{ q.label }}{% if q.note %} — {{ q.note }}{% endif %}</div>
+          <div class="action-bar"><a href="{{ ('/assets/qr/' + q.file) | url }}">Download PNG →</a></div>
+        </div>
+      {% endfor %}
+    </div>
   </div>
 </section>
 
